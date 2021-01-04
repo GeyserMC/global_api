@@ -14,8 +14,8 @@ defmodule GlobalLinking.Application do
         username: get_env(:username),
         password: get_env(:password),
         database: get_env(:database),
-        name: :myxql,
-        pool_size: 2
+        pool_size: get_env(:pool_size),
+        name: :myxql
       },
       create_cache(:java_link),
       create_cache(:bedrock_link),
