@@ -2,6 +2,16 @@ defmodule GlobalLinking.Utils do
   alias GlobalLinking.MojangApi, as: MojangApi
   alias GlobalLinking.Repo, as: Repo
 
+  def random_string(length) do
+    :crypto.strong_rand_bytes(length)
+    |> Base.url_encode64
+    |> binary_part(0, length)
+  end
+
+  def get_env(key, atom) do
+    Application.get_env(:global_linking, key)[atom]
+  end
+
   def is_int_and_rounded(xuid) do
     case String.contains?(xuid, ".") do
       true -> false

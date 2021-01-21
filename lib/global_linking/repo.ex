@@ -1,5 +1,4 @@
 defmodule GlobalLinking.Repo do
-
   def get_java_link(uuid) do
     result = MyXQL.query!(:myxql, "SELECT bedrockId, javaId, javaName, lastNameUpdate FROM links WHERE javaId = (?)", [uuid]).rows
     format_java_link_result(result, [])

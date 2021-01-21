@@ -13,26 +13,26 @@ defmodule GlobalLinkingWeb.Router do
     plug :accepts, ["json"]
   end
 
-  scope "/api/link", GlobalLinkingWeb do
-    pipe_through :api
-
-    get "/java/", ApiController, :get_java_link
-    get "/bedrock/", ApiController, :get_bedrock_link
+  scope "/xbox", GlobalLinkingWeb, log: false do
+    get "/token", XboxController, :got_token
   end
 
-  # Other scopes may use custom stacks.
-  # scope "/api", GlobalLinkingWeb do
-  #   pipe_through :api
-  # end
+  scope "/v1", GlobalLinkingWeb, log: false do
+    pipe_through :api
+
+    scope "/xbox" do
+      get "/gamertag", XboxController, :get_gamertag
+      get "/xuid", XboxController, :get_xuid
+    end
+
+    scope "/link" do
+      get "/java", ApiController, :get_java_link
+      get "/bedrock", ApiController, :get_bedrock_link
+    end
+  end
 
   # Enables LiveDashboard only for development
-  #
-  # If you want to use the LiveDashboard in production, you should put
-  # it behind authentication and allow only admins to access it.
-  # If your application does not have an admins-only section yet,
-  # you can use Plug.BasicAuth to set up some basic authentication
-  # as long as you are also using SSL (which you should anyway).
-  if Mix.env()== :dev do
+  if Mix.env() == :dev do
     import Phoenix.LiveDashboard.Router
 
     scope "/dashboard" do

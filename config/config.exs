@@ -7,9 +7,6 @@
 # General application configuration
 use Mix.Config
 
-config :global_linking,
-  ecto_repos: [GlobalLinking.Repo]
-
 # Configures the endpoint
 config :global_linking, GlobalLinkingWeb.Endpoint,
   url: [host: "localhost"],

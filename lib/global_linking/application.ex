@@ -8,6 +8,10 @@ defmodule GlobalLinking.Application do
 
   def start(_type, _args) do
     children = [
+      create_cache(:xbox_api, 60),
+      create_cache(:get_xuid, 5),
+      create_cache(:get_gamertag, 5),
+      GlobalLinking.XboxApi,
       {
         MyXQL,
         hostname: get_env(:hostname),
@@ -40,12 +44,13 @@ defmodule GlobalLinking.Application do
     :ok
   end
 
-  defp create_cache(name) do
+  defp create_cache(name, expire_time \\ 1) do
     Supervisor.child_spec(
-      {Cachex,
+      {
+        Cachex,
         [
           name: name,
-          expiration: expiration(default: :timer.minutes(1))
+          expiration: expiration(default: :timer.minutes(expire_time))
         ]
       },
       id: name

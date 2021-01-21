@@ -6,25 +6,17 @@ use Mix.Config
 
 # Configure your database
 config :global_linking, :app,
-       hostname: "localhost",
-       username: "global_linking",
-       password: "some_pass",
-       database: "global_linking_prod",
-       pool_size: 10
-
-secret_key_base =
-  System.get_env("SECRET_KEY_BASE") ||
-    raise """
-    environment variable SECRET_KEY_BASE is missing.
-    You can generate one by calling: mix phx.gen.secret
-    """
+  hostname: "localhost",
+  username: "global_linking",
+  password: "some_pass",
+  database: "global_linking_prod",
+  pool_size: 10
 
 config :global_linking, GlobalLinkingWeb.Endpoint,
   http: [
     port: String.to_integer(System.get_env("PORT") || "4000"),
-    transport_options: [socket_opts: [:inet4]]
-  ],
-  secret_key_base: secret_key_base
+    transport_options: [socket_opts: [:inet]]
+  ]
 
 # ## Using releases (Elixir v1.9+)
 #
