@@ -1,6 +1,6 @@
 defmodule GlobalLinking.XboxUtils do
   @moduledoc false
-  alias GlobalLinking.Utils, as: Utils
+  alias GlobalLinking.Utils
 
   @token_url "https://login.live.com/oauth20_token.srf"
   @authenticate_url "https://user.auth.xboxlive.com/user/authenticate"
@@ -21,11 +21,22 @@ defmodule GlobalLinking.XboxUtils do
   end
 
   def get_info() do
-    {Utils.get_env(:app, :client_id), Utils.get_env(:app, :redirect_url), Utils.get_env(:app, :client_secret)}
+    {
+      Utils.get_env(:app, :client_id),
+      Utils.get_env(:app, :redirect_url),
+      Utils.get_env(:app, :client_secret)
+    }
+  end
+
+  def not_setup_message() do
+    %{
+      success: false,
+      message: "The Xbox Api isn't setup correctly. Please contact a GeyserMC developer"
+    }
   end
 
   def save_token_data(data) do
-    File.write("token_cache.json", Jason.encode!(Map.drop(data, "info")))
+    File.write("token_cache.json", Jason.encode!(Map.delete(data, :info)))
   end
 
   def check_token_data(
@@ -49,10 +60,15 @@ defmodule GlobalLinking.XboxUtils do
         case (auth_token_valid_until - current_datetime) > min_remaining_time do
           true ->
             {xbox_token, xbox_token_valid_until} = start_xbox_setup(auth_token)
-            {:ok, %{data | xbox_token: xbox_token, xbox_token_valid_until: xbox_token_valid_until}}
+            {:update, %{data | xbox_token: xbox_token, xbox_token_valid_until: xbox_token_valid_until}}
           false ->
             # we have revive the session using the refresh token
-            start_initial_xbox_setup(refresh_token, true)
+            {state, data} = start_initial_xbox_setup(refresh_token, true)
+            if state == :ok do
+              {:update, data}
+            else
+              {:error, data}
+            end
         end
     end
   end

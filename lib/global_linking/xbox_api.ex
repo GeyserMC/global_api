@@ -2,8 +2,8 @@ defmodule GlobalLinking.XboxApi do
   @moduledoc false
   use Supervisor
   use GlobalLinkingWeb, :controller
-  alias GlobalLinking.XboxUtils, as: XboxUtils
-  alias GlobalLinking.Utils, as: Utils
+  alias GlobalLinking.XboxUtils
+  alias GlobalLinking.Utils
 
   def child_spec(opts \\ []) do
     %{

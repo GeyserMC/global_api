@@ -1,6 +1,6 @@
 defmodule GlobalLinking.Utils do
-  alias GlobalLinking.MojangApi, as: MojangApi
-  alias GlobalLinking.Repo, as: Repo
+  alias GlobalLinking.MojangApi
+  alias GlobalLinking.Repo
 
   def random_string(length) do
     :crypto.strong_rand_bytes(length)
@@ -10,6 +10,14 @@ defmodule GlobalLinking.Utils do
 
   def get_env(key, atom) do
     Application.get_env(:global_linking, key)[atom]
+  end
+
+  @doc """
+  If the string is in range. Both min and max are inclusive
+  """
+  def is_in_range(string, min, max) do
+    length = String.length(string)
+    length >= min && length <= max
   end
 
   def is_int_and_rounded(xuid) do
