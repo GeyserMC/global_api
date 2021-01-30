@@ -1,4 +1,4 @@
-defmodule GlobalLinkingWeb.ApiController do
+defmodule GlobalLinkingWeb.LinkController do
   use GlobalLinkingWeb, :controller
   alias GlobalLinking.Repo
   alias GlobalLinking.UUID

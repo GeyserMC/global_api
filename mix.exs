@@ -7,7 +7,14 @@ defmodule GlobalLinking.MixProject do
       version: "0.1.0",
       elixir: "~> 1.7",
       elixirc_paths: elixirc_paths(Mix.env()),
-      compilers: [:phoenix] ++ Mix.compilers(),
+      compilers: [:rustler] ++ [:phoenix] ++ Mix.compilers(),
+      rustler_crates: [
+        png: [
+          path: "native/png",
+          mode: (if Mix.env() == :prod, do: :release, else: :debug)
+        ]
+      ],
+      build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps()
@@ -38,6 +45,8 @@ defmodule GlobalLinking.MixProject do
       {:myxql, ">= 0.4.4"},
       {:phoenix_live_reload, "~> 1.2", only: :dev},
       {:phoenix_live_dashboard, "~> 0.4"},
+      {:rustler, "~> 0.22-rc"},
+      {:jose, "~> 1.11"},
       {:jason, "~> 1.0"},
       {:plug_cowboy, "~> 2.0"},
       {:cachex, "~> 3.3"}

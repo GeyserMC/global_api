@@ -48,7 +48,7 @@ defmodule GlobalLinking.XboxUtils do
         } = data,
         is_loading \\ false
       ) do
-    current_datetime = System.os_time(:second)
+    current_datetime = :os.system_time(:second)
     # 10 minutes for stored data and 20 seconds for
     min_remaining_time = if is_loading, do: 600, else: 20
 
