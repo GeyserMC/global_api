@@ -33,6 +33,8 @@ defmodule GlobalLinkingWeb.SkinController do
   def post_skin(conn, %{"chainData" => chain_data, "clientData" => client_data, "textureId" => texture_id})
       when is_list(chain_data) and is_binary(client_data) do
 
+    #todo change status when success = false
+
     case SkinNifUtils.validate_and_get_hash(chain_data, client_data) do
       :invalid_chain_data ->
         json(conn, %{success: false, message: "Invalid chain data"})
@@ -56,20 +58,20 @@ defmodule GlobalLinkingWeb.SkinController do
             case SkinNifUtils.get_texture_compare_hash(rgba_hash, texture_id) do
               {:hash_doesnt_match, texture_hash} ->
                 Cachex.put(:texture_id_to_hash, texture_id, texture_hash)
-                json(conn, :hash_doesnt_match)
+                json(conn, %{success: false, message: "The generated hash of the texture and the generated hash of skin data don't match"})
               :ok ->
                 Cachex.put(:texture_id_to_hash, texture_id, rgba_hash)
                 push_to_db(xuid, texture_id)
-                json(conn, :ok)
+                json(conn, %{success: true, data: %{xuid: xuid}})
             end
           else
             # we got another request for this hash, so we keep it longer in cache
             Cachex.put(:texture_id_to_hash, texture_id, hash)
             if rgba_hash === hash do
               push_to_db(xuid, texture_id)
-              json(conn, xuid)
+              json(conn,  %{success: true, data: %{xuid: xuid}})
             else
-              json(conn, :hash_doesnt_match)
+              json(conn, %{success: false, message: "The generated hash of the texture and the generated hash of skin data don't match"})
             end
           end
         end

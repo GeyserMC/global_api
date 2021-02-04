@@ -8,8 +8,6 @@ defmodule GlobalLinking.Application do
 
   def start(_type, _args) do
     children = [
-#    GlobalLinking.SkinChecker,
-#    GlobalLinking.SkinQueue,
       create_cache(:texture_id_by_xuid, 5),
       create_cache(:texture_id_to_hash, 7),
       create_cache(:xuid_request_cache, 7),
