@@ -9,8 +9,8 @@ defmodule GlobalLinking.MixProject do
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: [:rustler] ++ [:phoenix] ++ Mix.compilers(),
       rustler_crates: [
-        png: [
-          path: "native/png",
+        skins: [
+          path: "native/skins",
           mode: (if Mix.env() == :prod, do: :release, else: :debug)
         ]
       ],

@@ -8,6 +8,11 @@ defmodule GlobalLinking.Application do
 
   def start(_type, _args) do
     children = [
+#    GlobalLinking.SkinChecker,
+#    GlobalLinking.SkinQueue,
+      create_cache(:texture_id_by_xuid, 5),
+      create_cache(:texture_id_to_hash, 7),
+      create_cache(:xuid_request_cache, 7),
       create_cache(:xbox_api, 60),
       create_cache(:get_xuid, 5),
       create_cache(:get_gamertag, 5),
@@ -23,12 +28,8 @@ defmodule GlobalLinking.Application do
       },
       create_cache(:java_link),
       create_cache(:bedrock_link),
-      # Start the PubSub system
-      {Phoenix.PubSub, name: GlobalLinking.PubSub},
       # Start the Endpoint (http/https)
       GlobalLinkingWeb.Endpoint
-      # Start a worker by calling: GlobalLinking.Worker.start_link(arg)
-      # {GlobalLinking.Worker, arg}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

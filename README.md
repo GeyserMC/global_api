@@ -9,7 +9,15 @@ CREATE TABLE IF NOT EXISTS `links`
     `javaName`       VARCHAR(16),
     `lastNameUpdate` TIMESTAMP DEFAULT UTC_TIMESTAMP(),
     PRIMARY KEY (`bedrockId`)
-)
+);
+
+CREATE TABLE IF NOT EXISTS `skins`
+(
+    `bedrockId`      BIGINT,
+    `textureId`      VARCHAR(64),
+    `lastUpdate` TIMESTAMP DEFAULT UTC_TIMESTAMP(),
+    PRIMARY KEY (`bedrockId`)
+);
 ```
 
 To start your Phoenix server:

@@ -1,4 +1,14 @@
 defmodule GlobalLinking.Repo do
+  def get_texture_id_by_xuid(xuid) do
+    result = MyXQL.query!(:myxql, "SELECT textureId, unix_timestamp(lastUpdate) FROM skins WHERE bedrockId = (?)", [xuid]).rows
+    case length(result) do
+      0 -> :not_found
+      1 ->
+        [[texture_id, last_update] | []] = result
+        {texture_id, last_update}
+    end
+  end
+
   def get_java_link(uuid) do
     result = MyXQL.query!(:myxql, "SELECT bedrockId, javaId, javaName, lastNameUpdate FROM links WHERE javaId = (?)", [uuid]).rows
     format_java_link_result(result, [])

@@ -22,9 +22,9 @@ defmodule GlobalLinking.XboxUtils do
 
   def get_info() do
     {
-      Utils.get_env(:app, :client_id),
-      Utils.get_env(:app, :redirect_url),
-      Utils.get_env(:app, :client_secret)
+      Utils.get_env(:app_info, :client_id),
+      Utils.get_env(:app_info, :redirect_url),
+      Utils.get_env(:app_info, :client_secret)
     }
   end
 
