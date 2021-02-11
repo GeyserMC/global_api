@@ -1,5 +1,7 @@
 defmodule GlobalLinkingWeb.LinkController do
   use GlobalLinkingWeb, :controller
+
+  alias GlobalLinking.CustomMetrics
   alias GlobalLinking.Repo
   alias GlobalLinking.UUID
   alias GlobalLinking.Utils
@@ -12,6 +14,8 @@ defmodule GlobalLinkingWeb.LinkController do
         |> json(%{success: false, message: "uuid has to be a valid uuid (36 chars long)"})
 
       _ ->
+        CustomMetrics.add(:get_java_link)
+
         {_, result} = Cachex.fetch(:java_link, uuid, fn _ ->
           link = Repo.get_java_link(uuid)
           |> Utils.update_username_if_needed_array
@@ -36,6 +40,8 @@ defmodule GlobalLinkingWeb.LinkController do
         |> json(%{success: false, message: "xuid should be an int"})
 
       true ->
+        CustomMetrics.add(:get_bedrock_link)
+
         {_, result} = Cachex.fetch(:bedrock_link, xuid, fn _ ->
           link = Repo.get_bedrock_link(xuid)
           |> Utils.update_username_if_needed

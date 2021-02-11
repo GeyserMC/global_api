@@ -20,6 +20,12 @@ defmodule GlobalLinking.Utils do
     length >= min && length <= max
   end
 
+  def hash_string(hash) do
+    hash
+    |> Base.encode16
+    |> String.downcase
+  end
+
   def is_int_and_rounded(xuid) do
     case String.contains?(xuid, ".") do
       true -> false

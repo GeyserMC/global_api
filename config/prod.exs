@@ -10,7 +10,6 @@ use Mix.Config
 # which you should run after static files are built and
 # before starting your production server.
 config :global_linking, GlobalLinkingWeb.Endpoint,
-  http: [port: 80],
   debug_errors: false
 
 # Do not print debug messages in production

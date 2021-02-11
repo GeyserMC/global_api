@@ -1,5 +1,7 @@
 defmodule GlobalLinkingWeb.XboxController do
   use GlobalLinkingWeb, :controller
+
+  alias GlobalLinking.CustomMetrics
   alias GlobalLinking.Utils
   alias GlobalLinking.XboxApi
   alias GlobalLinking.XboxUtils
@@ -22,6 +24,8 @@ defmodule GlobalLinkingWeb.XboxController do
 
   def get_gamertag(conn, %{"xuid" => xuid}) do
     # there are no simple xuid validation checks :(
+    CustomMetrics.add(:get_gamertag)
+
     {_, gamertag} = Cachex.fetch(:get_gamertag, xuid, fn _ ->
       case XboxApi.get_gamertag(xuid) do
         :not_setup -> {:ignore, :not_setup}
@@ -53,6 +57,8 @@ defmodule GlobalLinkingWeb.XboxController do
 
   def get_xuid(conn, %{"gamertag" => gamertag}) do
     if Utils.is_in_range(gamertag, 1, 16) do
+      CustomMetrics.add(:get_xuid)
+
       {_, xuid} = Cachex.fetch(:get_xuid, gamertag, fn _ ->
         case XboxApi.get_xuid(gamertag) do
           :not_setup -> {:ignore, :not_setup}

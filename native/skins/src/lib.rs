@@ -9,12 +9,10 @@ extern crate sha2;
 
 use std::primitive;
 
-use bytes::Bytes;
 use jsonwebtokens::{Algorithm, AlgorithmID, Verifier};
-use rgb::*;
 use rustler::{Binary, Encoder, Env, ListIterator, OwnedBinary, Term};
 use rustler::atoms;
-use rustler::types::atom::ok;
+use rustler::types::atom::{false_, true_};
 use rustler::types::tuple::make_tuple;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -31,14 +29,8 @@ atoms! {
     hash_doesnt_match
 }
 
-fn get_texture(texture_id: &primitive::str) -> Bytes {
-    let mut uri = String::from("https://textures.minecraft.net/texture/");
-    uri.push_str(texture_id);
-    reqwest::blocking::get(&uri).unwrap().bytes().unwrap()
-}
-
 #[rustler::nif]
-pub fn validate_and_get_hash<'a>(env: Env<'a>, chain_data: Term, client_data: &primitive::str) -> Term<'a> {
+pub fn validate_and_get_png<'a>(env: Env<'a>, chain_data: Term, client_data: &primitive::str) -> Term<'a> {
     let list_iterator: ListIterator = chain_data.decode().unwrap();
 
     let mojang_key: Algorithm = create_key("MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAE8ELkixyLcwlZryUQcu1TvPOmI2B7vX83ndnWRUaXm74wFfa5f/lwQNTfrLVHa2PmenpGI6JhIMUJaWZrjmMj90NoKNFSNBuKdm8rYiXsfaz3K36x/1U26HpG0ZxK/V1V");
@@ -80,7 +72,8 @@ pub fn validate_and_get_hash<'a>(env: Env<'a>, chain_data: Term, client_data: &p
     let skin_data = client_claims["SkinData"].as_str().unwrap();
     let raw_skin_data = base64::decode(skin_data).unwrap();
 
-    if raw_skin_data.len() != skin_width * skin_height * 4 {
+    // we have to clone, you can't use stuff for calculations and re-use it after that :/
+    if raw_skin_data.len() != skin_width.clone() * skin_height.clone() * 4 {
         return invalid_size().to_term(env);
     }
 
@@ -92,34 +85,24 @@ pub fn validate_and_get_hash<'a>(env: Env<'a>, chain_data: Term, client_data: &p
 
     let skin_geometry = skin_geometry_option.unwrap();
 
-    if skin_geometry != STEVE_GEOMETRY && skin_geometry != ALEX_GEOMETRY {
+    let mut is_steve = false_();
+    if skin_geometry == STEVE_GEOMETRY {
+        is_steve = true_();
+    } else if skin_geometry != ALEX_GEOMETRY {
+        //todo convert geometry?
         return invalid_geometry().to_term(env);
     }
 
-    let username = last_data["extraData"]["displayName"].as_str();
     let xuid = last_data["extraData"]["XUID"].as_str();
+
+    let png = lodepng::encode32(raw_skin_data.as_slice(), skin_width, skin_height).unwrap();
 
     let mut hasher = Sha256::new();
     hasher.update(raw_skin_data.as_slice());
 
     let hash = hasher.finalize();
 
-    make_tuple(env, &[xuid.encode(env), username.encode(env), as_binary(env, hash.as_slice())])
-}
-
-#[rustler::nif]
-pub fn get_texture_compare_hash<'a>(env: Env<'a>, rgba_hash: Binary, texture_id: &primitive::str) -> Term<'a> {
-    let data = lodepng::decode32(get_texture(texture_id)).unwrap();
-    let raw_data: &[u8] = data.buffer.as_bytes();
-
-    let mut hasher = Sha256::new();
-    hasher.update(raw_data);
-    let hash2 = hasher.finalize();
-
-    if hash2.to_vec().eq(rgba_hash.as_slice()) {
-        return ok().to_term(env);
-    }
-    make_tuple(env, &[hash_doesnt_match().to_term(env), as_binary(env, hash2.as_slice())])
+    make_tuple(env, &[xuid.encode(env), is_steve.to_term(env), as_binary(env, &png), as_binary(env, hash.as_slice())])
 }
 
 fn as_binary<'a>(env: Env<'a>, data: &[u8]) -> Term<'a> {
@@ -136,4 +119,4 @@ pub fn create_key_from<'a>(pub_key: &primitive::str) -> String {
     vec!["-----BEGIN PUBLIC KEY-----", pub_key, "-----END PUBLIC KEY-----"].concat()
 }
 
-rustler::init!("Elixir.GlobalLinking.SkinNifUtils", [validate_and_get_hash, get_texture_compare_hash]);
+rustler::init!("Elixir.GlobalLinking.SkinNifUtils", [validate_and_get_png]);

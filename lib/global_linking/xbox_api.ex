@@ -1,16 +1,9 @@
 defmodule GlobalLinking.XboxApi do
   @moduledoc false
-  use Supervisor
-  use GlobalLinkingWeb, :controller
+  use GenServer
+
   alias GlobalLinking.XboxUtils
   alias GlobalLinking.Utils
-
-  def child_spec(opts \\ []) do
-    %{
-      id: __MODULE__,
-      start: {__MODULE__, :start_link, [opts]}
-    }
-  end
 
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -94,10 +87,12 @@ defmodule GlobalLinking.XboxApi do
     result
   end
 
+  @impl true
   def handle_call({:got_token, data}, _from, _) do
     {:reply, :ok, data}
   end
 
+  @impl true
   def handle_call(:get_token_and_uhs, _from, state) do
     if state.refresh_token == nil do
       {:reply, {nil, nil}, state}

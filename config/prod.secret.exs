@@ -12,11 +12,10 @@ config :global_linking, :app,
   database: "global_linking_prod",
   pool_size: 10
 
-config :global_linking, GlobalLinkingWeb.Endpoint,
-  http: [
-    port: String.to_integer(System.get_env("PORT") || "4000"),
-    transport_options: [socket_opts: [:inet]]
-  ]
+config :global_linking, :app_info,
+  client_id: "client id",
+  redirect_url: "https://api.geysermc.org/xbox/token",
+  client_secret: "client secret"
 
 # ## Using releases (Elixir v1.9+)
 #

@@ -8,8 +8,14 @@ defmodule GlobalLinking.Application do
 
   def start(_type, _args) do
     children = [
-      create_cache(:texture_id_by_xuid, 5),
-      create_cache(:texture_id_to_hash, 7),
+      GlobalLinking.CustomMetrics,
+      GlobalLinking.Metrics,
+      GlobalLinking.DatabaseQueue,
+      GlobalLinking.SocketQueue,
+      GlobalLinking.SkinQueue,
+      GlobalLinking.SkinUploader,
+      create_cache(:xuid_to_texture_id, 5),
+      create_cache(:hash_to_texture_id, 7),
       create_cache(:xuid_request_cache, 7),
       create_cache(:xbox_api, 60),
       create_cache(:get_xuid, 5),

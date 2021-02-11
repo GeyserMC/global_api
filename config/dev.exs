@@ -8,6 +8,11 @@ config :global_linking, :app,
   database: "global_linking_dev",
   pool_size: 3
 
+config :global_linking, :app_info,
+  client_id: "client id",
+  redirect_url: "https://api.geysermc.org/xbox/token",
+  client_secret: "client secret"
+
 # For development, we disable any cache and enable
 # debugging and code reloading.
 #
@@ -15,7 +20,6 @@ config :global_linking, :app,
 # watchers to your application. For example, we use it
 # with webpack to recompile .js and .css sources.
 config :global_linking, GlobalLinkingWeb.Endpoint,
-  http: [port: 4000],
   debug_errors: false,
   code_reloader: true,
   check_origin: false,
