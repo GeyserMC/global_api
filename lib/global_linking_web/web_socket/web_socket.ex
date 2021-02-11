@@ -7,6 +7,20 @@ defmodule GlobalLinkingWeb.WebSocket do
   alias GlobalLinking.SocketQueue
   alias GlobalLinking.Utils
 
+  @invalid_code Jason.encode!(%{error: "invalid code and/or verify code"})
+  @code_not_found Jason.encode!(%{error: "failed to find the given code in combination with the verify code"})
+
+  @ping_too_fast Jason.encode!(%{error: "pings have to be at least 10 seconds apart"})
+  @invalid_action Jason.encode!(%{error: "invalid action"})
+  @invalid_data Jason.encode!(%{error: "invalid data"})
+
+  @invalid_chain_data Jason.encode!(%{error: "invalid chain data"})
+  @invalid_client_data Jason.encode!(%{error: "invalid client data"})
+  @invalid_skin_size Jason.encode!(%{error: "invalid skin size"})
+  @invalid_geometry Jason.encode!(%{error: "invalid geometry"})
+
+  @creator_left Jason.encode!(%{info: "creator left and there are no uploads left"})
+
   def init(request, _state) do
     opts = %{:idle_timeout => 20000}
     query_map = URI.decode_query(request.qs)
@@ -31,10 +45,10 @@ defmodule GlobalLinkingWeb.WebSocket do
                 opts
               }
             :error ->
-              {:error, "subscriber doesn't provide a verify code"}
+              {:error, @invalid_code}
           end
         else
-          {:error, "subscribed_to has to be a valid integer"}
+          {:error, @invalid_code}
         end
       :error ->
         {
@@ -57,11 +71,7 @@ defmodule GlobalLinkingWeb.WebSocket do
     else
       CustomMetrics.add(:subscribers_added)
       case SocketQueue.add_subscriber(state.subscribed_to, state.verify_code, self()) do
-        :error ->
-          {
-            [{:close, "failed to find the given subscribe id in combination with the verify code"}],
-            state
-          }
+        :error -> {[{:close, @code_not_found}], state}
         pending_uploads ->
           {
             [{:text, Jason.encode!(%{event_id: 0, pending_uploads: pending_uploads})}],
@@ -74,22 +84,22 @@ defmodule GlobalLinkingWeb.WebSocket do
   def websocket_handle(:ping, state) do
     current_time = :os.system_time(:millisecond)
     if current_time - state.last_ping < 10000 do
-      {[{:close, "pings have to be at least 10 seconds apart"}], state}
+      {[{:close, @ping_too_fast}], state}
     else
       {:ok, %{state | last_ping: current_time}}
     end
   end
 
   def websocket_handle(:pong, state) do
-    {[{:close, %{error: "client can only send ping"}}], state}
+    {[{:close, %{error: @invalid_action}}], state}
   end
 
   def websocket_handle({:ping, _}, state) do
-    {[{:close, %{error: "cannot handle ping with additional info"}}], state}
+    {[{:close, %{error: @invalid_action}}], state}
   end
 
   def websocket_handle({:pong, _}, state) do
-    {[{:close, %{error: "cannot handle ping with additional info"}}], state}
+    {[{:close, %{error: @invalid_action}}], state}
   end
 
   def websocket_handle({:text, data}, state) when state.is_creator do
@@ -97,7 +107,7 @@ defmodule GlobalLinkingWeb.WebSocket do
       {:ok, json} ->
         websocket_handle({:json, json}, state)
       {:error, _} ->
-        {[{:close, 1007, Jason.encode!(%{error: "invalid data"})}], state}
+        {[{:close, 1007, @invalid_data}], state}
     end
   end
 
@@ -105,13 +115,13 @@ defmodule GlobalLinkingWeb.WebSocket do
       when is_list(chain_data) and is_binary(client_data) do
     case SkinNifUtils.validate_and_get_png(chain_data, client_data) do
       :invalid_chain_data ->
-        {[{:close, %{error: "invalid chain data"}}], state}
+        {[{:close, @invalid_chain_data}], state}
       :invalid_client_data ->
-        {[{:close, %{error: "invalid client data"}}], state}
+        {[{:close, @invalid_client_data}], state}
       :invalid_size ->
-        {[{:close, %{error: "invalid skin size"}}], state}
+        {[{:close, @invalid_skin_size}], state}
       :invalid_geometry ->
-        {[{:close, %{error: "the given geometry is not supported"}}], state}
+        {[{:close, @invalid_geometry}], state}
       {xuid, is_steve, png, rgba_hash} ->
         #todo validate xuid maybe?
 
@@ -149,15 +159,15 @@ defmodule GlobalLinkingWeb.WebSocket do
   end
 
   def websocket_handle({:json, _}, state) do
-    {[{:close, 1007, Jason.encode!(%{error: "the data isn't recognized by the server"})}], state}
+    {[{:close, 1007, @invalid_data}], state}
   end
 
   def websocket_handle({:text, _}, state) do
-    {[{:close, 1007, Jason.encode!(%{error: "only the creator can send data"})}], state}
+    {[{:close, 1007, @invalid_action}], state}
   end
 
   def websocket_info({:disconnect, :creator_disconnected}, state) do
-    [[{:close, 1000, Jason.encode!(%{info: "creator left and there are no uploads left"})}], state]
+    [[{:close, 1000, @creator_left}], state]
   end
 
   def websocket_info({_, data}, state) do
