@@ -59,7 +59,7 @@ defmodule GlobalLinking.SocketQueue do
     case Map.fetch(state.id_subscribers, id) do
       {:ok, entry} ->
         if entry.verify_code === verify_code do
-          broadcast_message(id, %{event_id: 2, subscribers_count: Enum.count(entry.channels) + 1})
+          broadcast_message(id, %{event_id: 1, subscribers_count: Enum.count(entry.channels) + 1})
           entry = %{entry | channels: [socket | entry.channels]}
           {
             :reply,
@@ -90,7 +90,7 @@ defmodule GlobalLinking.SocketQueue do
             false
           end
         )
-        broadcast_message(id, %{event_id: 2, subscribers_count: Enum.count(channels)})
+        broadcast_message(id, %{event_id: 1, subscribers_count: Enum.count(channels)})
         if entry.pending_uploads == 0 do
           broadcast_message(id, :creator_disconnected, :disconnect)
           {:noreply, %{state | id_subscribers: Map.delete(state.id_subscribers, id)}}
@@ -100,7 +100,7 @@ defmodule GlobalLinking.SocketQueue do
         end
       else
         channels = Enum.filter(entry.channels, fn x -> x !== socket end)
-        broadcast_message(id, %{event_id: 2, subscribers_count: Enum.count(channels)})
+        broadcast_message(id, %{event_id: 1, subscribers_count: Enum.count(channels)})
         entry = %{entry | channels: channels}
         {:noreply, %{state | id_subscribers: check_empty(state.id_subscribers, id, entry)}}
       end
