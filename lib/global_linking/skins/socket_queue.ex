@@ -123,12 +123,18 @@ defmodule GlobalLinking.SocketQueue do
     # key has to exist, because subscribers can't upload skins
     entry = state.id_subscribers[id]
     entry = %{entry | pending_uploads: entry.pending_uploads + 1}
+
+    {is_present, pending_skins} = add_pending_skin(state.pending_skins, rgba_hash, id, xuid)
     state = %{
       state |
       id_subscribers: Map.put(state.id_subscribers, id, entry),
-      pending_skins: add_pending_skin(state.pending_skins, rgba_hash, id, xuid)
+      pending_skins: pending_skins
     }
-    SkinQueue.add_request({rgba_hash, is_steve, png})
+
+    if !is_present do
+      SkinQueue.add_request({rgba_hash, is_steve, png})
+    end
+
     broadcast_message(id, %{event_id: 2, xuid: xuid}) # added to queue
     {:noreply, state}
   end
@@ -210,9 +216,9 @@ defmodule GlobalLinking.SocketQueue do
     case Map.fetch(pending_skins, rgba_hash) do
       {:ok, entry} ->
         entry = %{entry | subscribers: [{id, xuid} | entry.subscribers]}
-        Map.put(pending_skins, rgba_hash, entry)
+        {true, Map.put(pending_skins, rgba_hash, entry)}
       :error ->
-        Map.put(pending_skins, rgba_hash, %{subscribers: [{id, xuid}]})
+        {false, Map.put(pending_skins, rgba_hash, %{subscribers: [{id, xuid}]})}
     end
   end
 end
