@@ -58,7 +58,7 @@ defmodule GlobalLinking.SocketQueue do
   def handle_call({:add_subscriber, id, verify_code, socket}, _from, state) do
     case Map.fetch(state.id_subscribers, id) do
       {:ok, entry} ->
-        if entry.verify_code === verify_code do
+        if entry.verify_code == verify_code do
           broadcast_message(id, %{event_id: 1, subscribers_count: Enum.count(entry.channels) + 1})
           entry = %{entry | channels: [socket | entry.channels]}
           {
@@ -144,15 +144,14 @@ defmodule GlobalLinking.SocketQueue do
     # key has to exist, because one of the channels caused this
     subscriber = state.id_subscribers[id]
 
-    if subscriber !== :nil do
-      channels = subscriber.channels
-      message = Map.put(message, :subscribers_count, Enum.count(channels)) #todo prob remove
-      json = Jason.encode!(message)
+    if subscriber != nil do
+      message = Map.put(message, :pending_uploads, subscriber.pending_uploads)
+      |> Jason.encode!
 
       Enum.each(
-        channels,
+        subscriber.channels,
         fn socket ->
-          send socket, {channel, json}
+          send socket, {channel, message}
         end
       )
     end
@@ -178,7 +177,7 @@ defmodule GlobalLinking.SocketQueue do
                  |> Map.put(:xuid, xuid)
                  |> Jason.encode!
 
-        Cachex.put(:xuid_to_texture_id, xuid, data_map.texture_id)
+        Cachex.put(:xuid_to_skin, xuid, {data_map.value, data_map.signature, data_map.texture_id})
 
         Enum.each(
           entry.channels,
@@ -187,7 +186,7 @@ defmodule GlobalLinking.SocketQueue do
           end
         )
 
-        if entry.pending_uploads == 0 do
+        if entry.pending_uploads == 0 && !entry.is_active do
           broadcast_message(id, :creator_disconnected, :disconnect)
           handle_skin_uploaded(
             tail,

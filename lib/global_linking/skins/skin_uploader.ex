@@ -60,7 +60,10 @@ defmodule GlobalLinking.SkinUploader do
       # http://textures.minecraft.net/texture/ = 38 chars long
       texture_id = String.slice(texture_id, 38, String.length(texture_id) - 38)
 
-      Cachex.put(:hash_to_texture_id, rgba_hash, texture_id)
+      skin_value = texture_data["value"]
+      skin_signature = texture_data["signature"]
+
+      Cachex.put(:hash_to_skin, rgba_hash, {skin_value, skin_signature, texture_id})
       CustomMetrics.add(:skins_uploaded)
       SocketQueue.skin_uploaded(
         rgba_hash,
@@ -68,8 +71,8 @@ defmodule GlobalLinking.SkinUploader do
           event_id: 3,
           hash: hash_string,
           texture_id: texture_id,
-          value: texture_data.value,
-          signature: texture_data.signature
+          value: skin_value,
+          signature: skin_signature
         }
       )
 

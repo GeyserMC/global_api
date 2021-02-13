@@ -128,33 +128,34 @@ defmodule GlobalLinkingWeb.WebSocket do
         CustomMetrics.add(:skin_upload_requests)
 
         # check for cached skin
-        {:ok, texture_id} = Cachex.get(:xuid_to_texture_id, xuid)
-        if texture_id !== :nil do
+        {:ok, entry} = Cachex.get(:xuid_to_skin, xuid)
+        if entry != nil do
+          {skin_value, skin_signature, texture_id} = entry
           SocketQueue.broadcast_message(
             state.subscribed_to,
-            %{event_id: 3, xuid: xuid, texture_id: texture_id, hash: Utils.hash_string(rgba_hash)}
+            %{event_id: 3, xuid: xuid, value: skin_value, signature: skin_signature, texture_id: texture_id, hash: Utils.hash_string(rgba_hash)}
           )
-          {:ok, state}
         else
+          {:ok, entry} = Cachex.get(:hash_to_skin, rgba_hash);
 
-          {:ok, texture_id} = Cachex.get(:hash_to_texture_id, rgba_hash);
-
-          if texture_id === :nil do
+          if entry == nil do
             SocketQueue.add_pending_upload(state.subscribed_to, xuid, is_steve, png, rgba_hash)
-            {:ok, state}
           else
-            Cachex.put(:xuid_to_texture_id, xuid, texture_id)
+            Cachex.put(:xuid_to_skin, xuid, entry)
 
             # apparently this hash is popular, so we'll reset the expire time
-            Cachex.put(:hash_to_texture_id, rgba_hash, texture_id)
+            Cachex.put(:hash_to_skin, rgba_hash, entry)
+
+            {skin_value, skin_signature, texture_id} = entry
 
             DatabaseQueue.set_texture(xuid, texture_id)
             SocketQueue.broadcast_message(
               state.subscribed_to,
-              %{event_id: 3, xuid: xuid, texture_id: texture_id}
+              %{event_id: 3, xuid: xuid, value: skin_value, signature: skin_signature, texture_id: texture_id}
             )
           end
         end
+        {:ok, state}
     end
   end
 
