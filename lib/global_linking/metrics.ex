@@ -289,7 +289,7 @@ ets: #{avg.memory[:ets]} mb"
     if minute >= 60 do
       if hour >= 24 do
         last_day = Map.delete(last_day, 0)
-        {%{last_day | this_minute: 1, this_hour: 0, first_day: last_day.first_day}, fields}
+        {%{last_day | this_minute: 1, this_hour: 0, first_day: false}, fields}
       else
         last_day = Map.delete(last_day, hour + 1)
         {%{last_day | this_minute: 1, this_hour: hour + 1}, fields}

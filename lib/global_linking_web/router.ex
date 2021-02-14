@@ -15,7 +15,6 @@ defmodule GlobalLinkingWeb.Router do
 
     scope "/skin" do
       get "/", SkinController, :get_skin
-      post "/", SkinController, :post_skin
     end
 
     scope "/xbox" do

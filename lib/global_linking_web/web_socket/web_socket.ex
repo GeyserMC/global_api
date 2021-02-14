@@ -122,6 +122,8 @@ defmodule GlobalLinkingWeb.WebSocket do
         {[{:close, @invalid_skin_size}], state}
       :invalid_geometry ->
         {[{:close, @invalid_geometry}], state}
+      {:invalid_geometry, reason} ->
+        {[{:close, Jason.encode!(%{error: "invalid geometry: " <> reason})}], state}
       {xuid, is_steve, png, rgba_hash} ->
         #todo validate xuid maybe?
 
