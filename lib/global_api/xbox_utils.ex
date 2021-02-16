@@ -1,6 +1,6 @@
-defmodule GlobalLinking.XboxUtils do
+defmodule GlobalApi.XboxUtils do
   @moduledoc false
-  alias GlobalLinking.Utils
+  alias GlobalApi.Utils
 
   @token_url "https://login.live.com/oauth20_token.srf"
   @authenticate_url "https://user.auth.xboxlive.com/user/authenticate"

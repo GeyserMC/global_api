@@ -1,9 +1,9 @@
-defmodule GlobalLinking.XboxApi do
+defmodule GlobalApi.XboxApi do
   @moduledoc false
   use GenServer
 
-  alias GlobalLinking.XboxUtils
-  alias GlobalLinking.Utils
+  alias GlobalApi.XboxUtils
+  alias GlobalApi.Utils
 
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)

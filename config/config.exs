@@ -8,25 +8,25 @@
 use Mix.Config
 
 # Configures the endpoint
-config :global_linking, GlobalLinkingWeb.Endpoint,
+config :global_api, GlobalApiWeb.Endpoint,
   url: [host: "localhost"],
   http: [
     dispatch: [
            {:_, [
-             {"/ws", GlobalLinkingWeb.WebSocket, []},
-             {:_, Phoenix.Endpoint.Cowboy2Handler, {GlobalLinkingWeb.Endpoint, []}}
+             {"/ws", GlobalApiWeb.WebSocket, []},
+             {:_, Phoenix.Endpoint.Cowboy2Handler, {GlobalApiWeb.Endpoint, []}}
            ]}
     ],
     port: String.to_integer(System.get_env("PORT") || if Mix.env() == :dev do "4000" else "80" end),
     transport_options: [socket_opts: [:inet]]
   ],
   secret_key_base: "isncTcWni6IAuCWNYM9BgZXca+9KWCOGDXPafajJCvRvYS0/SHjgDdGNBZZwYPEQ",
-  render_errors: [view: GlobalLinkingWeb.ErrorView, accepts: ~w(json), layout: false],
-  pubsub_server: GlobalLinking.PubSub,
+  render_errors: [view: GlobalApiWeb.ErrorView, accepts: ~w(json), layout: false],
+  pubsub_server: GlobalApi.PubSub,
   live_view: [signing_salt: "H1cVO7Kw"]
 
 # it currently only supports a message that has been created already by the webhook
-config :global_linking, :webhook,
+config :global_api, :webhook,
   url: "https://discord.com/api/webhooks/{webhook.id}/{webhook.token}/messages/{message.id}"
 
 # Configures Elixir's Logger

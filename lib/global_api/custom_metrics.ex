@@ -1,4 +1,4 @@
-defmodule GlobalLinking.CustomMetrics do
+defmodule GlobalApi.CustomMetrics do
   use GenServer
 
   @type t :: %__MODULE__{

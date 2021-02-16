@@ -1,5 +1,5 @@
-defmodule GlobalLinkingWeb.ErrorView do
-  use GlobalLinkingWeb, :view
+defmodule GlobalApiWeb.ErrorView do
+  use GlobalApiWeb, :view
 
   def render("404.json", _assigns) do
     %{success: false, message: "Requested page cannot be found"}

@@ -1,4 +1,4 @@
-defmodule GlobalLinking.Repo do
+defmodule GlobalApi.Repo do
   def get_texture_id_by_xuid(xuid) do
     result = MyXQL.query!(:myxql, "SELECT textureId, unix_timestamp(lastUpdate) FROM skins WHERE bedrockId = (?)", [xuid]).rows
     case length(result) do

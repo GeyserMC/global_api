@@ -1,14 +1,14 @@
 use Mix.Config
 
 # Configure your database
-config :global_linking, :app,
+config :global_api, :app,
   hostname: "localhost",
-  username: "global_linking",
+  username: "global_api",
   password: "some_pass",
-  database: "global_linking_dev",
+  database: "global_api_dev",
   pool_size: 3
 
-config :global_linking, :app_info,
+config :global_api, :app_info,
   client_id: "client id",
   redirect_url: "https://api.geysermc.org/xbox/token",
   client_secret: "client secret"
@@ -19,7 +19,7 @@ config :global_linking, :app_info,
 # The watchers configuration can be used to run external
 # watchers to your application. For example, we use it
 # with webpack to recompile .js and .css sources.
-config :global_linking, GlobalLinkingWeb.Endpoint,
+config :global_api, GlobalApiWeb.Endpoint,
   debug_errors: false,
   code_reloader: true,
   check_origin: false,
@@ -50,13 +50,13 @@ config :global_linking, GlobalLinkingWeb.Endpoint,
 # different ports.
 
 # Watch static and templates for browser reloading.
-config :global_linking, GlobalLinkingWeb.Endpoint,
+config :global_api, GlobalApiWeb.Endpoint,
   live_reload: [
     patterns: [
       ~r"priv/static/.*(js|css|png|jpeg|jpg|gif|svg)$",
       ~r"priv/gettext/.*(po)$",
-      ~r"lib/global_linking_web/(live|views)/.*(ex)$",
-      ~r"lib/global_linking_web/templates/.*(eex)$"
+      ~r"lib/global_api_web/(live|views)/.*(ex)$",
+      ~r"lib/global_api_web/templates/.*(eex)$"
     ]
   ]
 

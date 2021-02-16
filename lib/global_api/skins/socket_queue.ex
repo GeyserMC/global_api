@@ -1,9 +1,9 @@
-defmodule GlobalLinking.SocketQueue do
+defmodule GlobalApi.SocketQueue do
   use GenServer
 
-  alias GlobalLinking.DatabaseQueue
-  alias GlobalLinking.SkinQueue
-  alias GlobalLinking.Utils
+  alias GlobalApi.DatabaseQueue
+  alias GlobalApi.SkinQueue
+  alias GlobalApi.Utils
 
   @type t :: %__MODULE__{id_subscribers: Map.t(), pending_skins: Map.t(), current_id: integer}
 

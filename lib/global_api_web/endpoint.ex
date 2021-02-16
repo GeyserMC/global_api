@@ -1,5 +1,5 @@
-defmodule GlobalLinkingWeb.Endpoint do
-  use Phoenix.Endpoint, otp_app: :global_linking
+defmodule GlobalApiWeb.Endpoint do
+  use Phoenix.Endpoint, otp_app: :global_api
 
   # Live Dashboard and code reloader is only enabled during development
   if Mix.env() == :dev do
@@ -8,7 +8,7 @@ defmodule GlobalLinkingWeb.Endpoint do
     # Set :encryption_salt if you would also like to encrypt it.
     @session_options [
       store: :cookie,
-      key: "_global_linking_key",
+      key: "_global_api_key",
       signing_salt: "jvggC7w3"
     ]
 
@@ -33,5 +33,5 @@ defmodule GlobalLinkingWeb.Endpoint do
     json_decoder: Phoenix.json_library()
 
   # plug Plug.SSL
-  plug GlobalLinkingWeb.Router
+  plug GlobalApiWeb.Router
 end

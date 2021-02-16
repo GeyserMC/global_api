@@ -5,14 +5,14 @@
 use Mix.Config
 
 # Configure your database
-config :global_linking, :app,
+config :global_api, :app,
   hostname: "localhost",
-  username: "global_linking",
+  username: "global_api",
   password: "some_pass",
-  database: "global_linking_prod",
+  database: "global_api_dev",
   pool_size: 10
 
-config :global_linking, :app_info,
+config :global_api, :app_info,
   client_id: "client id",
   redirect_url: "https://api.geysermc.org/xbox/token",
   client_secret: "client secret"
@@ -22,7 +22,7 @@ config :global_linking, :app_info,
 # If you are doing OTP releases, you need to instruct Phoenix
 # to start each relevant endpoint:
 #
-#     config :global_linking, GlobalLinkingWeb.Endpoint, server: true
+#     config :global_api, GlobalApiWeb.Endpoint, server: true
 #
 # Then you can assemble a release by calling `mix release`.
 # See `mix help release` for more information.

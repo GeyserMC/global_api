@@ -1,10 +1,10 @@
-defmodule GlobalLinkingWeb.XboxController do
-  use GlobalLinkingWeb, :controller
+defmodule GlobalApiWeb.XboxController do
+  use GlobalApiWeb, :controller
 
-  alias GlobalLinking.CustomMetrics
-  alias GlobalLinking.Utils
-  alias GlobalLinking.XboxApi
-  alias GlobalLinking.XboxUtils
+  alias GlobalApi.CustomMetrics
+  alias GlobalApi.Utils
+  alias GlobalApi.XboxApi
+  alias GlobalApi.XboxUtils
 
   def got_token(conn, %{"code" => code, "state" => state}) do
     {:ok, correct_state} = Cachex.get(:xbox_api, :state)

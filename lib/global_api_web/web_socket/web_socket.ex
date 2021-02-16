@@ -1,11 +1,11 @@
-defmodule GlobalLinkingWeb.WebSocket do
+defmodule GlobalApiWeb.WebSocket do
   @behaviour :cowboy_websocket
 
-  alias GlobalLinking.CustomMetrics
-  alias GlobalLinking.DatabaseQueue
-  alias GlobalLinking.SkinNifUtils
-  alias GlobalLinking.SocketQueue
-  alias GlobalLinking.Utils
+  alias GlobalApi.CustomMetrics
+  alias GlobalApi.DatabaseQueue
+  alias GlobalApi.SkinNifUtils
+  alias GlobalApi.SocketQueue
+  alias GlobalApi.Utils
 
   @invalid_code Jason.encode!(%{error: "invalid code and/or verify code"})
   @code_not_found Jason.encode!(%{error: "failed to find the given code in combination with the verify code"})

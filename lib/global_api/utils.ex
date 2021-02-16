@@ -1,6 +1,6 @@
-defmodule GlobalLinking.Utils do
-  alias GlobalLinking.MojangApi
-  alias GlobalLinking.Repo
+defmodule GlobalApi.Utils do
+  alias GlobalApi.MojangApi
+  alias GlobalApi.Repo
 
   def random_string(length) do
     :crypto.strong_rand_bytes(length)
@@ -9,7 +9,7 @@ defmodule GlobalLinking.Utils do
   end
 
   def get_env(key, atom) do
-    Application.get_env(:global_linking, key)[atom]
+    Application.get_env(:global_api, key)[atom]
   end
 
   @doc """

@@ -447,4 +447,4 @@ pub fn create_key_from<'a>(pub_key: &primitive::str) -> String {
     vec!["-----BEGIN PUBLIC KEY-----", pub_key, "-----END PUBLIC KEY-----"].concat()
 }
 
-rustler::init!("Elixir.GlobalLinking.SkinNifUtils", [validate_and_get_png]);
+rustler::init!("Elixir.GlobalApi.SkinNifUtils", [validate_and_get_png]);

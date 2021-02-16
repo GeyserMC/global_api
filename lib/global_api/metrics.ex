@@ -1,7 +1,7 @@
-defmodule GlobalLinking.Metrics do
+defmodule GlobalApi.Metrics do
   @moduledoc false
 
-  alias GlobalLinking.CustomMetrics
+  alias GlobalApi.CustomMetrics
 
   def child_spec(opts \\ []) do
     %{id: __MODULE__, start: {__MODULE__, :start_link, [opts]}}
@@ -13,7 +13,7 @@ defmodule GlobalLinking.Metrics do
   end
 
   def init(_) do
-    webhook_url = Application.get_env(:global_linking, :webhook)[:url]
+    webhook_url = Application.get_env(:global_api, :webhook)[:url]
     loop(webhook_url, {%{this_hour: 0, this_minute: 1, first_day: true}, %{}}, 1)
   end
 

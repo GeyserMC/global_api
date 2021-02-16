@@ -1,4 +1,4 @@
-defmodule GlobalLinking.Application do
+defmodule GlobalApi.Application do
   # See https://hexdocs.pm/elixir/Application.html
   # for more information on OTP Applications
   @moduledoc false
@@ -8,19 +8,19 @@ defmodule GlobalLinking.Application do
 
   def start(_type, _args) do
     children = [
-      GlobalLinking.CustomMetrics,
-      GlobalLinking.Metrics,
-      GlobalLinking.DatabaseQueue,
-      GlobalLinking.SocketQueue,
-      GlobalLinking.SkinQueue,
-      GlobalLinking.SkinUploader,
+      GlobalApi.CustomMetrics,
+      GlobalApi.Metrics,
+      GlobalApi.DatabaseQueue,
+      GlobalApi.SocketQueue,
+      GlobalApi.SkinQueue,
+      GlobalApi.SkinUploader,
       create_cache(:xuid_to_skin, 5),
       create_cache(:hash_to_skin, 7),
       create_cache(:xuid_request_cache, 7),
       create_cache(:xbox_api, 60),
       create_cache(:get_xuid, 5),
       create_cache(:get_gamertag, 5),
-      GlobalLinking.XboxApi,
+      GlobalApi.XboxApi,
       {
         MyXQL,
         hostname: get_env(:hostname),
@@ -33,19 +33,19 @@ defmodule GlobalLinking.Application do
       create_cache(:java_link),
       create_cache(:bedrock_link),
       # Start the Endpoint (http/https)
-      GlobalLinkingWeb.Endpoint
+      GlobalApiWeb.Endpoint
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
-    opts = [strategy: :one_for_one, name: GlobalLinking.Supervisor]
+    opts = [strategy: :one_for_one, name: GlobalApi.Supervisor]
     Supervisor.start_link(children, opts)
   end
 
   # Tell Phoenix to update the endpoint configuration
   # whenever the application is updated.
   def config_change(changed, _new, removed) do
-    GlobalLinkingWeb.Endpoint.config_change(changed, removed)
+    GlobalApiWeb.Endpoint.config_change(changed, removed)
     :ok
   end
 
@@ -63,6 +63,6 @@ defmodule GlobalLinking.Application do
   end
 
   def get_env(atom) do
-    Application.get_env(:global_linking, :app)[atom]
+    Application.get_env(:global_api, :app)[atom]
   end
 end

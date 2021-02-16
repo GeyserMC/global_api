@@ -1,7 +1,7 @@
-defmodule GlobalLinking.SkinQueue do
+defmodule GlobalApi.SkinQueue do
   use GenServer
 
-  alias GlobalLinking.SkinUploader
+  alias GlobalApi.SkinUploader
 
   @type t :: %__MODULE__{queue: List.t(), checker_ready: bool}
 

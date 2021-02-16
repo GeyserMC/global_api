@@ -1,9 +1,9 @@
-defmodule GlobalLinking.SkinUploader do
+defmodule GlobalApi.SkinUploader do
   use GenServer
 
-  alias GlobalLinking.CustomMetrics
-  alias GlobalLinking.SocketQueue
-  alias GlobalLinking.Utils
+  alias GlobalApi.CustomMetrics
+  alias GlobalApi.SocketQueue
+  alias GlobalApi.Utils
 
   @headers [{"Content-Type", "multipart/form-data"}, {"User-Agent", "GeyserMC/GlobalApi"}]
 

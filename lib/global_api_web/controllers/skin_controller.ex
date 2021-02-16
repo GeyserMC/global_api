@@ -1,7 +1,7 @@
-defmodule GlobalLinkingWeb.SkinController do
-  use GlobalLinkingWeb, :controller
-  alias GlobalLinking.Repo
-  alias GlobalLinking.Utils
+defmodule GlobalApiWeb.SkinController do
+  use GlobalApiWeb, :controller
+  alias GlobalApi.Repo
+  alias GlobalApi.Utils
 
   def get_skin(conn, %{"xuid" => xuid}) do
     case Utils.is_int_and_rounded(xuid) do

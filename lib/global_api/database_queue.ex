@@ -1,4 +1,4 @@
-defmodule GlobalLinking.DatabaseQueue do
+defmodule GlobalApi.DatabaseQueue do
   use GenServer
 
   def start_link(init_arg) do

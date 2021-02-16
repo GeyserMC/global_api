@@ -1,5 +1,5 @@
-defmodule GlobalLinking.MojangApi do
-  alias GlobalLinking.UUID
+defmodule GlobalApi.MojangApi do
+  alias GlobalApi.UUID
 
   @profile_url "https://sessionserver.mojang.com/session/minecraft/profile/"
 

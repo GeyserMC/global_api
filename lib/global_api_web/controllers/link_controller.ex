@@ -1,10 +1,10 @@
-defmodule GlobalLinkingWeb.LinkController do
-  use GlobalLinkingWeb, :controller
+defmodule GlobalApiWeb.LinkController do
+  use GlobalApiWeb, :controller
 
-  alias GlobalLinking.CustomMetrics
-  alias GlobalLinking.Repo
-  alias GlobalLinking.UUID
-  alias GlobalLinking.Utils
+  alias GlobalApi.CustomMetrics
+  alias GlobalApi.Repo
+  alias GlobalApi.UUID
+  alias GlobalApi.Utils
 
   def get_java_link(conn, %{"uuid" => uuid}) do
     case UUID.cast(uuid) do

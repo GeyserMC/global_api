@@ -1,4 +1,4 @@
-defmodule GlobalLinking.UUID do
+defmodule GlobalApi.UUID do
 
   @typedoc """
   A hex-encoded UUID string.

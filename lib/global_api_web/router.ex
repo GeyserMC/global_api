@@ -1,11 +1,11 @@
-defmodule GlobalLinkingWeb.Router do
-  use GlobalLinkingWeb, :router
+defmodule GlobalApiWeb.Router do
+  use GlobalApiWeb, :router
 
   pipeline :api do
     plug :accepts, ["json"]
   end
 
-  scope "/v1", GlobalLinkingWeb, log: false do
+  scope "/v1", GlobalApiWeb, log: false do
     pipe_through :api
 
     scope "/link" do
@@ -23,7 +23,7 @@ defmodule GlobalLinkingWeb.Router do
     end
   end
 
-  scope "/xbox", GlobalLinkingWeb, log: false do
+  scope "/xbox", GlobalApiWeb, log: false do
     pipe_through :api
 
     get "/token", XboxController, :got_token

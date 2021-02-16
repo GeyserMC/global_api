@@ -1,4 +1,4 @@
-# NIF for Elixir.GlobalLinking.SkinNifUtils
+# NIF for Elixir.GlobalApi.SkinNifUtils
 
 ## To build the NIF module:
 
@@ -9,8 +9,8 @@
 ## To load the NIF:
 
 ```elixir
-defmodule GlobalLinking.SkinNifUtils do
-    use Rustler, otp_app: :global_linking, crate: "skins"
+defmodule GlobalApi.SkinNifUtils do
+    use Rustler, otp_app: :global_api, crate: "skins"
 
     # When your NIF is loaded, it will override this function.
     def add(_a, _b), do: :erlang.nif_error(:nif_not_loaded)

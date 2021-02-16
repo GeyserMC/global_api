@@ -1,4 +1,4 @@
-# GlobalLinking
+# GlobalApi
 
 Run the following queries on your database:
 ```mysql

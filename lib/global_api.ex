@@ -1,6 +1,6 @@
-defmodule GlobalLinking do
+defmodule GlobalApi do
   @moduledoc """
-  GlobalLinking keeps the contexts that define your domain
+  GlobalApi keeps the contexts that define your domain
   and business logic.
 
   Contexts are also responsible for managing your data, regardless
