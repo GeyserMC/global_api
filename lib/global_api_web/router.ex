@@ -9,17 +9,17 @@ defmodule GlobalApiWeb.Router do
     pipe_through :api
 
     scope "/link" do
-      get "/bedrock", LinkController, :get_bedrock_link
-      get "/java", LinkController, :get_java_link
+      get "/bedrock/:xuid", LinkController, :get_bedrock_link
+      get "/java/:uuid", LinkController, :get_java_link
     end
 
     scope "/skin" do
-      get "/", SkinController, :get_skin
+      get "/:xuid", SkinController, :get_skin
     end
 
     scope "/xbox" do
-      get "/gamertag", XboxController, :get_gamertag
-      get "/xuid", XboxController, :get_xuid
+      get "/gamertag/:xuid", XboxController, :get_gamertag
+      get "/xuid/:gamertag", XboxController, :get_xuid
     end
   end
 

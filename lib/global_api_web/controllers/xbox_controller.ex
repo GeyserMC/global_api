@@ -6,6 +6,7 @@ defmodule GlobalApiWeb.XboxController do
   alias GlobalApi.XboxApi
   alias GlobalApi.XboxUtils
 
+  # we can't specify the cache headers in cloudflare for this
   def got_token(conn, %{"code" => code, "state" => state}) do
     {:ok, correct_state} = Cachex.get(:xbox_api, :state)
     if String.equivalent?(correct_state, state) do
@@ -23,71 +24,92 @@ defmodule GlobalApiWeb.XboxController do
   end
 
   def get_gamertag(conn, %{"xuid" => xuid}) do
-    # there are no simple xuid validation checks :(
-    CustomMetrics.add(:get_gamertag)
+    case Utils.is_int_and_rounded(xuid) do
+      false ->
+        conn
+        |> put_status(:bad_request)
+        |> put_resp_header("cache-control", "max-age=604800, s-max-age=604800, immutable, public")
+        |> json(%{success: false, message: "xuid should be an int"})
 
-    {_, gamertag} = Cachex.fetch(:get_gamertag, xuid, fn _ ->
-      case XboxApi.get_gamertag(xuid) do
-        :not_setup -> {:ignore, :not_setup}
-        gamertag -> {:commit, gamertag}
-      end
-    end)
+      true ->
+        CustomMetrics.add(:get_gamertag)
 
-    case gamertag do
-      :not_setup ->
-        json(conn, XboxUtils.not_setup_message())
-      nil ->
-        json(conn, %{success: true, data: %{}})
-      gamertag ->
-        json(
-          conn,
-          %{
-            success: true,
-            data: %{
-              gamertag: gamertag
-            }
-          }
+        {_, gamertag} = Cachex.fetch(
+          :get_gamertag,
+          xuid,
+          fn _ ->
+            case XboxApi.get_gamertag(xuid) do
+              :not_setup -> {:ignore, :not_setup}
+              gamertag -> {:commit, gamertag}
+            end
+          end
         )
-    end
-  end
 
-  def get_gamertag(conn, _) do
-    json(conn, %{success: false, message: "You have to provide a xuid to get a gamertag back"})
+        case gamertag do
+          :not_setup ->
+            conn
+            |> put_resp_header("cache-control", "max-age=300, s-maxage=300, public")
+            |> json(XboxUtils.not_setup_message())
+          nil ->
+            conn
+            |> put_resp_header("cache-control", "max-age=900, s-maxage=900, public")
+            |> json(%{success: true, data: %{}})
+          gamertag ->
+            conn
+            |> put_resp_header("cache-control", "public, max-age=1800, s-maxage=1800")
+            |> json(
+                 %{
+                   success: true,
+                   data: %{
+                     gamertag: gamertag
+                   }
+                 }
+               )
+        end
+    end
   end
 
   def get_xuid(conn, %{"gamertag" => gamertag}) do
     if Utils.is_in_range(gamertag, 1, 16) do
       CustomMetrics.add(:get_xuid)
 
-      {_, xuid} = Cachex.fetch(:get_xuid, gamertag, fn _ ->
-        case XboxApi.get_xuid(gamertag) do
-          :not_setup -> {:ignore, :not_setup}
-          xuid -> {:commit, xuid}
+      {_, xuid} = Cachex.fetch(
+        :get_xuid,
+        gamertag,
+        fn _ ->
+          case XboxApi.get_xuid(gamertag) do
+            :not_setup -> {:ignore, :not_setup}
+            xuid -> {:commit, xuid}
+          end
         end
-      end)
+      )
 
       case xuid do
         :not_setup ->
-          json(conn, XboxUtils.not_setup_message())
+          conn
+          |> put_resp_header("cache-control", "max-age=300, s-maxage=300, public")
+          |> json(XboxUtils.not_setup_message())
         nil ->
-          json(conn, %{success: true, data: %{}})
+          conn
+          |> put_resp_header("cache-control", "max-age=900, s-maxage=900, public")
+          |> json(%{success: true, data: %{}})
         xuid ->
-          json(
-            conn,
-            %{
-              success: true,
-              data: %{
-                xuid: xuid
-              }
-            }
-          )
+          conn
+          |> put_resp_header("cache-control", "max-age=1800, s-maxage=1800, public")
+          |> json(
+               %{
+                 success: true,
+                 data: %{
+                   xuid: xuid
+                 }
+               }
+             )
       end
     else
-      json(conn, %{success: false, message: "Gamertag is smaller then one char long or longer then 16 chars long"})
+      conn
+      |> put_status(:bad_request)
+      |> put_resp_header("cache-control", "max-age=604800, s-maxage=604800, immutable, public")
+      |> json(%{success: false, message: "Gamertag is empty or longer than 16 chars"})
     end
-  end
-
-  def get_xuid(conn, _) do
-    json(conn, %{success: false, message: "You have to provide a gamertag to get a xuid back"})
   end
 end

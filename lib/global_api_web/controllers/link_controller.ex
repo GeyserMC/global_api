@@ -22,13 +22,16 @@ defmodule GlobalApiWeb.LinkController do
           {:commit, link}
         end)
 
-        json(conn, %{success: true, data: result})
+        conn
+        |> put_resp_header("cache-control", "max-age=60, s-maxage=60, public")
+        |> json(%{success: true, data: result})
     end
   end
 
   def get_java_link(conn, _) do
     conn
     |> put_status(:bad_request)
+    |> put_resp_header("cache-control", "immutable")
     |> json(%{success: false, message: "Please provide an uuid to lookup"})
   end
 
@@ -48,13 +51,16 @@ defmodule GlobalApiWeb.LinkController do
           {:commit, link}
         end)
 
-        json(conn, %{success: true, data: result})
+        conn
+        |> put_resp_header("cache-control", "max-age=60, s-maxage=60, public")
+        |> json(%{success: true, data: result})
     end
   end
 
   def get_bedrock_link(conn, _) do
     conn
     |> put_status(:bad_request)
+    |> put_resp_header("cache-control", "immutable")
     |> json(%{success: false, message: "Please provide a xuid to lookup"})
   end
 end

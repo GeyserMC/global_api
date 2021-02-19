@@ -8,6 +8,7 @@ defmodule GlobalApiWeb.SkinController do
       false ->
         conn
         |> put_status(:bad_request)
+        |> put_resp_header("cache-control", "max-age=604800, s-maxage=604800, immutable, public")
         |> json(%{success: false, message: "xuid should be an int"})
 
       true ->
@@ -21,10 +22,14 @@ defmodule GlobalApiWeb.SkinController do
         end)
 
         if result === :not_found do
-          json(conn, %{success: true, data: %{}})
+          conn
+          |> put_resp_header("cache-control", "max-age=1800, s-maxage=1800, public")
+          |> json(%{success: true, data: %{}})
         else
           {texture_id, last_update} = result
-          json(conn, %{success: true, data: %{texture_id: texture_id, last_update: last_update}})
+          conn
+          |> put_resp_header("cache-control", "max-age=900, s-maxage=900, public")
+          |> json(%{success: true, data: %{texture_id: texture_id, last_update: last_update}})
         end
     end
   end

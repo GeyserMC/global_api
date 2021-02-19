@@ -27,7 +27,7 @@ defmodule GlobalApi.Utils do
   end
 
   def is_int_and_rounded(xuid) do
-    case String.contains?(xuid, ".") do
+    case String.contains?(xuid, ".") || String.starts_with?(xuid, "-") do
       true -> false
       false ->
         try do
@@ -45,6 +45,8 @@ defmodule GlobalApi.Utils do
   defp update_username_if_needed_array([], []) do
     []
   end
+
+  #todo make some changes here
 
   defp update_username_if_needed_array([current | remaining], []) do
     result = update_username_if_needed(current)
