@@ -135,7 +135,7 @@ defmodule GlobalApiWeb.WebSocket do
           {skin_value, skin_signature, texture_id} = entry
           SocketQueue.broadcast_message(
             state.subscribed_to,
-            %{event_id: 3, xuid: xuid, value: skin_value, signature: skin_signature, texture_id: texture_id, hash: Utils.hash_string(rgba_hash)}
+            %{event_id: 3, xuid: xuid, success: true, data: %{value: skin_value, signature: skin_signature, texture_id: texture_id, hash: Utils.hash_string(rgba_hash)}}
           )
         else
           {:ok, entry} = Cachex.get(:hash_to_skin, rgba_hash);
@@ -153,7 +153,7 @@ defmodule GlobalApiWeb.WebSocket do
             DatabaseQueue.set_texture(xuid, texture_id)
             SocketQueue.broadcast_message(
               state.subscribed_to,
-              %{event_id: 3, xuid: xuid, value: skin_value, signature: skin_signature, texture_id: texture_id}
+              %{event_id: 3, xuid: xuid, success: true, data: %{value: skin_value, signature: skin_signature, texture_id: texture_id, hash: Utils.hash_string(rgba_hash)}}
             )
           end
         end

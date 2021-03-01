@@ -3,9 +3,9 @@ defmodule GlobalApi.SkinQueue do
 
   alias GlobalApi.SkinUploader
 
-  @type t :: %__MODULE__{queue: List.t(), checker_ready: bool}
+  @type t :: %__MODULE__{queue: List.t(), uploader_ready: bool}
 
-  defstruct queue: [], checker_ready: true
+  defstruct queue: [], uploader_ready: true
 
   def start_link(init_arg) do
     GenServer.start_link(__MODULE__, init_arg, name: __MODULE__)
@@ -22,8 +22,8 @@ defmodule GlobalApi.SkinQueue do
 
   @impl true
   def handle_cast({:push, request}, state) do
-    if state.checker_ready do
-      state = %{state | checker_ready: false}
+    if state.uploader_ready do
+      state = %{state | uploader_ready: false}
       SkinUploader.send_next(self(), request)
       {:noreply, state}
     else
@@ -37,7 +37,7 @@ defmodule GlobalApi.SkinQueue do
   """
   def handle_info(:next, state) do
     if length(state.queue) == 0 do
-      {:noreply, %{state | checker_ready: true}}
+      {:noreply, %{state | uploader_ready: true}}
     else
       [next | remain] = state.queue
       SkinUploader.send_next(self(), next)

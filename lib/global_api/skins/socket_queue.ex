@@ -30,6 +30,10 @@ defmodule GlobalApi.SocketQueue do
     GenServer.cast(__MODULE__, {:remove_subscriber, id, socket, was_creator})
   end
 
+  def skin_upload_failed(rgba_hash) do
+    GenServer.cast(__MODULE__, {:skin_upload_failed, rgba_hash})
+  end
+
   def skin_uploaded(rgba_hash, data_to_send) do
     GenServer.cast(__MODULE__, {:skin_uploaded, rgba_hash, data_to_send})
   end
@@ -110,6 +114,14 @@ defmodule GlobalApi.SocketQueue do
   end
 
   @impl true
+  def handle_cast({:skin_upload_failed, rgba_hash}, state) do
+    # this is always present, since disconnecting clients will only remove their id_subscribers section and not pending_skins
+    requested_by = state.pending_skins[rgba_hash]
+    state = handle_skin_upload_failed(requested_by.subscribers, state)
+    {:noreply, %{state | pending_skins: Map.delete(state.pending_skins, rgba_hash)}}
+  end
+
+  @impl true
   def handle_cast({:skin_uploaded, rgba_hash, data_map}, state) when is_map(data_map) do
     # this is always present, since disconnecting clients will only remove their id_subscribers section and not pending_skins
     requested_by = state.pending_skins[rgba_hash]
@@ -146,7 +158,7 @@ defmodule GlobalApi.SocketQueue do
 
     if subscriber != nil do
       message = Map.put(message, :pending_uploads, subscriber.pending_uploads)
-      |> Jason.encode!
+                |> Jason.encode!
 
       Enum.each(
         subscriber.channels,
@@ -167,14 +179,50 @@ defmodule GlobalApi.SocketQueue do
     end
   end
 
+  defp handle_skin_upload_failed([{id, xuid} | tail], state) do
+    case Map.fetch(state.id_subscribers, id) do
+      {:ok, entry} ->
+        pending_uploads = entry.pending_uploads - 1
+        entry = %{entry | pending_uploads: pending_uploads}
+
+        result = %{event_id: 3, pending_uploads: pending_uploads, xuid: xuid, success: false}
+                 |> Jason.encode!
+
+        Enum.each(
+          entry.channels,
+          fn socket ->
+            send socket, {:uploaded, result}
+          end
+        )
+
+        if entry.pending_uploads == 0 && !entry.is_active do
+          broadcast_message(id, :creator_disconnected, :disconnect)
+          handle_skin_upload_failed(
+            tail,
+            %{state | id_subscribers: Map.delete(state.id_subscribers, id)}
+          )
+        else
+          handle_skin_upload_failed(
+            tail,
+            %{state | id_subscribers: Map.put(state.id_subscribers, id, entry)}
+          )
+        end
+      :error ->
+        handle_skin_upload_failed(tail, state)
+    end
+  end
+
+  defp handle_skin_upload_failed([], state) do
+    state
+  end
+
   defp handle_skin_uploaded([{id, xuid} | tail], xuids, data_map, state) do
     case Map.fetch(state.id_subscribers, id) do
       {:ok, entry} ->
         pending_uploads = entry.pending_uploads - 1
         entry = %{entry | pending_uploads: pending_uploads}
 
-        result = Map.put(data_map, :pending_uploads, pending_uploads)
-                 |> Map.put(:xuid, xuid)
+        result = %{event_id: 3, pending_uploads: pending_uploads, xuid: xuid, success: true, data: data_map}
                  |> Jason.encode!
 
         Cachex.put(:xuid_to_skin, xuid, {data_map.value, data_map.signature, data_map.texture_id})

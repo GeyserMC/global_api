@@ -14,24 +14,20 @@ defmodule GlobalApi.Metrics do
 
   def init(_) do
     webhook_url = Application.get_env(:global_api, :webhook)[:url]
-    loop(webhook_url, {%{this_hour: 0, this_minute: 1, first_day: true}, %{}}, 1)
+    loop(webhook_url, {%{this_hour: 0, this_minute: 1, first_day: true}, %{}, %{open_subscribers: 0}}, 1)
   end
 
   def loop(webhook_url, state, num) do
     ctm = :os.system_time(:millisecond)
 
-    {last_day, last_minute} = state
+    {last_day, last_minute, open_atm} = state
     if num > 60 do
-      last_day = post_stats(webhook_url, state)
+      {last_day, open_atm} = post_stats(webhook_url, state)
       timeout = 1000 + (ctm - :os.system_time(:millisecond))
-      :timer.sleep(
-        if timeout < 0 do
-          0
-        else
-          timeout
-        end
-      )
-      loop(webhook_url, {last_day, %{}}, 1)
+      if timeout > 0 do
+        :timer.sleep(timeout)
+      end
+      loop(webhook_url, {last_day, %{}, open_atm}, 1)
     else
       memory = :erlang.memory()
       data = %{
@@ -47,12 +43,15 @@ defmodule GlobalApi.Metrics do
         }
       }
       last_minute = Map.put(last_minute, num, data)
-      :timer.sleep(1000 + (ctm - :os.system_time(:millisecond)))
-      loop(webhook_url, {last_day, last_minute}, num + 1)
+      timeout = 1000 + (ctm - :os.system_time(:millisecond))
+      if timeout > 0 do
+        :timer.sleep(timeout)
+      end
+      loop(webhook_url, {last_day, last_minute, open_atm}, num + 1)
     end
   end
 
-  defp post_stats(webhook_url, {last_day, last_minute}) do
+  defp post_stats(webhook_url, {last_day, last_minute, open_atm}) do
     all_metrics = CustomMetrics.fetch_all()
 
     avg = calc_avg(
@@ -72,6 +71,16 @@ defmodule GlobalApi.Metrics do
         },
       }
     )
+
+    open_atm = %{
+      open_atm |
+      open_subscribers: open_atm.open_subscribers + (
+        all_metrics.subscribers_created + all_metrics.subscribers_added - all_metrics.subscribers_removed)
+    }
+
+    open_atm_fields = [
+      convert(open_atm, :open_subscribers, "open subscribers")
+    ]
 
     custom_fields = [
       convert(all_metrics, :subscribers_created, "subscribers created"),
@@ -172,6 +181,9 @@ ets: #{avg.memory[:ets]} mb"
       }
     ]
 
+    #todo it's actually quite likely that these requests take one second or more
+    # so for the best results we should do this uploading in a separate process
+    # since the request is blocking
     HTTPoison.patch(
       webhook_url,
       Jason.encode!(
@@ -180,9 +192,14 @@ ets: #{avg.memory[:ets]} mb"
             time_based_metrics,
             [
               %{
-              description: "The number of received requests in the last 60 seconds",
-              color: 4886754,
-              fields: custom_fields
+                description: "The number of received requests in the last 60 seconds",
+                color: 4886754,
+                fields: custom_fields
+              },
+              %{
+                description: "The number of open connections at this moment",
+                color: 4886754,
+                fields: open_atm_fields
               },
               %{
                 description: "System information",
@@ -198,7 +215,7 @@ ets: #{avg.memory[:ets]} mb"
       [{"Content-Type", "application/json"}]
     )
 
-    last_day
+    {last_day, open_atm}
   end
 
   defp calc_avg(state, num, last_num, total) do
@@ -259,7 +276,11 @@ ets: #{avg.memory[:ets]} mb"
     fields = if hour == 0 && last_day.first_day do
       []
     else
-      avg_day = calc_avg_day(last_day, 0, hour, last_day.first_day,
+      avg_day = calc_avg_day(
+        last_day,
+        0,
+        hour,
+        last_day.first_day,
         %{
           subscribers_created: 0,
           subscribers_added: 0,
@@ -376,10 +397,22 @@ ets: #{avg.memory[:ets]} mb"
         :hour ->
           calc_time(time / 24, decimals, :day)
         _ ->
-          :erlang.float_to_binary(time, [decimals: decimals]) <> " " <> Atom.to_string(previous) <> "#{if time > 1 do 's' else '' end}"
+          :erlang.float_to_binary(time, [decimals: decimals]) <> " " <> Atom.to_string(previous) <> "#{
+            if time > 1 do
+              's'
+            else
+              ''
+            end
+          }"
       end
     else
-      :erlang.float_to_binary(time, [decimals: decimals]) <> " " <> Atom.to_string(previous) <> "#{if time > 1 do 's' else '' end}"
+      :erlang.float_to_binary(time, [decimals: decimals]) <> " " <> Atom.to_string(previous) <> "#{
+        if time > 1 do
+          's'
+        else
+          ''
+        end
+      }"
     end
   end
 end

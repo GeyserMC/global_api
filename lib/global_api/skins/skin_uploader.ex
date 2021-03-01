@@ -50,6 +50,8 @@ defmodule GlobalApi.SkinUploader do
           IO.puts("Error while uploading skin! " <> body["errorCode"] <> " " <> error <> ". First try? #{first_try}")
           if first_try do
             upload_and_store({rgba_hash, is_steve, png}, false)
+          else
+            SocketQueue.skin_upload_failed(rgba_hash)
           end
         else
 
@@ -71,7 +73,6 @@ defmodule GlobalApi.SkinUploader do
           SocketQueue.skin_uploaded(
             rgba_hash,
             %{
-              event_id: 3,
               hash: hash_string,
               texture_id: texture_id,
               value: skin_value,
@@ -85,7 +86,7 @@ defmodule GlobalApi.SkinUploader do
           end
         end
       {:error, error} ->
-        IO.puts("Failed to get a response from the Mineskin server. Reason: " <> error.reason <> ". We'll try it again.")
+        IO.puts("Failed to get a response from the Mineskin server. Reason: " <> inspect(error.reason) <> ". We'll try it again.")
         upload_and_store({rgba_hash, is_steve, png}, true)
     end
   end
