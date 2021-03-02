@@ -1,6 +1,7 @@
 defmodule GlobalApi.SocketQueue do
   use GenServer
 
+  alias GlobalApi.CustomMetrics
   alias GlobalApi.DatabaseQueue
   alias GlobalApi.SkinQueue
   alias GlobalApi.Utils
@@ -145,6 +146,7 @@ defmodule GlobalApi.SocketQueue do
 
     if !is_present do
       SkinQueue.add_request({rgba_hash, is_steve, png})
+      CustomMetrics.add(:skin_upload_queue_length)
     end
 
     broadcast_message(id, %{event_id: 2, xuid: xuid}) # added to queue

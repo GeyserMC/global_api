@@ -7,10 +7,11 @@ defmodule GlobalApi.CustomMetrics do
                subscribers_removed: integer,
                skins_uploaded: integer,
                skin_upload_requests: integer,
+               skin_upload_queue_length: integer, # global stats
                get_xuid: integer, # xbox controller
                get_gamertag: integer,
                get_java_link: integer, # link controller
-               get_bedrock_link: integer
+               get_bedrock_link: integer,
              }
 
   defstruct subscribers_created: 0,
@@ -18,6 +19,7 @@ defmodule GlobalApi.CustomMetrics do
             subscribers_removed: 0,
             skins_uploaded: 0,
             skin_upload_requests: 0,
+            skin_upload_queue_length: 0,
             get_xuid: 0,
             get_gamertag: 0,
             get_java_link: 0,

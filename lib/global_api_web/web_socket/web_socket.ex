@@ -138,7 +138,7 @@ defmodule GlobalApiWeb.WebSocket do
             %{event_id: 3, xuid: xuid, success: true, data: %{value: skin_value, signature: skin_signature, texture_id: texture_id, hash: Utils.hash_string(rgba_hash)}}
           )
         else
-          {:ok, entry} = Cachex.get(:hash_to_skin, rgba_hash);
+          {:ok, entry} = Cachex.get(:hash_to_skin, rgba_hash)
 
           if entry == nil do
             SocketQueue.add_pending_upload(state.subscribed_to, xuid, is_steve, png, rgba_hash)

@@ -20,6 +20,10 @@ defmodule GlobalApi.SkinQueue do
     GenServer.cast(__MODULE__, {:push, data})
   end
 
+  def resume() do
+    send __MODULE__, :next
+  end
+
   @impl true
   def handle_cast({:push, request}, state) do
     if state.uploader_ready do

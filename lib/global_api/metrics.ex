@@ -14,7 +14,7 @@ defmodule GlobalApi.Metrics do
 
   def init(_) do
     webhook_url = Application.get_env(:global_api, :webhook)[:url]
-    loop(webhook_url, {%{this_hour: 0, this_minute: 1, first_day: true}, %{}, %{open_subscribers: 0}}, 1)
+    loop(webhook_url, {%{this_hour: 0, this_minute: 1, first_day: true}, %{}, %{open_subscribers: 0, upload_queue_length: 0, skins_uploaded: 0}}, 1)
   end
 
   def loop(webhook_url, state, num) do
@@ -75,11 +75,15 @@ defmodule GlobalApi.Metrics do
     open_atm = %{
       open_atm |
       open_subscribers: open_atm.open_subscribers + (
-        all_metrics.subscribers_created + all_metrics.subscribers_added - all_metrics.subscribers_removed)
+        all_metrics.subscribers_created + all_metrics.subscribers_added - all_metrics.subscribers_removed),
+      upload_queue_length: open_atm.upload_queue_length + all_metrics.skin_upload_queue_length,
+      skins_uploaded: open_atm.skins_uploaded + all_metrics.skins_uploaded
     }
 
     open_atm_fields = [
-      convert(open_atm, :open_subscribers, "open subscribers")
+      convert(open_atm, :open_subscribers, "open subscribers"),
+      convert(open_atm, :upload_queue_length, "upload queue length"),
+      convert(open_atm, :skins_uploaded, "skins uploaded"),
     ]
 
     custom_fields = [
@@ -197,7 +201,7 @@ ets: #{avg.memory[:ets]} mb"
                 fields: custom_fields
               },
               %{
-                description: "The number of open connections at this moment",
+                description: "A few global stats",
                 color: 4886754,
                 fields: open_atm_fields
               },

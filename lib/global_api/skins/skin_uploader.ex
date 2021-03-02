@@ -2,6 +2,7 @@ defmodule GlobalApi.SkinUploader do
   use GenServer
 
   alias GlobalApi.CustomMetrics
+  alias GlobalApi.SkinQueue
   alias GlobalApi.SocketQueue
   alias GlobalApi.Utils
 
@@ -13,6 +14,9 @@ defmodule GlobalApi.SkinUploader do
 
   @impl true
   def init(_init_arg) do
+    # resume if the uploader has been terminated for whatever reason
+    SkinQueue.resume()
+
     {:ok, :ok}
   end
 
@@ -22,6 +26,8 @@ defmodule GlobalApi.SkinUploader do
 
   @impl true
   def handle_cast({queue, request}, :ok) do
+    CustomMetrics.add(:skin_upload_queue_length, -1)
+
     upload_and_store(request, true)
     send queue, :next
     {:noreply, :ok}
