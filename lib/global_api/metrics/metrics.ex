@@ -2,6 +2,7 @@ defmodule GlobalApi.Metrics do
   @moduledoc false
 
   alias GlobalApi.CustomMetrics
+  alias GlobalApi.MetricsUploader
 
   def child_spec(opts \\ []) do
     %{id: __MODULE__, start: {__MODULE__, :start_link, [opts]}}
@@ -13,21 +14,27 @@ defmodule GlobalApi.Metrics do
   end
 
   def init(_) do
-    webhook_url = Application.get_env(:global_api, :webhook)[:url]
-    loop(webhook_url, {%{this_hour: 0, this_minute: 1, first_day: true}, %{}, %{open_subscribers: 0, upload_queue_length: 0, skins_uploaded: 0}}, 1)
+    loop(
+      {
+        %{this_hour: 0, this_minute: 1, first_day: true},
+        %{},
+        %{open_subscribers: 0, upload_queue_length: 0, skin_upload_requests: 0, skins_uploaded: 0}
+      },
+      1
+    )
   end
 
-  def loop(webhook_url, state, num) do
+  def loop(state, num) do
     ctm = :os.system_time(:millisecond)
 
     {last_day, last_minute, open_atm} = state
     if num > 60 do
-      {last_day, open_atm} = post_stats(webhook_url, state)
+      {last_day, open_atm} = post_stats(state)
       timeout = 1000 + (ctm - :os.system_time(:millisecond))
       if timeout > 0 do
         :timer.sleep(timeout)
       end
-      loop(webhook_url, {last_day, %{}, open_atm}, 1)
+      loop({last_day, %{}, open_atm}, 1)
     else
       memory = :erlang.memory()
       data = %{
@@ -47,11 +54,11 @@ defmodule GlobalApi.Metrics do
       if timeout > 0 do
         :timer.sleep(timeout)
       end
-      loop(webhook_url, {last_day, last_minute, open_atm}, num + 1)
+      loop({last_day, last_minute, open_atm}, num + 1)
     end
   end
 
-  defp post_stats(webhook_url, {last_day, last_minute, open_atm}) do
+  defp post_stats({last_day, last_minute, open_atm}) do
     all_metrics = CustomMetrics.fetch_all()
 
     avg = calc_avg(
@@ -77,12 +84,14 @@ defmodule GlobalApi.Metrics do
       open_subscribers: open_atm.open_subscribers + (
         all_metrics.subscribers_created + all_metrics.subscribers_added - all_metrics.subscribers_removed),
       upload_queue_length: open_atm.upload_queue_length + all_metrics.skin_upload_queue_length,
+      skin_upload_requests: open_atm.skin_upload_requests + all_metrics.skin_upload_requests,
       skins_uploaded: open_atm.skins_uploaded + all_metrics.skins_uploaded
     }
 
     open_atm_fields = [
       convert(open_atm, :open_subscribers, "open subscribers"),
       convert(open_atm, :upload_queue_length, "upload queue length"),
+      convert(open_atm, :skin_upload_requests, "skin upload requests"),
       convert(open_atm, :skins_uploaded, "skins uploaded"),
     ]
 
@@ -185,39 +194,8 @@ ets: #{avg.memory[:ets]} mb"
       }
     ]
 
-    #todo it's actually quite likely that these requests take one second or more
-    # so for the best results we should do this uploading in a separate process
-    # since the request is blocking
-    HTTPoison.patch(
-      webhook_url,
-      Jason.encode!(
-        %{
-          embeds: Enum.concat(
-            time_based_metrics,
-            [
-              %{
-                description: "The number of received requests in the last 60 seconds",
-                color: 4886754,
-                fields: custom_fields
-              },
-              %{
-                description: "A few global stats",
-                color: 4886754,
-                fields: open_atm_fields
-              },
-              %{
-                description: "System information",
-                color: 4886754,
-                timestamp: DateTime.utc_now()
-                           |> DateTime.to_iso8601(),
-                fields: system_fields
-              }
-            ]
-          )
-        }
-      ),
-      [{"Content-Type", "application/json"}]
-    )
+    # uploading can take quite a while
+    MetricsUploader.upload(time_based_metrics, custom_fields, open_atm_fields, system_fields)
 
     {last_day, open_atm}
   end

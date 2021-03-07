@@ -8,6 +8,16 @@ defmodule GlobalApi.Application do
 
   def start(_type, _args) do
     children = [
+      {
+        MyXQL,
+        hostname: get_env(:hostname),
+        username: get_env(:username),
+        password: get_env(:password),
+        database: get_env(:database),
+        pool_size: get_env(:pool_size),
+        name: :myxql
+      },
+      GlobalApi.MetricsUploader,
       GlobalApi.CustomMetrics,
       GlobalApi.Metrics,
       GlobalApi.DatabaseQueue,
@@ -21,15 +31,6 @@ defmodule GlobalApi.Application do
       create_cache(:get_xuid, 5),
       create_cache(:get_gamertag, 5),
       GlobalApi.XboxApi,
-      {
-        MyXQL,
-        hostname: get_env(:hostname),
-        username: get_env(:username),
-        password: get_env(:password),
-        database: get_env(:database),
-        pool_size: get_env(:pool_size),
-        name: :myxql
-      },
       create_cache(:java_link),
       create_cache(:bedrock_link),
       # Start the Endpoint (http/https)

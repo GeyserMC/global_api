@@ -50,9 +50,9 @@ defmodule GlobalApi.Utils do
 
   defp update_username_if_needed_array([current | remaining], []) do
     result = update_username_if_needed(current)
-    if result[:lastNameUpdate] == DateTime.to_unix(current[:lastNameUpdate]),
+    if result[:last_name_update] == DateTime.to_unix(current[:last_name_update]),
        do: [result],
-       else: update_username_if_needed_array(remaining, [result], result[:lastNameUpdate])
+       else: update_username_if_needed_array(remaining, [result], result[:last_name_update])
   end
 
   # if there are no more items to handle, return the result
@@ -61,26 +61,26 @@ defmodule GlobalApi.Utils do
   end
 
   defp update_username_if_needed_array([current | remaining], result, time) do
-    data = %{current | lastUpdateTime: time}
+    data = %{current | last_update_time: time}
     update_username_if_needed_array(remaining, [data | result], time)
   end
 
-  def update_username_if_needed(%{javaId: javaId, javaName: javaName, lastNameUpdate: lastNameUpdate} = result) do
-    timeSinceUpdate = DateTime.diff(DateTime.utc_now(), lastNameUpdate, :second)
-    if timeSinceUpdate >= 86_400, # one day
+  def update_username_if_needed(%{java_id: java_id, java_name: java_name, last_name_update: last_name_update} = result) do
+    time_since_update = DateTime.diff(DateTime.utc_now(), last_name_update, :second)
+    if time_since_update >= 86_400, # one day
        do: (
-         username = MojangApi.get_current_username(javaId)
-         if username != javaName,
+         username = MojangApi.get_current_username(java_id)
+         if username != java_name,
             do: (
-              updateTime = Repo.update_java_username(javaId, username)
-              %{result | javaName: username, lastNameUpdate: DateTime.to_unix(updateTime)}
+              update_time = Repo.update_java_username(java_id, username)
+              %{result | java_name: username, last_name_update: DateTime.to_unix(update_time)}
               ),
             else: (
-              updateTime = Repo.update_last_name_update(javaId)
-              %{result | lastNameUpdate: DateTime.to_unix(updateTime)}
+              update_time = Repo.update_last_name_update(java_id)
+              %{result | last_name_update: DateTime.to_unix(update_time)}
               )
          ),
-       else: %{result | lastNameUpdate: DateTime.to_unix(lastNameUpdate)}
+       else: %{result | last_name_update: DateTime.to_unix(last_name_update)}
   end
 
   # no link found

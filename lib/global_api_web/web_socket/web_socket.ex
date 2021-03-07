@@ -3,6 +3,7 @@ defmodule GlobalApiWeb.WebSocket do
 
   alias GlobalApi.CustomMetrics
   alias GlobalApi.DatabaseQueue
+  alias GlobalApi.Repo
   alias GlobalApi.SkinNifUtils
   alias GlobalApi.SocketQueue
   alias GlobalApi.Utils
@@ -125,37 +126,36 @@ defmodule GlobalApiWeb.WebSocket do
       {:invalid_geometry, reason} ->
         {[{:close, Jason.encode!(%{error: "invalid geometry: " <> reason})}], state}
       {xuid, is_steve, png, rgba_hash} ->
-        #todo validate xuid maybe?
 
         CustomMetrics.add(:skin_upload_requests)
 
         # check for cached skin
         {:ok, entry} = Cachex.get(:xuid_to_skin, xuid)
         if entry != nil do
-          {skin_value, skin_signature, texture_id} = entry
-          SocketQueue.broadcast_message(
-            state.subscribed_to,
-            %{event_id: 3, xuid: xuid, success: true, data: %{value: skin_value, signature: skin_signature, texture_id: texture_id, hash: Utils.hash_string(rgba_hash)}}
-          )
-        else
-          {:ok, entry} = Cachex.get(:hash_to_skin, rgba_hash)
+          {hash, texture_id, skin_value, skin_signature, is_steve, _} = entry
 
-          if entry == nil do
-            SocketQueue.add_pending_upload(state.subscribed_to, xuid, is_steve, png, rgba_hash)
-          else
-            Cachex.put(:xuid_to_skin, xuid, entry)
+          changed = rgba_hash != hash
+          using_it = Repo.is_player_using_this(xuid, rgba_hash, is_steve)
 
-            # apparently this hash is popular, so we'll reset the expire time
-            Cachex.put(:hash_to_skin, rgba_hash, entry)
+          if !using_it && !changed do
+              # we already uploaded this skin, but this player doesn't have it
+              DatabaseQueue.set_texture(xuid, rgba_hash, texture_id, skin_value, skin_signature, is_steve)
+          end
 
-            {skin_value, skin_signature, texture_id} = entry
-
-            DatabaseQueue.set_texture(xuid, texture_id)
+          if using_it do
             SocketQueue.broadcast_message(
               state.subscribed_to,
-              %{event_id: 3, xuid: xuid, success: true, data: %{value: skin_value, signature: skin_signature, texture_id: texture_id, hash: Utils.hash_string(rgba_hash)}}
+              %{event_id: 3, xuid: xuid, success: true, data: %{hash: hash, texture_id: texture_id, value: skin_value, signature: skin_signature, is_steve: is_steve}}
             )
+          else
+            #todo probably check the timestamp as well. When the saved timestamp is higher than the current one, ignore it
+
+            # if the stored skin doesn't equal the requested skin and if the player isn't using it
+            # we have to fire another db call. If the skin isn't stored at all we have to upload it
+            part_two(state, xuid, is_steve, png, rgba_hash)
           end
+        else
+           part_two(state, xuid, is_steve, png, rgba_hash)
         end
         {:ok, state}
     end
@@ -167,6 +167,45 @@ defmodule GlobalApiWeb.WebSocket do
 
   def websocket_handle({:text, _}, state) do
     {[{:close, 1007, @invalid_action}], state}
+  end
+
+  defp part_two(state, xuid, is_steve, png, rgba_hash) do
+    {:ok, entry} = Cachex.get(:hash_to_skin, rgba_hash)
+
+    if entry == nil do
+      case Repo.get_player_or_skin(xuid, rgba_hash, is_steve) do
+        :not_found ->
+          # no-one has this skin yet. We'll queue it for upload
+          SocketQueue.add_pending_upload(state.subscribed_to, xuid, is_steve, png, rgba_hash)
+
+        {bedrock_id, texture_id, skin_value, skin_signature, _} ->
+          if bedrock_id == xuid do
+            # last stored skin is still his current skin
+            SocketQueue.broadcast_message(
+              state.subscribed_to,
+              %{event_id: 3, xuid: xuid, success: true, data: %{hash: Utils.hash_string(rgba_hash), texture_id: texture_id, value: skin_value, signature: skin_signature, is_steve: is_steve}}
+            )
+          else
+            # we already uploaded this skin, but this player doesn't have it
+            DatabaseQueue.set_texture(xuid, rgba_hash, texture_id, skin_value, skin_signature, is_steve)
+          end
+      end
+    else
+      Cachex.put(:xuid_to_skin, xuid, entry)
+
+      # apparently this hash is popular, so we'll reset the expire time
+      Cachex.put(:hash_to_skin, rgba_hash, entry)
+
+      {hash, texture_id, skin_value, skin_signature, is_steve, _} = entry
+
+      # it's cheaper to just upload it to the database again, because we'd have to make a query call anyway
+      DatabaseQueue.set_texture(xuid, rgba_hash, texture_id, skin_value, skin_signature, is_steve)
+
+      SocketQueue.broadcast_message(
+        state.subscribed_to,
+        %{event_id: 3, xuid: xuid, success: true, data: %{hash: hash, texture_id: texture_id, value: skin_value, signature: skin_signature, is_steve: is_steve}}
+      )
+    end
   end
 
   def websocket_info({:disconnect, :creator_disconnected}, state) do

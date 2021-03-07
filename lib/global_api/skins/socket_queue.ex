@@ -127,7 +127,7 @@ defmodule GlobalApi.SocketQueue do
     # this is always present, since disconnecting clients will only remove their id_subscribers section and not pending_skins
     requested_by = state.pending_skins[rgba_hash]
     {xuids, state} = handle_skin_uploaded(requested_by.subscribers, MapSet.new(), data_map, state)
-    Enum.each(xuids, fn xuid -> DatabaseQueue.set_texture(xuid, data_map.texture_id) end)
+    Enum.each(xuids, fn xuid -> DatabaseQueue.set_texture(xuid, rgba_hash, data_map.texture_id, data_map.value, data_map.signature, data_map.is_steve) end)
     {:noreply, %{state | pending_skins: Map.delete(state.pending_skins, rgba_hash)}}
   end
 
@@ -227,7 +227,7 @@ defmodule GlobalApi.SocketQueue do
         result = %{event_id: 3, pending_uploads: pending_uploads, xuid: xuid, success: true, data: data_map}
                  |> Jason.encode!
 
-        Cachex.put(:xuid_to_skin, xuid, {data_map.value, data_map.signature, data_map.texture_id})
+        Cachex.put(:xuid_to_skin, xuid, {data_map.hash, data_map.texture_id, data_map.value, data_map.signature, data_map.is_steve, :os.system_time(:millisecond)})
 
         Enum.each(
           entry.channels,

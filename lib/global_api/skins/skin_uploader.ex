@@ -6,7 +6,7 @@ defmodule GlobalApi.SkinUploader do
   alias GlobalApi.SocketQueue
   alias GlobalApi.Utils
 
-  @headers [{"Content-Type", "multipart/form-data"}, {"User-Agent", "GeyserMC/GlobalApi"}]
+  @headers [{"Content-Type", "multipart/form-data"}, {"User-Agent", "GeyserMC/global_api"}]
 
   def start_link(init_arg) do
     GenServer.start_link(__MODULE__, init_arg, name: __MODULE__)
@@ -41,10 +41,10 @@ defmodule GlobalApi.SkinUploader do
       url,
       {
         :multipart,
-        [{"file", png, {"form-data", [name: "file", filename: "floodgate-global.png"]}, []}]
+        [{"file", png, {"form-data", [name: "file", filename: "floodgate.png"]}, []}]
       },
       @headers,
-      []
+      [recv_timeout: 15_000]
     )
 
     case request do
@@ -82,7 +82,8 @@ defmodule GlobalApi.SkinUploader do
               hash: hash_string,
               texture_id: texture_id,
               value: skin_value,
-              signature: skin_signature
+              signature: skin_signature,
+              is_steve: is_steve
             }
           )
 

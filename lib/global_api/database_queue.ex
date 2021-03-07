@@ -7,13 +7,41 @@ defmodule GlobalApi.DatabaseQueue do
 
   @impl true
   def init(_init_arg) do
+    # Setup the database
+    MyXQL.query!(:myxql, "
+CREATE TABLE IF NOT EXISTS skins
+(
+    bedrock_id BIGINT NOT NULL,
+    hash BINARY(32) NOT NULL,
+    texture_id VARCHAR(64) NOT NULL,
+    value TEXT NOT NULL,
+    signature TEXT NOT NULL,
+    is_steve BOOL NOT NULL,
+    last_update TIMESTAMP DEFAULT UTC_TIMESTAMP(),
+    PRIMARY KEY (bedrock_id),
+    INDEX player_skin (bedrock_id, hash, is_steve),
+    INDEX unique_skin (hash, is_steve)
+);")
+    # index bedrock_id,hash,is_steve is used in is_player_using_this
+
+    MyXQL.query!(:myxql, "
+CREATE TABLE IF NOT EXISTS links
+(
+    bedrock_id       BIGINT      NOT NULL,
+    java_id          VARCHAR(36) NOT NULL,
+    java_name        VARCHAR(16) NOT NULL,
+    last_name_update TIMESTAMP DEFAULT UTC_TIMESTAMP(),
+    PRIMARY KEY (bedrock_id)
+);")
+
     {:ok, :ok}
   end
 
-  def set_texture(xuid, texture_id) do
+  def set_texture(xuid, hash, texture_id, value, signature, is_steve) do
     async_query(
-      "INSERT INTO skins (bedrockId, textureId) VALUES ((?), (?)) ON DUPLICATE KEY UPDATE bedrockId = VALUES(bedrockId), textureId = VALUES(textureId), lastUpdate = UTC_TIMESTAMP()",
-      [xuid, texture_id]
+      "INSERT INTO skins (bedrock_id, hash, texture_id, value, signature, is_steve) VALUES ((?), (?), (?), (?), (?), (?))
+      ON DUPLICATE KEY UPDATE hash = VALUES(hash), texture_id = VALUES(texture_id), value = VALUES(value), signature = VALUES(signature), is_steve = VALUES(is_steve), last_update = UTC_TIMESTAMP()",
+      [xuid, hash, texture_id, value, signature, is_steve]
     )
   end
 

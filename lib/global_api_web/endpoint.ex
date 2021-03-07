@@ -1,7 +1,7 @@
 defmodule GlobalApiWeb.Endpoint do
   use Phoenix.Endpoint, otp_app: :global_api
 
-  # Live Dashboard and code reloader is only enabled during development
+  # Live Dashboard and live code reload is only enabled during development
   if Mix.env() == :dev do
     # The session will be stored in the cookie and signed,
     # this means its contents can be read but not tampered with.
@@ -32,6 +32,9 @@ defmodule GlobalApiWeb.Endpoint do
     pass: ["*/*"],
     json_decoder: Phoenix.json_library()
 
-  # plug Plug.SSL
+  if Mix.env() == :prod do
+    plug Plug.SSL, log: false
+  end
+
   plug GlobalApiWeb.Router
 end
