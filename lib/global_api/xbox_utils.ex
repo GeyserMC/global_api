@@ -140,15 +140,15 @@ defmodule GlobalApi.XboxUtils do
       {"Content-Type", "application/x-www-form-urlencoded"}
     ]
 
-    body = "client_id=" <> client_id <> "&scope=Xboxlive.offline_access&code=" <> code <> "&redirect_uri=" <> redirect_url <> "&client_secret=" <> client_secret
+    body = "client_id=" <> client_id <> "&scope=Xboxlive.offline_access&redirect_uri=" <> redirect_url <> "&client_secret=" <> client_secret
     body = body <>
            if is_refresh do
-             "&grant_type=refresh_token"
+             "&grant_type=refresh_token&refresh_token="
            else
-             "&grant_type=authorization_code"
+             "&grant_type=authorization_code&code="
            end
 
-    {:ok, response} = HTTPoison.post(@token_url, body, headers)
+    {:ok, response} = HTTPoison.post(@token_url, body <> code, headers)
     Jason.decode!(response.body)
   end
 
