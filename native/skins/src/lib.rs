@@ -18,6 +18,8 @@ use serde_json::json;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 
+const TEXTURE_TYPE_FACE : i64 = 1;
+
 atoms! {
     invalid_chain_data,
     invalid_client_data,
@@ -230,8 +232,31 @@ fn convert_geometry(skin_data: &[u8], skin_width: &usize, client_claims: Value, 
             return Err("no animated frames were found");
         }
 
-        // we just assume that the first entry is the head
-        let face_frame = animated_frames.get(0).unwrap();
+        // we can't assume that the first entry always is the head
+        // so we have to find the head
+        let mut face_frame = None;
+
+        for animated_frame in animated_frames {
+            let animation_type = animated_frame.get("Type");
+            if animation_type.is_none() {
+                return Err("animation frame doesn't have a type")
+            }
+
+            let animation_type = animation_type.unwrap().as_i64();
+            if animation_type.is_none() {
+                return Err("animation frame type is not an int")
+            }
+
+            if animation_type.unwrap() == TEXTURE_TYPE_FACE {
+                face_frame = Some(animated_frame);
+            }
+        }
+
+        if face_frame.is_none() {
+            return Err("geometry did have an animated face, but the animation frame doesn't")
+        }
+        let face_frame : &Value = face_frame.unwrap();
+        // we found the face :)
 
         let face_width = face_frame.get("ImageWidth");
         let face_height = face_frame.get("ImageHeight");
@@ -525,7 +550,7 @@ fn translate_bone(skin_data: &[u8], w: &usize, bone: &Value, only_face: bool, ne
 
     let (x_tex_offset, y_tex_offset, x_tex_size, y_tex_size) = get_texture_offset(name);
     // we don't have to map every bone, and bones that we don't have to map have are: 0, 1
-    if x_tex_offset == 0 && y_tex_offset == 1 {
+    if x_tex_size == 0 && y_tex_size == 0 {
         return Ok(-1);
     }
 
