@@ -125,7 +125,7 @@ defmodule GlobalApi.SocketQueue do
   def handle_cast({:skin_uploaded, rgba_hash, data_map}, state) when is_map(data_map) do
     # this is always present, since disconnecting clients will only remove their id_subscribers section and not pending_skins
     requested_by = state.pending_skins[rgba_hash]
-    {xuids, state} = handle_skin_uploaded(requested_by.subscribers, MapSet.new(), data_map, state)
+    {xuids, state} = handle_skin_uploaded(requested_by.subscribers, MapSet.new(), rgba_hash, data_map, state)
     #todo use `IN` to cut down queries
     Enum.each(xuids, fn xuid -> SkinsRepo.set_skin(xuid, rgba_hash, data_map.texture_id, data_map.value, data_map.signature, data_map.is_steve) end)
     {:noreply, %{state | pending_skins: Map.delete(state.pending_skins, rgba_hash)}}
@@ -217,7 +217,7 @@ defmodule GlobalApi.SocketQueue do
     state
   end
 
-  defp handle_skin_uploaded([{id, xuid} | tail], xuids, data_map, state) do
+  defp handle_skin_uploaded([{id, xuid} | tail], xuids, rgba_hash, data_map, state) do
     case Map.fetch(state.id_subscribers, id) do
       {:ok, entry} ->
         pending_uploads = entry.pending_uploads - 1
@@ -226,7 +226,7 @@ defmodule GlobalApi.SocketQueue do
         result = %{event_id: 3, pending_uploads: pending_uploads, xuid: xuid, success: true, data: data_map}
                  |> Jason.encode!
 
-        Cachex.put(:xuid_to_skin, xuid, {data_map.hash, data_map.texture_id, data_map.value, data_map.signature, data_map.is_steve, :os.system_time(:millisecond)})
+        Cachex.put(:xuid_to_skin, xuid, {rgba_hash, data_map.texture_id, data_map.value, data_map.signature, data_map.is_steve, :os.system_time(:millisecond)})
 
         Enum.each(
           entry.channels,
@@ -240,6 +240,7 @@ defmodule GlobalApi.SocketQueue do
           handle_skin_uploaded(
             tail,
             MapSet.put(xuids, xuid),
+            rgba_hash,
             data_map,
             %{state | id_subscribers: Map.delete(state.id_subscribers, id)}
           )
@@ -247,16 +248,17 @@ defmodule GlobalApi.SocketQueue do
           handle_skin_uploaded(
             tail,
             MapSet.put(xuids, xuid),
+            rgba_hash,
             data_map,
             %{state | id_subscribers: Map.put(state.id_subscribers, id, entry)}
           )
         end
       :error ->
-        handle_skin_uploaded(tail, MapSet.put(xuids, xuid), data_map, state)
+        handle_skin_uploaded(tail, MapSet.put(xuids, xuid), rgba_hash, data_map, state)
     end
   end
 
-  defp handle_skin_uploaded([], xuids, _data_map, state) do
+  defp handle_skin_uploaded([], xuids, _rgba_hash, _data_map, state) do
     {xuids, state}
   end
 

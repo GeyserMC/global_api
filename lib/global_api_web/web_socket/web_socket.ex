@@ -144,7 +144,7 @@ defmodule GlobalApiWeb.WebSocket do
                   xuid: xuid,
                   success: true,
                   data: %{
-                    hash: hash,
+                    hash: Utils.hash_string(hash),
                     texture_id: texture_id,
                     value: skin_value,
                     signature: skin_signature,

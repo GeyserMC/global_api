@@ -25,7 +25,7 @@ defmodule GlobalApiWeb.SkinController do
                 {
                   :commit,
                   {
-                    Utils.hash_string(skin.hash),
+                    skin.hash,
                     skin.texture_id,
                     skin.value,
                     skin.signature,
@@ -50,7 +50,7 @@ defmodule GlobalApiWeb.SkinController do
                %{
                  success: true,
                  data: %{
-                   hash: hash,
+                   hash: Utils.hash_string(hash),
                    texture_id: texture_id,
                    value: value,
                    signature: signature,

@@ -17,9 +17,10 @@ defmodule GlobalApi.SkinsRepo do
   def get_player_or_skin(xuid, hash, is_steve) when is_binary(hash) do
     Repo.one(
       from s in Skin, where: s.hash == ^hash and s.is_steve == ^is_steve,
-                       order_by: [
-                         desc: s.bedrock_id == ^xuid
-                       ]
+                      order_by: [
+                        desc: s.bedrock_id == ^xuid
+                      ],
+                      limit: 1
     )
   end
 
