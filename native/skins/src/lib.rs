@@ -68,7 +68,6 @@ pub fn validate_and_get_png<'a>(env: Env<'a>, chain_data: Term, client_data: &pr
     let skin_data = client_claims["SkinData"].as_str().unwrap();
     let raw_skin_data = base64::decode(skin_data).unwrap();
 
-    // we have to clone, you can't use stuff for calculations and re-use it after that :/
     if raw_skin_data.len() != skin_width * skin_height * 4 {
         return invalid_size().to_term(env);
     }
@@ -185,7 +184,28 @@ fn convert_geometry(skin_data: &[u8], skin_width: &usize, client_claims: Value, 
         return Err("unknown format version or geometry data doesn't contain name of geometry");
     }
 
-    let bones = geometry_entry.unwrap().get("bones");
+    let geometry_entry = geometry_entry.unwrap();
+
+    // it always has a description at this point
+    let description = geometry_entry.get("description").unwrap();
+
+    let tex_width = description.get("texture_width");
+    let tex_height = description.get("texture_height");
+    if tex_width.is_none() || tex_height.is_none() {
+        return Err("geometry data doesn't have a texture width or height")
+    }
+    let tex_width = tex_width.unwrap().as_i64();
+    let tex_height = tex_height.unwrap().as_i64();
+    if tex_width.is_none() || tex_height.is_none() {
+        return Err("geometry data texture width or height aren't integers")
+    }
+    let tex_width = tex_width.unwrap() as usize;
+    let tex_height = tex_height.unwrap() as usize;
+    if &tex_width != skin_width || tex_width * tex_height * 4 != skin_data.len() {
+        return Err("the image width and height doesn't match the geometry data width and height")
+    }
+
+    let bones = geometry_entry.get("bones");
     if bones.is_none() {
         return Err("geometry data doesn't have any bones");
     }
@@ -294,7 +314,28 @@ fn convert_geometry(skin_data: &[u8], skin_width: &usize, client_claims: Value, 
             return Err("unknown format version or geometry data doesn't contain name of geometry");
         }
 
-        let bones = geometry_entry.unwrap().get("bones");
+        let geometry_entry = geometry_entry.unwrap();
+
+        // it always has a description at this point
+        let description = geometry_entry.get("description").unwrap();
+
+        let tex_width = description.get("texture_width");
+        let tex_height = description.get("texture_height");
+        if tex_width.is_none() || tex_height.is_none() {
+            return Err("geometry data doesn't have a texture width or height")
+        }
+        let tex_width = tex_width.unwrap().as_i64();
+        let tex_height = tex_height.unwrap().as_i64();
+        if tex_width.is_none() || tex_height.is_none() {
+            return Err("geometry data texture width or height aren't integers")
+        }
+        let tex_width = tex_width.unwrap() as usize;
+        let tex_height = tex_height.unwrap() as usize;
+        if tex_width != face_width || tex_height != face_height {
+            return Err("the image width and height doesn't match the geometry data width and height")
+        }
+
+        let bones = geometry_entry.get("bones");
         if bones.is_none() {
             return Err("geometry data doesn't have any bones");
         }
