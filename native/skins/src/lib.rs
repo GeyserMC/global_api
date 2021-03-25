@@ -186,18 +186,21 @@ fn convert_geometry(skin_data: &[u8], skin_width: &usize, client_claims: Value, 
 
     let geometry_entry = geometry_entry.unwrap();
 
-    // it always has a description at this point
-    let description = geometry_entry.get("description").unwrap();
+    let description = geometry_entry.get("description");
+    if description.is_none() {
+        return Err("given geometry data entry doesn't have a description");
+    }
+    let description = description.unwrap();
 
     let tex_width = description.get("texture_width");
     let tex_height = description.get("texture_height");
     if tex_width.is_none() || tex_height.is_none() {
         return Err("geometry data doesn't have a texture width or height")
     }
-    let tex_width = tex_width.unwrap().as_i64();
-    let tex_height = tex_height.unwrap().as_i64();
+    let tex_width = tex_width.unwrap().as_f64();
+    let tex_height = tex_height.unwrap().as_f64();
     if tex_width.is_none() || tex_height.is_none() {
-        return Err("geometry data texture width or height aren't integers")
+        return Err("geometry data texture width or height aren't numbers")
     }
     let tex_width = tex_width.unwrap() as usize;
     let tex_height = tex_height.unwrap() as usize;
@@ -316,18 +319,21 @@ fn convert_geometry(skin_data: &[u8], skin_width: &usize, client_claims: Value, 
 
         let geometry_entry = geometry_entry.unwrap();
 
-        // it always has a description at this point
-        let description = geometry_entry.get("description").unwrap();
+        let description = geometry_entry.get("description");
+        if description.is_none() {
+            return Err("given geometry data entry doesn't have a description");
+        }
+        let description = description.unwrap();
 
         let tex_width = description.get("texture_width");
         let tex_height = description.get("texture_height");
         if tex_width.is_none() || tex_height.is_none() {
             return Err("geometry data doesn't have a texture width or height")
         }
-        let tex_width = tex_width.unwrap().as_i64();
-        let tex_height = tex_height.unwrap().as_i64();
+        let tex_width = tex_width.unwrap().as_f64();
+        let tex_height = tex_height.unwrap().as_f64();
         if tex_width.is_none() || tex_height.is_none() {
-            return Err("geometry data texture width or height aren't integers")
+            return Err("geometry data texture width or height aren't numbers")
         }
         let tex_width = tex_width.unwrap() as usize;
         let tex_height = tex_height.unwrap() as usize;
