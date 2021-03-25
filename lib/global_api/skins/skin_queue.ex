@@ -24,6 +24,10 @@ defmodule GlobalApi.SkinQueue do
     send __MODULE__, :next
   end
 
+  def get_queue_length() do
+    GenServer.call(__MODULE__, :queue_length)
+  end
+
   @impl true
   def handle_cast({:push, request}, state) do
     if state.uploader_ready do
@@ -47,5 +51,10 @@ defmodule GlobalApi.SkinQueue do
       SkinUploader.send_next(self(), next)
       {:noreply, %{state | queue: remain}}
     end
+  end
+
+  @impl true
+  def handle_call(:queue_length, _, state) do
+    {:reply, length(state.queue), state}
   end
 end

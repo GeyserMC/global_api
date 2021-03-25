@@ -1,7 +1,6 @@
 defmodule GlobalApiWeb.XboxController do
   use GlobalApiWeb, :controller
 
-  alias GlobalApi.CustomMetrics
   alias GlobalApi.Utils
   alias GlobalApi.XboxApi
   alias GlobalApi.XboxUtils
@@ -32,8 +31,6 @@ defmodule GlobalApiWeb.XboxController do
         |> json(%{success: false, message: "xuid should be an int"})
 
       true ->
-        CustomMetrics.add(:get_gamertag)
-
         {_, gamertag} = Cachex.fetch(
           :get_gamertag,
           xuid,
@@ -71,8 +68,6 @@ defmodule GlobalApiWeb.XboxController do
 
   def get_xuid(conn, %{"gamertag" => gamertag}) do
     if Utils.is_in_range(gamertag, 1, 16) do
-      CustomMetrics.add(:get_xuid)
-
       {_, xuid} = Cachex.fetch(
         :get_xuid,
         gamertag,

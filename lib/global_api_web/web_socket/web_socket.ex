@@ -1,10 +1,8 @@
 defmodule GlobalApiWeb.WebSocket do
   @behaviour :cowboy_websocket
 
-  alias GlobalApi.CustomMetrics
-  alias GlobalApi.DatabaseQueue
-  alias GlobalApi.Repo
   alias GlobalApi.SkinNifUtils
+  alias GlobalApi.SkinsRepo
   alias GlobalApi.SocketQueue
   alias GlobalApi.Utils
 
@@ -63,14 +61,12 @@ defmodule GlobalApiWeb.WebSocket do
 
   def websocket_init(state) do
     if state.subscribed_to == -1 do
-      CustomMetrics.add(:subscribers_created)
       {id, verify_code} = SocketQueue.create_subscriber(self())
       {
         [{:text, Jason.encode!(%{event_id: 0, id: id, verify_code: verify_code})}],
         %{state | subscribed_to: id, verify_code: verify_code, initialized: true}
       }
     else
-      CustomMetrics.add(:subscribers_added)
       case SocketQueue.add_subscriber(state.subscribed_to, state.verify_code, self()) do
         :error -> {[{:close, @code_not_found}], state}
         pending_uploads ->
@@ -114,49 +110,63 @@ defmodule GlobalApiWeb.WebSocket do
 
   def websocket_handle({:json, %{"chain_data" => chain_data, "client_data" => client_data}}, state)
       when is_list(chain_data) and is_binary(client_data) do
-    case SkinNifUtils.validate_and_get_png(chain_data, client_data) do
-      :invalid_chain_data ->
-        {[{:close, @invalid_chain_data}], state}
-      :invalid_client_data ->
-        {[{:close, @invalid_client_data}], state}
-      :invalid_size ->
-        {[{:close, @invalid_skin_size}], state}
-      :invalid_geometry ->
-        {[{:close, @invalid_geometry}], state}
-      {:invalid_geometry, reason} ->
-        {[{:close, Jason.encode!(%{error: "invalid geometry: " <> reason})}], state}
-      {xuid, is_steve, png, rgba_hash} ->
+    try do
+      case SkinNifUtils.validate_and_get_png(chain_data, client_data) do
+        :invalid_chain_data ->
+          {[{:close, @invalid_chain_data}], state}
+        :invalid_client_data ->
+          {[{:close, @invalid_client_data}], state}
+        :invalid_size ->
+          {[{:close, @invalid_skin_size}], state}
+        :invalid_geometry ->
+          {[{:close, @invalid_geometry}], state}
+        {:invalid_geometry, reason} ->
+          {[{:close, Jason.encode!(%{error: "invalid geometry: " <> reason})}], state}
+        {xuid, is_steve, png, rgba_hash} ->
+          # check for cached skin
+          {:ok, entry} = Cachex.get(:xuid_to_skin, xuid)
+          if entry != nil do
+            {hash, texture_id, skin_value, skin_signature, is_steve, _} = entry
 
-        CustomMetrics.add(:skin_upload_requests)
+            changed = rgba_hash != hash
+            using_it = SkinsRepo.is_player_using_this(xuid, rgba_hash, is_steve)
 
-        # check for cached skin
-        {:ok, entry} = Cachex.get(:xuid_to_skin, xuid)
-        if entry != nil do
-          {hash, texture_id, skin_value, skin_signature, is_steve, _} = entry
-
-          changed = rgba_hash != hash
-          using_it = Repo.is_player_using_this(xuid, rgba_hash, is_steve)
-
-          if !using_it && !changed do
+            if !using_it && !changed do
               # we already uploaded this skin, but this player doesn't have it
-              DatabaseQueue.set_texture(xuid, rgba_hash, texture_id, skin_value, skin_signature, is_steve)
-          end
+              SkinsRepo.set_skin(xuid, rgba_hash, texture_id, skin_value, skin_signature, is_steve)
+            end
 
-          if using_it do
-            SocketQueue.broadcast_message(
-              state.subscribed_to,
-              %{event_id: 3, xuid: xuid, success: true, data: %{hash: hash, texture_id: texture_id, value: skin_value, signature: skin_signature, is_steve: is_steve}}
-            )
+            if using_it do
+              SocketQueue.broadcast_message(
+                state.subscribed_to,
+                %{
+                  event_id: 3,
+                  xuid: xuid,
+                  success: true,
+                  data: %{
+                    hash: hash,
+                    texture_id: texture_id,
+                    value: skin_value,
+                    signature: skin_signature,
+                    is_steve: is_steve
+                  }
+                }
+              )
+            else
+              #todo probably check the timestamp as well. When the saved timestamp is higher than the current one, ignore it
+
+              # if the stored skin doesn't equal the requested skin and if the player isn't using it
+              # we have to fire another db call. If the skin isn't stored at all we have to upload it
+              part_two(state, xuid, is_steve, png, rgba_hash)
+            end
           else
-            #todo probably check the timestamp as well. When the saved timestamp is higher than the current one, ignore it
-
-            # if the stored skin doesn't equal the requested skin and if the player isn't using it
-            # we have to fire another db call. If the skin isn't stored at all we have to upload it
             part_two(state, xuid, is_steve, png, rgba_hash)
           end
-        else
-           part_two(state, xuid, is_steve, png, rgba_hash)
-        end
+          {:ok, state}
+      end
+    rescue
+      error ->
+        IO.inspect("Error: #{inspect(error)}!\n#{inspect(chain_data, limit: :infinity, printable_limit: :infinity)}\n#{inspect(client_data, limit: :infinity, printable_limit: :infinity)}", limit: :infinity, printable_limit: :infinity)
         {:ok, state}
     end
   end
@@ -170,40 +180,62 @@ defmodule GlobalApiWeb.WebSocket do
   end
 
   defp part_two(state, xuid, is_steve, png, rgba_hash) do
-    {:ok, entry} = Cachex.get(:hash_to_skin, rgba_hash)
+    {:ok, entry} = Cachex.get(:hash_to_skin, {rgba_hash, is_steve})
 
     if entry == nil do
-      case Repo.get_player_or_skin(xuid, rgba_hash, is_steve) do
-        :not_found ->
+      case SkinsRepo.get_player_or_skin(xuid, rgba_hash, is_steve) do
+        nil ->
           # no-one has this skin yet. We'll queue it for upload
           SocketQueue.add_pending_upload(state.subscribed_to, xuid, is_steve, png, rgba_hash)
 
-        {bedrock_id, texture_id, skin_value, skin_signature, _} ->
-          if bedrock_id == xuid do
+        skin ->
+          if skin.bedrock_id == xuid do
             # last stored skin is still his current skin
             SocketQueue.broadcast_message(
               state.subscribed_to,
-              %{event_id: 3, xuid: xuid, success: true, data: %{hash: Utils.hash_string(rgba_hash), texture_id: texture_id, value: skin_value, signature: skin_signature, is_steve: is_steve}}
+              %{
+                event_id: 3,
+                xuid: xuid,
+                success: true,
+                data: %{
+                  hash: Utils.hash_string(rgba_hash),
+                  texture_id: skin.texture_id,
+                  value: skin.value,
+                  signature: skin.signature,
+                  is_steve: is_steve
+                }
+              }
             )
           else
             # we already uploaded this skin, but this player doesn't have it
-            DatabaseQueue.set_texture(xuid, rgba_hash, texture_id, skin_value, skin_signature, is_steve)
+            SkinsRepo.set_skin(xuid, rgba_hash, skin.texture_id, skin.value, skin.signature, is_steve)
           end
       end
     else
-      Cachex.put(:xuid_to_skin, xuid, entry)
-
       # apparently this hash is popular, so we'll reset the expire time
-      Cachex.put(:hash_to_skin, rgba_hash, entry)
+      Cachex.put(:hash_to_skin, {rgba_hash, is_steve}, entry)
 
-      {hash, texture_id, skin_value, skin_signature, is_steve, _} = entry
+      {texture_id, skin_value, skin_signature, last_update} = entry
+
+      Cachex.put(:xuid_to_skin, xuid, {rgba_hash, texture_id, skin_value, skin_signature, is_steve, last_update})
 
       # it's cheaper to just upload it to the database again, because we'd have to make a query call anyway
-      DatabaseQueue.set_texture(xuid, rgba_hash, texture_id, skin_value, skin_signature, is_steve)
+      SkinsRepo.set_skin(xuid, rgba_hash, texture_id, skin_value, skin_signature, is_steve)
 
       SocketQueue.broadcast_message(
         state.subscribed_to,
-        %{event_id: 3, xuid: xuid, success: true, data: %{hash: hash, texture_id: texture_id, value: skin_value, signature: skin_signature, is_steve: is_steve}}
+        %{
+          event_id: 3,
+          xuid: xuid,
+          success: true,
+          data: %{
+            hash: Utils.hash_string(rgba_hash),
+            texture_id: texture_id,
+            value: skin_value,
+            signature: skin_signature,
+            is_steve: is_steve
+          }
+        }
       )
     end
   end
@@ -218,7 +250,6 @@ defmodule GlobalApiWeb.WebSocket do
 
   def terminate(_reason, _req, state) do
     if state.initialized do
-      CustomMetrics.add(:subscribers_removed)
       SocketQueue.remove_subscriber(state.subscribed_to, self(), state.is_creator)
     end
   end

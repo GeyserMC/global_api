@@ -1,6 +1,7 @@
 defmodule GlobalApi.Utils do
+  alias GlobalApi.Link
+  alias GlobalApi.LinksRepo
   alias GlobalApi.MojangApi
-  alias GlobalApi.Repo
 
   def random_string(length) do
     :crypto.strong_rand_bytes(length)
@@ -47,12 +48,13 @@ defmodule GlobalApi.Utils do
   end
 
   #todo make some changes here
+  #todo this really needs a revisit
 
   defp update_username_if_needed_array([current | remaining], []) do
     result = update_username_if_needed(current)
-    if result[:last_name_update] == DateTime.to_unix(current[:last_name_update]),
-       do: [result],
-       else: update_username_if_needed_array(remaining, [result], result[:last_name_update])
+    if result.updated_at == current.updated_at,
+       do: [current | remaining], #this is always the first entry, so we should be safe
+       else: update_username_if_needed_array(remaining, [result], result.updated_at)
   end
 
   # if there are no more items to handle, return the result
@@ -61,26 +63,28 @@ defmodule GlobalApi.Utils do
   end
 
   defp update_username_if_needed_array([current | remaining], result, time) do
-    data = %{current | last_update_time: time}
+    data = %{current | updated_at: time}
     update_username_if_needed_array(remaining, [data | result], time)
   end
 
-  def update_username_if_needed(%{java_id: java_id, java_name: java_name, last_name_update: last_name_update} = result) do
-    time_since_update = DateTime.diff(DateTime.utc_now(), last_name_update, :second)
-    if time_since_update >= 86_400, # one day
-       do: (
-         username = MojangApi.get_current_username(java_id)
-         if username != java_name,
-            do: (
-              update_time = Repo.update_java_username(java_id, username)
-              %{result | java_name: username, last_name_update: DateTime.to_unix(update_time)}
-              ),
-            else: (
-              update_time = Repo.update_last_name_update(java_id)
-              %{result | last_name_update: DateTime.to_unix(update_time)}
-              )
-         ),
-       else: %{result | last_name_update: DateTime.to_unix(last_name_update)}
+  def update_username_if_needed(%Link{java_id: java_id, java_name: java_name, updated_at: updated_at} = result) do
+    updated_at = DateTime.to_unix(updated_at)
+    time_since_update = :os.system_time(:millisecond) - updated_at
+    if time_since_update >= 86_400 * 1000 do # one day
+      username = MojangApi.get_current_username(java_id)
+      if username != java_name,
+         do: (
+           {:ok, result} = LinksRepo.update_link(result, %{java_name: username})
+           result
+           ),
+         else: (
+           x = LinksRepo.update_link(result)
+           {:ok, _} = x #just update the updated_at timestamp
+           result
+           )
+    else
+      result
+    end
   end
 
   # no link found

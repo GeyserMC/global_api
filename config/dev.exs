@@ -1,13 +1,5 @@
 use Mix.Config
 
-# Configure your database
-config :global_api, :app,
-  hostname: "localhost",
-  username: "global_api",
-  password: "some_pass",
-  database: "global_api_dev",
-  pool_size: 3
-
 config :global_api, :app_info,
   client_id: "client id",
   redirect_url: "https://api.geysermc.org/xbox/token",
@@ -51,6 +43,17 @@ config :global_api, GlobalApiWeb.Endpoint,
 
 # Watch static and templates for browser reloading.
 config :global_api, GlobalApiWeb.Endpoint,
+  url: [host: "localhost"],
+  http: [
+    dispatch: [
+      {:_, [
+        {"/ws", GlobalApiWeb.WebSocket, []},
+        {:_, Phoenix.Endpoint.Cowboy2Handler, {GlobalApiWeb.Endpoint, []}}
+      ]}
+    ],
+    port: String.to_integer(System.get_env("PORT") || "4000"),
+    transport_options: [socket_opts: [:inet]]
+  ],
   live_reload: [
     patterns: [
       ~r"priv/static/.*(js|css|png|jpeg|jpg|gif|svg)$",
@@ -69,3 +72,4 @@ config :phoenix, :stacktrace_depth, 20
 
 # Initialize plugs at runtime for faster development compilation
 config :phoenix, :plug_init_mode, :runtime
+config :unplug, :init_mode, :runtime

@@ -1,7 +1,6 @@
 defmodule GlobalApi.SkinUploader do
   use GenServer
 
-  alias GlobalApi.CustomMetrics
   alias GlobalApi.SkinQueue
   alias GlobalApi.SocketQueue
   alias GlobalApi.Utils
@@ -26,8 +25,6 @@ defmodule GlobalApi.SkinUploader do
 
   @impl true
   def handle_cast({queue, request}, :ok) do
-    CustomMetrics.add(:skin_upload_queue_length, -1)
-
     upload_and_store(request, true)
     send queue, :next
     {:noreply, :ok}
@@ -49,7 +46,7 @@ defmodule GlobalApi.SkinUploader do
 
     case request do
       {:ok, response} ->
-        body = Jason.decode!(response.body)
+        {:ok, body} = Jason.decode(response.body)
 
         error = body["error"]
         if error != nil do
@@ -74,8 +71,7 @@ defmodule GlobalApi.SkinUploader do
           skin_value = texture_data["value"]
           skin_signature = texture_data["signature"]
 
-          Cachex.put(:hash_to_skin, rgba_hash, {skin_value, skin_signature, texture_id})
-          CustomMetrics.add(:skins_uploaded)
+          Cachex.put(:hash_to_skin, {rgba_hash, is_steve}, {texture_id, skin_value, skin_signature, :os.system_time(:millisecond)})
           SocketQueue.skin_uploaded(
             rgba_hash,
             %{
@@ -100,7 +96,7 @@ defmodule GlobalApi.SkinUploader do
 
   defp get_model_url(is_steve) do
     if is_steve do
-      ""
+      "&variant=classic"
     else
       "&variant=slim"
     end

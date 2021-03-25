@@ -27,7 +27,11 @@ defmodule GlobalApi.MixProject do
   def application do
     [
       mod: {GlobalApi.Application, []},
-      extra_applications: [:logger, :runtime_tools]
+      extra_applications: [
+        :prom_ex,
+        :logger,
+        :runtime_tools
+      ]
     ]
   end
 
@@ -41,15 +45,18 @@ defmodule GlobalApi.MixProject do
   defp deps do
     [
       {:phoenix, "~> 1.5.7"},
-      {:httpoison, "~> 1.7"},
+      {:phoenix_ecto, "~> 4.0"},
+      {:ecto_sql, "~> 3.4"},
       {:myxql, ">= 0.4.4"},
       {:phoenix_live_reload, "~> 1.2", only: :dev},
       {:phoenix_live_dashboard, "~> 0.4"},
+      {:httpoison, "~> 1.7"},
       {:rustler, "~> 0.22-rc"},
-      {:jose, "~> 1.11"},
       {:jason, "~> 1.0"},
       {:plug_cowboy, "~> 2.0"},
-      {:cachex, "~> 3.3"}
+      {:cachex, "~> 3.3"},
+      {:prom_ex, "~> 1.0.0"},
+      {:unplug, "~> 0.2.1"}
     ]
   end
 

@@ -8,19 +8,7 @@ defmodule GlobalApi.Application do
 
   def start(_type, _args) do
     children = [
-      {
-        MyXQL,
-        hostname: get_env(:hostname),
-        username: get_env(:username),
-        password: get_env(:password),
-        database: get_env(:database),
-        pool_size: get_env(:pool_size),
-        name: :myxql
-      },
-      GlobalApi.MetricsUploader,
-      GlobalApi.CustomMetrics,
-      GlobalApi.Metrics,
-      GlobalApi.DatabaseQueue,
+      GlobalApi.PromEx,
       GlobalApi.SocketQueue,
       GlobalApi.SkinQueue,
       GlobalApi.SkinUploader,
@@ -31,8 +19,10 @@ defmodule GlobalApi.Application do
       create_cache(:get_xuid, 5),
       create_cache(:get_gamertag, 5),
       GlobalApi.XboxApi,
-      create_cache(:java_link),
-      create_cache(:bedrock_link),
+      create_cache(:java_link, 5),
+      create_cache(:bedrock_link, 5),
+      GlobalApi.Repo,
+      GlobalApi.MetricJob,
       # Start the Endpoint (http/https)
       GlobalApiWeb.Endpoint
     ]
@@ -50,7 +40,7 @@ defmodule GlobalApi.Application do
     :ok
   end
 
-  defp create_cache(name, expire_time \\ 1) do
+  defp create_cache(name, expire_time) do
     Supervisor.child_spec(
       {
         Cachex,

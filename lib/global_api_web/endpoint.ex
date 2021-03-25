@@ -32,9 +32,15 @@ defmodule GlobalApiWeb.Endpoint do
     pass: ["*/*"],
     json_decoder: Phoenix.json_library()
 
+  plug Unplug,
+       if: {GlobalApi.UnplugPredicates.SecureMetricsEndpoint, []},
+       do: {PromEx.Plug, prom_ex_module: GlobalApi.PromEx}
+
   if Mix.env() == :prod do
-    plug Plug.SSL, log: false
+    plug Plug.SSL
   end
+
+  plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
 
   plug GlobalApiWeb.Router
 end

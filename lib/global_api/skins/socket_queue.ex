@@ -1,9 +1,8 @@
 defmodule GlobalApi.SocketQueue do
   use GenServer
 
-  alias GlobalApi.CustomMetrics
-  alias GlobalApi.DatabaseQueue
   alias GlobalApi.SkinQueue
+  alias GlobalApi.SkinsRepo
   alias GlobalApi.Utils
 
   @type t :: %__MODULE__{id_subscribers: Map.t(), pending_skins: Map.t(), current_id: integer}
@@ -127,7 +126,8 @@ defmodule GlobalApi.SocketQueue do
     # this is always present, since disconnecting clients will only remove their id_subscribers section and not pending_skins
     requested_by = state.pending_skins[rgba_hash]
     {xuids, state} = handle_skin_uploaded(requested_by.subscribers, MapSet.new(), data_map, state)
-    Enum.each(xuids, fn xuid -> DatabaseQueue.set_texture(xuid, rgba_hash, data_map.texture_id, data_map.value, data_map.signature, data_map.is_steve) end)
+    #todo use `IN` to cut down queries
+    Enum.each(xuids, fn xuid -> SkinsRepo.set_skin(xuid, rgba_hash, data_map.texture_id, data_map.value, data_map.signature, data_map.is_steve) end)
     {:noreply, %{state | pending_skins: Map.delete(state.pending_skins, rgba_hash)}}
   end
 
@@ -146,7 +146,6 @@ defmodule GlobalApi.SocketQueue do
 
     if !is_present do
       SkinQueue.add_request({rgba_hash, is_steve, png})
-      CustomMetrics.add(:skin_upload_queue_length)
     end
 
     broadcast_message(id, %{event_id: 2, xuid: xuid}) # added to queue

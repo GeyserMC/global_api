@@ -4,14 +4,6 @@
 # remember to add this file to your .gitignore.
 use Mix.Config
 
-# Configure your database
-config :global_api, :app,
-  hostname: "localhost",
-  username: "global_api",
-  password: "some_pass",
-  database: "global_api_dev",
-  pool_size: 10
-
 config :global_api, :app_info,
   client_id: "client id",
   redirect_url: "https://api.geysermc.org/xbox/token",

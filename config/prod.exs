@@ -10,6 +10,22 @@ use Mix.Config
 # which you should run after static files are built and
 # before starting your production server.
 config :global_api, GlobalApiWeb.Endpoint,
+  url: [host: "api.geysermc.org"],
+  https: [
+    dispatch: [
+      {:_, [
+        {"/ws", GlobalApiWeb.WebSocket, []},
+        {:_, Phoenix.Endpoint.Cowboy2Handler, {GlobalApiWeb.Endpoint, []}}
+      ]}
+    ],
+    ip: {0, 0, 0, 0, 0, 0, 0, 0},
+    port: String.to_integer(System.get_env("PORT") || "4443"),
+    otp_app: :global_api,
+    keyfile: "/path-to.key",
+    certfile: "/path-to.crt",
+    cipher_suite: :strong
+  ],
+  force_ssl: [hsts: true, host: nil, log: false],
   debug_errors: false
 
 # Do not print debug messages in production
