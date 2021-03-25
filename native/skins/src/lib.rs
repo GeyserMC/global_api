@@ -181,29 +181,11 @@ fn convert_geometry(skin_data: &[u8], skin_width: &usize, client_claims: Value, 
 
     let geometry_entry = get_correct_entry(format_version, &json, geometry_name);
     if geometry_entry.is_none() {
-        return Err("unknown format version or geometry data doesn't contain name of geometry");
+        return Err("unknown format version or can't find the correct geometry data");
     }
 
-    let geometry_entry = geometry_entry.unwrap();
+    let (geometry_entry, tex_width, tex_height) = geometry_entry.unwrap();
 
-    let description = geometry_entry.get("description");
-    if description.is_none() {
-        return Err("given geometry data entry doesn't have a description");
-    }
-    let description = description.unwrap();
-
-    let tex_width = description.get("texture_width");
-    let tex_height = description.get("texture_height");
-    if tex_width.is_none() || tex_height.is_none() {
-        return Err("geometry data doesn't have a texture width or height")
-    }
-    let tex_width = tex_width.unwrap().as_f64();
-    let tex_height = tex_height.unwrap().as_f64();
-    if tex_width.is_none() || tex_height.is_none() {
-        return Err("geometry data texture width or height aren't numbers")
-    }
-    let tex_width = tex_width.unwrap() as usize;
-    let tex_height = tex_height.unwrap() as usize;
     if &tex_width != skin_width || tex_width * tex_height * 4 != skin_data.len() {
         return Err("the image width and height doesn't match the geometry data width and height")
     }
@@ -314,29 +296,11 @@ fn convert_geometry(skin_data: &[u8], skin_width: &usize, client_claims: Value, 
 
         let geometry_entry = get_correct_entry(format_version, &json, animated_face.unwrap());
         if geometry_entry.is_none() {
-            return Err("unknown format version or geometry data doesn't contain name of geometry");
+            return Err("unknown format version or can't find the correct geometry data");
         }
 
-        let geometry_entry = geometry_entry.unwrap();
+        let (geometry_entry, tex_width, tex_height) = geometry_entry.unwrap();
 
-        let description = geometry_entry.get("description");
-        if description.is_none() {
-            return Err("given geometry data entry doesn't have a description");
-        }
-        let description = description.unwrap();
-
-        let tex_width = description.get("texture_width");
-        let tex_height = description.get("texture_height");
-        if tex_width.is_none() || tex_height.is_none() {
-            return Err("geometry data doesn't have a texture width or height")
-        }
-        let tex_width = tex_width.unwrap().as_f64();
-        let tex_height = tex_height.unwrap().as_f64();
-        if tex_width.is_none() || tex_height.is_none() {
-            return Err("geometry data texture width or height aren't numbers")
-        }
-        let tex_width = tex_width.unwrap() as usize;
-        let tex_height = tex_height.unwrap() as usize;
         if tex_width != face_width || tex_height != face_height {
             return Err("the image width and height doesn't match the geometry data width and height")
         }
@@ -362,9 +326,16 @@ fn convert_geometry(skin_data: &[u8], skin_width: &usize, client_claims: Value, 
     Ok((new_vec, skin_model))
 }
 
-fn get_correct_entry<'a>(format_version: &str, geometry_data: &'a Value, geometry_name: &'a str) -> Option<&'a Value> {
+fn get_correct_entry<'a>(format_version: &str, geometry_data: &'a Value, geometry_name: &'a str) -> Option<(&'a Value, usize, usize)> {
     match format_version {
-        "1.8.0" => geometry_data.get(geometry_name),
+        "1.8.0" => {
+            let geometry_data = geometry_data.get(geometry_name)?;
+
+            let texture_width = geometry_data.get("texturewidth")?.as_f64()?;
+            let texture_height = geometry_data.get("textureheight")?.as_f64()?;
+
+            Some((geometry_data, texture_width as usize, texture_height as usize))
+        },
         "1.12.0" | "1.14.0" => {
             let geometry_data = geometry_data.get("minecraft:geometry")?;
 
@@ -377,7 +348,9 @@ fn get_correct_entry<'a>(format_version: &str, geometry_data: &'a Value, geometr
                 let identifier = identifier.as_str()?;
 
                 if identifier.eq(geometry_name) {
-                    return Some(entry);
+                    let texture_width = description.get("texture_width")?.as_f64()?;
+                    let texture_height = description.get("texture_height")?.as_f64()?;
+                    return Some((entry, texture_width as usize, texture_height as usize));
                 }
             }
             None
@@ -637,8 +610,8 @@ fn get_bone_offset(uv: &[Value]) -> (bool, usize, usize) {
         return (false, 0, 0);
     }
 
-    let x_offset = x_offset.unwrap().as_i64();
-    let y_offset = y_offset.unwrap().as_i64();
+    let x_offset = x_offset.unwrap().as_f64();
+    let y_offset = y_offset.unwrap().as_f64();
 
     if x_offset.is_none() || y_offset.is_none() {
         return (false, 0, 0);
