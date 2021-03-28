@@ -87,6 +87,10 @@ defmodule GlobalApi.XboxUtils do
 
   def start_initial_xbox_setup(code, is_refresh \\ false) do
     json_response = request_token(get_info(), code, is_refresh)
+    if json_response["error"] != nil do
+      IO.puts("Error while requesting token: " <> json_response["error"])
+      IO.puts("Description: " <> json_response["error_description"])
+    end
 
     access_token = json_response["access_token"]
     refresh_token = json_response["refresh_token"]
