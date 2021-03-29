@@ -401,8 +401,19 @@ fn translate_cubed_bone(skin_data: &[u8], w: &usize, name: &str, x_tex_offset: u
         return Err("cube doesn't have uv");
     }
 
+    // temp pos
+    let result = if (skin_model == 0 || skin_model == 1) && (name.eq("leftArm") || name.eq("leftarm") || name.eq("rightArm") || name.eq("rightarm")) {
+        skin_model
+    } else {
+        -1
+    };
+
     let uv = uv.unwrap().as_array();
     if uv.is_none() {
+        // temp 'fix'
+        if cube.get("uv").unwrap().is_object() {
+            return Ok(result);
+        }
         return Err("cube's uv isn't an array");
     }
 
@@ -413,12 +424,6 @@ fn translate_cubed_bone(skin_data: &[u8], w: &usize, name: &str, x_tex_offset: u
     }
 
     fill_and_scale_texture(skin_data, new_vec, *w, 64, tex_width, tex_height, x_tex_size, y_tex_size, x_offset, y_offset, x_tex_offset, y_tex_offset);
-
-    let result = if (skin_model == 0 || skin_model == 1) && (name.eq("leftArm") || name.eq("leftarm") || name.eq("rightArm") || name.eq("rightarm")) {
-        skin_model
-    } else {
-        -1
-    };
 
     Ok(result)
 }
