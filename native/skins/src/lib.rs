@@ -18,7 +18,7 @@ use serde_json::json;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 
-const TEXTURE_TYPE_FACE : i64 = 1;
+const TEXTURE_TYPE_FACE: i64 = 1;
 
 atoms! {
     invalid_chain_data,
@@ -116,13 +116,27 @@ pub fn validate_and_get_png<'a>(env: Env<'a>, chain_data: Term, client_data: &pr
     let geometry_name = geometry_name_opt.unwrap();
     let geometry_data = geometry_data_res.unwrap();
 
+    // sometimes its already defined what model a skin is
+    let mut arm_model = -1;
+    let arm_size = client_claims.get("ArmSize");
+    if let Some(arm_size) = arm_size {
+        let arm_size = arm_size.as_str();
+        if let Some(arm_size) = arm_size {
+            arm_model = if arm_size.eq("slim") { 1 } else { 0 };
+        }
+    }
+
     let convert_result = get_skin_or_convert_geometry(needs_convert, raw_skin_data, skin_width, client_claims, geometry_data, geometry_name_obj, geometry_name);
     if let Err(err) = convert_result {
         return make_tuple(env, &[invalid_geometry().to_term(env), err.encode(env)]);
     }
 
     let (raw_data, is_steve) = convert_result.unwrap();
-    let is_steve = if is_steve { true_() } else { false_() };
+    let mut is_steve = if is_steve { true_() } else { false_() };
+
+    if arm_model != -1 {
+        is_steve = if arm_model == 0 { true_() } else { false_() };
+    }
 
     let xuid = last_data["extraData"]["XUID"].as_str();
 
@@ -187,7 +201,7 @@ fn convert_geometry(skin_data: &[u8], skin_width: &usize, client_claims: Value, 
     let (geometry_entry, tex_width, tex_height) = geometry_entry.unwrap();
 
     if &tex_width != skin_width || tex_width * tex_height * 4 != skin_data.len() {
-        return Err("the image width and height doesn't match the geometry data width and height")
+        return Err("the image width and height doesn't match the geometry data width and height");
     }
 
     let bones = geometry_entry.get("bones");
@@ -244,12 +258,12 @@ fn convert_geometry(skin_data: &[u8], skin_width: &usize, client_claims: Value, 
         for animated_frame in animated_frames {
             let animation_type = animated_frame.get("Type");
             if animation_type.is_none() {
-                return Err("animation frame doesn't have a type")
+                return Err("animation frame doesn't have a type");
             }
 
             let animation_type = animation_type.unwrap().as_i64();
             if animation_type.is_none() {
-                return Err("animation frame type is not an int")
+                return Err("animation frame type is not an int");
             }
 
             if animation_type.unwrap() == TEXTURE_TYPE_FACE {
@@ -258,9 +272,9 @@ fn convert_geometry(skin_data: &[u8], skin_width: &usize, client_claims: Value, 
         }
 
         if face_frame.is_none() {
-            return Err("geometry did have an animated face, but the animation frame doesn't")
+            return Err("geometry did have an animated face, but the animation frame doesn't");
         }
-        let face_frame : &Value = face_frame.unwrap();
+        let face_frame: &Value = face_frame.unwrap();
         // we found the face :)
 
         let face_width = face_frame.get("ImageWidth");
@@ -302,7 +316,7 @@ fn convert_geometry(skin_data: &[u8], skin_width: &usize, client_claims: Value, 
         let (geometry_entry, tex_width, tex_height) = geometry_entry.unwrap();
 
         if tex_width != face_width || tex_height != face_height {
-            return Err("the image width and height doesn't match the geometry data width and height")
+            return Err("the image width and height doesn't match the geometry data width and height");
         }
 
         let bones = geometry_entry.get("bones");
@@ -335,7 +349,7 @@ fn get_correct_entry<'a>(format_version: &str, geometry_data: &'a Value, geometr
             let texture_height = geometry_data.get("textureheight")?.as_f64()?;
 
             Some((geometry_data, texture_width as usize, texture_height as usize))
-        },
+        }
         "1.12.0" | "1.14.0" => {
             let geometry_data = geometry_data.get("minecraft:geometry")?;
 
@@ -400,7 +414,7 @@ fn translate_cubed_bone(skin_data: &[u8], w: &usize, name: &str, x_tex_offset: u
 
     fill_and_scale_texture(skin_data, new_vec, *w, 64, tex_width, tex_height, x_tex_size, y_tex_size, x_offset, y_offset, x_tex_offset, y_tex_offset);
 
-    let result = if skin_model == 0 || skin_model == 1 && name.eq("leftArm") || name.eq("rightArm") {
+    let result = if (skin_model == 0 || skin_model == 1) && (name.eq("leftArm") || name.eq("leftarm") || name.eq("rightArm") || name.eq("rightarm")) {
         skin_model
     } else {
         -1
