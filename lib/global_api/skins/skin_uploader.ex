@@ -31,66 +31,80 @@ defmodule GlobalApi.SkinUploader do
   end
 
   defp upload_and_store({rgba_hash, is_steve, png}, first_try) do
-    url = "https://api.mineskin.org/generate/upload?visibility=1" <> get_model_url(is_steve)
+    try do
+      url = "https://api.mineskin.org/generate/upload?visibility=1" <> get_model_url(is_steve)
 
-    request = HTTPoison.request(
-      :post,
-      url,
-      {
-        :multipart,
-        [{"file", png, {"form-data", [name: "file", filename: "floodgate.png"]}, []}]
-      },
-      @headers,
-      [recv_timeout: 15_000]
-    )
+      request = HTTPoison.request(
+        :post,
+        url,
+        {
+          :multipart,
+          [{"file", png, {"form-data", [name: "file", filename: "floodgate.png"]}, []}]
+        },
+        @headers,
+        [recv_timeout: 15_000]
+      )
 
-    case request do
-      {:ok, response} ->
-        {:ok, body} = Jason.decode(response.body)
-
-        error = body["error"]
-        if error != nil do
-          IO.puts("Error while uploading skin! " <> body["errorCode"] <> " " <> error <> ". First try? #{first_try}")
-          if first_try do
-            upload_and_store({rgba_hash, is_steve, png}, false)
+      case request do
+        {:ok, response} ->
+          {resp_type, body} = Jason.decode(response.body)
+          # let's handle errors first. For whatever reason cloudflare throws a 502 once in a while
+          if resp_type != :ok do
+            IO.puts("#{resp_type} #{inspect(body)}")
           else
-            SocketQueue.skin_upload_failed(rgba_hash)
+            # yay, data is valid
+
+            error = body["error"]
+            if error != nil do
+              IO.puts("Error while uploading skin! #{body["errorCode"]} #{error}. First try? #{first_try}")
+              IO.puts(inspect(body))
+
+              timeout = body["nextRequest"] || 0
+              if first_try do
+                :timer.sleep(timeout)
+                upload_and_store({rgba_hash, is_steve, png}, false)
+              else
+                SocketQueue.skin_upload_failed(rgba_hash)
+                :timer.sleep(timeout)
+              end
+            else
+              timeout = body["nextRequest"] || 0
+              next_request = :os.system_time(:millisecond) + (timeout * 1000)
+
+              hash_string = Utils.hash_string(rgba_hash)
+
+              texture_data = body["data"]["texture"]
+
+              texture_id = texture_data["url"]
+              # http://textures.minecraft.net/texture/ = 38 chars long
+              texture_id = String.slice(texture_id, 38, String.length(texture_id) - 38)
+
+              skin_value = texture_data["value"]
+              skin_signature = texture_data["signature"]
+
+              SocketQueue.skin_uploaded(
+                rgba_hash,
+                %{
+                  hash: hash_string,
+                  texture_id: texture_id,
+                  value: skin_value,
+                  signature: skin_signature,
+                  is_steve: is_steve
+                }
+              )
+
+              next_request = next_request - :os.system_time(:millisecond)
+              if next_request > 0 do
+                :timer.sleep(next_request)
+              end
+            end
           end
-        else
-
-          next_request = :os.system_time(:millisecond) + (body["nextRequest"] * 1000)
-
-          hash_string = Utils.hash_string(rgba_hash)
-
-          texture_data = body["data"]["texture"]
-
-          texture_id = texture_data["url"]
-          # http://textures.minecraft.net/texture/ = 38 chars long
-          texture_id = String.slice(texture_id, 38, String.length(texture_id) - 38)
-
-          skin_value = texture_data["value"]
-          skin_signature = texture_data["signature"]
-
-          Cachex.put(:hash_to_skin, {rgba_hash, is_steve}, {texture_id, skin_value, skin_signature, :os.system_time(:millisecond)})
-          SocketQueue.skin_uploaded(
-            rgba_hash,
-            %{
-              hash: hash_string,
-              texture_id: texture_id,
-              value: skin_value,
-              signature: skin_signature,
-              is_steve: is_steve
-            }
-          )
-
-          next_request = next_request - :os.system_time(:millisecond)
-          if next_request > 0 do
-            :timer.sleep(next_request)
-          end
-        end
-      {:error, error} ->
-        IO.puts("Failed to get a response from the Mineskin server. Reason: " <> inspect(error.reason) <> ". We'll try it again.")
-        upload_and_store({rgba_hash, is_steve, png}, true)
+        {:error, error} ->
+          IO.puts("Failed to get a response from the Mineskin server. Reason: " <> inspect(error.reason) <> ". We'll try it again.")
+          upload_and_store({rgba_hash, is_steve, png}, true)
+      end
+    rescue
+      e -> IO.puts("error! #{inspect(e)}") #todo always return `skin_upload_failed` if it failed to upload. Otherwise the `pending uploads` messes up
     end
   end
 

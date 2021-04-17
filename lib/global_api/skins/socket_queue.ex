@@ -126,8 +126,16 @@ defmodule GlobalApi.SocketQueue do
     # this is always present, since disconnecting clients will only remove their id_subscribers section and not pending_skins
     requested_by = state.pending_skins[rgba_hash]
     {xuids, state} = handle_skin_uploaded(requested_by.subscribers, MapSet.new(), rgba_hash, data_map, state)
-    #todo use `IN` to cut down queries
-    Enum.each(xuids, fn xuid -> SkinsRepo.set_skin(xuid, rgba_hash, data_map.texture_id, data_map.value, data_map.signature, data_map.is_steve) end)
+
+    skin_id = SkinsRepo.create_or_get_unique_skin(%{data_map | hash: rgba_hash})
+
+    Cachex.put(
+      :hash_to_skin,
+      {rgba_hash, data_map.is_steve},
+      {skin_id, data_map.texture_id, data_map.value, data_map.signature}
+    )
+
+    Enum.each(xuids, fn xuid -> SkinsRepo.set_skin(xuid, skin_id) end)
     {:noreply, %{state | pending_skins: Map.delete(state.pending_skins, rgba_hash)}}
   end
 
@@ -226,7 +234,9 @@ defmodule GlobalApi.SocketQueue do
         result = %{event_id: 3, pending_uploads: pending_uploads, xuid: xuid, success: true, data: data_map}
                  |> Jason.encode!
 
-        Cachex.put(:xuid_to_skin, xuid, {rgba_hash, data_map.texture_id, data_map.value, data_map.signature, data_map.is_steve, :os.system_time(:millisecond)})
+        cached = Map.merge(data_map, %{hash: rgba_hash, last_update: :os.system_time(:millisecond)})
+
+        Cachex.put(:xuid_to_skin, xuid, cached)
 
         Enum.each(
           entry.channels,

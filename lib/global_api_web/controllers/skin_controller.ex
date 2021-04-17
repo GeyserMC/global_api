@@ -17,20 +17,19 @@ defmodule GlobalApiWeb.SkinController do
           :xuid_to_skin,
           xuid,
           fn (xuid) ->
-            case SkinsRepo.get_skin_by_id(xuid) do
+            case SkinsRepo.get_player_skin(xuid) do
               nil ->
                 {:ignore, nil} #todo why don't I cache this?
-              skin ->
-                #todo stop using those stupid DateTimes
+              player_skin ->
                 {
                   :commit,
-                  {
-                    skin.hash,
-                    skin.texture_id,
-                    skin.value,
-                    skin.signature,
-                    skin.is_steve,
-                    DateTime.to_unix(skin.updated_at)
+                  %{
+                    hash: player_skin.skin.hash,
+                    texture_id: player_skin.skin.texture_id,
+                    value: player_skin.skin.value,
+                    signature: player_skin.skin.signature,
+                    is_steve: player_skin.skin.is_steve,
+                    last_update: player_skin.updated_at
                   }
                 }
             end
@@ -42,21 +41,12 @@ defmodule GlobalApiWeb.SkinController do
           |> put_resp_header("cache-control", "max-age=1800, s-maxage=1800, public")
           |> json(%{success: true, data: %{}})
         else
-          {hash, texture_id, value, signature, is_steve, last_update} = result
-
           conn
           |> put_resp_header("cache-control", "max-age=900, s-maxage=900, public")
           |> json(
                %{
                  success: true,
-                 data: %{
-                   hash: Utils.hash_string(hash),
-                   texture_id: texture_id,
-                   value: value,
-                   signature: signature,
-                   is_steve: is_steve,
-                   last_update: last_update
-                 }
+                 data: %{result | hash: Utils.hash_string(result.hash)}
                }
              )
         end

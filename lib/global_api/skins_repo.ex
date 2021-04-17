@@ -1,57 +1,54 @@
 defmodule GlobalApi.SkinsRepo do
   alias GlobalApi.Repo
-  alias GlobalApi.Skin
+  alias GlobalApi.PlayerSkin
+  alias GlobalApi.UniqueSkin
   import Ecto.Query
 
-  def get_skin_by_id(id) do
-    Skin
-    |> Repo.get(id)
+  def get_player_skin(id) do
+    Repo.one(
+      from s in PlayerSkin, join: u in assoc(s, :skin),
+                            where: s.bedrock_id == ^id,
+                            preload: [
+                              skin: u
+                            ]
+    )
   end
 
   def create_skin(attrs \\ %{}) do
-    %Skin{}
-    |> Skin.changeset(attrs)
+    %PlayerSkin{}
+    |> PlayerSkin.changeset(attrs)
     |> Repo.insert(on_conflict: :replace_all)
   end
 
-  def get_player_or_skin(xuid, hash, is_steve) when is_binary(hash) do
-    Repo.one(
-      from s in Skin, where: s.hash == ^hash and s.is_steve == ^is_steve,
-                      order_by: [
-                        desc: s.bedrock_id == ^xuid
-                      ],
-                      limit: 1
-    )
+  def get_unique_skin(hash, is_steve) when is_binary(hash) do
+    Repo.one(from s in UniqueSkin, where: s.hash == ^hash and s.is_steve == ^is_steve, limit: 1)
   end
 
-  def is_player_using_this(xuid, hash, is_steve) when is_binary(hash) do
-    result = Repo.one(
-      from s in "skins", select: count(s.bedrock_id),
-                         where: s.bedrock_id == ^xuid and s.hash == ^hash and s.is_steve == ^is_steve
-    )
-    if result != nil do
-      result > 0
+  def create_unique_skin(attrs) when is_map(attrs) do
+    %UniqueSkin{}
+    |> UniqueSkin.changeset(attrs)
+    |> Repo.insert!(on_conflict: :nothing)
+    # on conflict id will be nil
+  end
+
+  def create_or_get_unique_skin(attrs) when is_map(attrs) do
+    skin_id = create_unique_skin(attrs).id
+    # I don't think that this will ever happen, but just in case
+    if skin_id == nil do
+      get_unique_skin(attrs.hash, attrs.is_steve).id
+    else
+      skin_id
     end
   end
 
-  def get_skin_by_hash(hash, is_steve) when is_binary(hash) and is_boolean(is_steve) do
-    Skin
-    |> Repo.get_by([hash: hash, is_steve: is_steve])
+  def set_skin(xuid, %UniqueSkin{} = unique_skin) do
+    set_skin(xuid, unique_skin.id)
   end
 
-  def get_players_with_skin(hash, is_steve) when is_binary(hash) and is_boolean(is_steve) do
-    Repo.all(from s in "skins", select: [:bedrock_id, :last_update], where: s.hash == ^hash and s.is_steve == ^is_steve)
-  end
-
-  def set_skin(xuid, hash, texture_id, value, signature, is_steve) do
-    #todo none of the called methods do something with returned data
+  def set_skin(xuid, skin_id) when is_integer(skin_id) do
     %{
       bedrock_id: xuid,
-      hash: hash,
-      texture_id: texture_id,
-      value: value,
-      signature: signature,
-      is_steve: is_steve
+      skin_id: skin_id
     }
     |> create_skin
   end
