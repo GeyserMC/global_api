@@ -24,7 +24,7 @@ defmodule GlobalApiWeb.LinkController do
         link = Enum.map(link, &Link.to_public/1)
 
         conn
-        |> put_resp_header("cache-control", "max-age=60, s-maxage=60, public")
+        |> put_resp_header("cache-control", "max-age=30, public")
         |> json(
              %{
                success: true,
@@ -57,7 +57,7 @@ defmodule GlobalApiWeb.LinkController do
         end)
 
         conn
-        |> put_resp_header("cache-control", "max-age=60, s-maxage=60, public")
+        |> put_resp_header("cache-control", "max-age=30, public")
         |> json(
              %{
                success: true,

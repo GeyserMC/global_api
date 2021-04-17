@@ -7,6 +7,10 @@ defmodule GlobalApiWeb.WebSocket do
   alias GlobalApi.UniqueSkin
   alias GlobalApi.Utils
 
+  @debug -1
+  @info 0
+  @error 1
+
   @invalid_code Jason.encode!(%{error: "invalid code and/or verify code"})
   @code_not_found Jason.encode!(%{error: "failed to find the given code in combination with the verify code"})
 
@@ -16,8 +20,6 @@ defmodule GlobalApiWeb.WebSocket do
 
   @invalid_chain_data Jason.encode!(%{error: "invalid chain data"})
   @invalid_client_data Jason.encode!(%{error: "invalid client data"})
-  @invalid_skin_size Jason.encode!(%{error: "invalid skin size"})
-  @invalid_geometry Jason.encode!(%{error: "invalid geometry"})
 
   @creator_left Jason.encode!(%{info: "creator left and there are no uploads left"})
 
@@ -118,11 +120,14 @@ defmodule GlobalApiWeb.WebSocket do
         :invalid_client_data ->
           {[{:close, @invalid_client_data}], state}
         :invalid_size ->
-          {[{:close, @invalid_skin_size}], state}
+          send_log_message(state, @info, "received a skin with an invalid skin size")
+          {:ok, state}
         :invalid_geometry ->
-          {[{:close, @invalid_geometry}], state}
+          send_log_message(state, @info, "received a skin with invalid geometry")
+          {:ok, state}
         {:invalid_geometry, reason} ->
-          {[{:close, Jason.encode!(%{error: "invalid geometry: " <> reason})}], state}
+          send_log_message(state, @info, "received a skin with invalid geometry: #{reason}")
+          {:ok, state}
         {xuid, is_steve, png, rgba_hash} ->
           # check for cached skin
           {:ok, entry} = Cachex.get(:xuid_to_skin, xuid)
@@ -292,6 +297,10 @@ defmodule GlobalApiWeb.WebSocket do
         end
       end
     end
+  end
+
+  def send_log_message(state, priority, message) do
+    SocketQueue.broadcast_message(state.subscribed_to, %{event_id: 5, priority: priority, message: message})
   end
 
   def websocket_info({:disconnect, :creator_disconnected}, state) do
