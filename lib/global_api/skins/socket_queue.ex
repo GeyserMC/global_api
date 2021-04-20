@@ -18,6 +18,14 @@ defmodule GlobalApi.SocketQueue do
     {:ok, %__MODULE__{}}
   end
 
+  @impl true
+  def terminate(_reason, state) do
+    Enum.each(state.id_subscribers, fn subscriber ->
+      Enum.each(subscriber.channels, fn channel ->
+        send(channel, {:disconnect, :internal_error})
+      end) end)
+  end
+
   def create_subscriber(socket) do
     GenServer.call(__MODULE__, {:create_subscriber, socket})
   end

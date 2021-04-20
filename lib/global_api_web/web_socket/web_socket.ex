@@ -22,6 +22,7 @@ defmodule GlobalApiWeb.WebSocket do
   @invalid_client_data Jason.encode!(%{error: "invalid client data"})
 
   @creator_left Jason.encode!(%{info: "creator left and there are no uploads left"})
+  @internal_error Jason.encode!(%{info: "the service experienced an unexpected error"})
 
   def init(request, _state) do
     opts = %{:idle_timeout => 20000}
@@ -305,6 +306,10 @@ defmodule GlobalApiWeb.WebSocket do
 
   def websocket_info({:disconnect, :creator_disconnected}, state) do
     [[{:close, 1000, @creator_left}], state]
+  end
+
+  def websocket_info({:disconnect, :internal_error}, state) do
+    [[{:close, 1011, @internal_error}], state]
   end
 
   def websocket_info({_, data}, state) do
