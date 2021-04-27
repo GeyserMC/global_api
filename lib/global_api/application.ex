@@ -12,13 +12,14 @@ defmodule GlobalApi.Application do
       GlobalApi.SocketQueue,
       GlobalApi.SkinQueue,
       GlobalApi.SkinUploader,
-      create_cache(:xuid_to_skin, 2), #temporarely lowered from 5 to 2 for testing
+      create_cache(:xuid_to_skin, 2), # temporarily lowered from 5 to 2 for testing
       create_cache(:hash_to_skin, 15), # skin hashes are static
       create_cache(:xuid_request_cache, 7),
-      create_cache(:xbox_api, 60),
-      create_cache(:get_xuid, 5),
-      create_cache(:get_gamertag, 5),
+      create_cache(:xbox_api, 60 * 24 * 365),
+      create_cache(:get_xuid, 15),
+      create_cache(:get_gamertag, 15),
       GlobalApi.XboxApi,
+      GlobalApi.IdentityUpdater,
       create_cache(:java_link, 5),
       create_cache(:bedrock_link, 5),
       GlobalApi.Repo,

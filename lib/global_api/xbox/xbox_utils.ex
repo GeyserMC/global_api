@@ -9,15 +9,20 @@ defmodule GlobalApi.XboxUtils do
   def load_token_data() do
     case File.read("token_cache.json") do
       {:ok, body} ->
-        Jason.decode!(body)
-        |> keys_to_atoms
+        result =
+          Jason.decode!(body)
+          |> keys_to_atoms
+        %{
+          result |
+          data: Enum.map(result.data, fn data -> keys_to_atoms(data) end),
+          updater: keys_to_atoms(result.updater)
+        }
       {:error, _} -> nil
     end
   end
 
   def keys_to_atoms(data) do
-    data
-    |> Map.new(fn {k, v} -> {String.to_atom(k), v} end)
+    Map.new(data, fn {k, v} -> {String.to_atom(k), v} end)
   end
 
   def get_info() do
@@ -35,8 +40,12 @@ defmodule GlobalApi.XboxUtils do
     }
   end
 
-  def save_token_data(data) do
-    File.write("token_cache.json", Jason.encode!(Map.delete(data, :info)))
+  def save_token_data(token_data) do
+    File.write("token_cache.json", Jason.encode!(%{updater: token_data.updater, data: token_data.data}))
+  end
+
+  def check_token_data(%{} = data) when map_size(data) == 0 do
+    {:ok, data}
   end
 
   def check_token_data(
@@ -73,15 +82,26 @@ defmodule GlobalApi.XboxUtils do
     end
   end
 
-  def check_and_save_token_data(data) do
-    case check_token_data(data) do
-      {:ok, data} -> {:ok, data}
-      {:update, data} ->
-        case save_token_data(data) do
-          :ok -> {:ok, data}
+  def check_and_save_token_data(token_data) do
+    case check_token_data(token_data.updater) do
+      {:error, reason} -> {:error, "#{reason} - updater"}
+      {_, updater_data} ->
+        data = check_token_data_array(token_data.data, [])
+        result = %{updater: updater_data, data: data}
+        case save_token_data(result) do
+          :ok -> {:ok, result}
           {:error, reason} -> {:error, reason}
         end
-      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp check_token_data_array([], result), do: result
+
+  defp check_token_data_array([entry | rest], result) do
+    case check_token_data(entry) do
+      {:ok, data} -> check_token_data_array(rest, [data | result])
+      {:update, data} -> check_token_data_array(rest, [data | result])
+      {:error, reason} -> {:error, "#{reason} - no #{length(result) + 1}"}
     end
   end
 
@@ -110,8 +130,8 @@ defmodule GlobalApi.XboxUtils do
       xbox_token = json_response["Token"]
 
       {:ok, xbox_token_valid_until, 0} = DateTime.from_iso8601(json_response["NotAfter"])
-      IO.puts("Successfully completed the initial xbox setup! We don't have to do anything until " <> DateTime.to_string(xbox_token_valid_until))
-      IO.puts("We have to restart this process around " <> DateTime.to_string(DateTime.from_unix!(auth_token_valid_until)))
+      IO.puts("Successfully completed the initial xbox setup! We don't have to do anything until #{DateTime.to_string(xbox_token_valid_until)}")
+      IO.puts("We have to restart this process around #{DateTime.to_string(DateTime.from_unix!(auth_token_valid_until))}")
       xbox_token_valid_until = DateTime.to_unix(xbox_token_valid_until)
 
       {
@@ -134,7 +154,7 @@ defmodule GlobalApi.XboxUtils do
 
     xbox_token = Map.get(json_response, "Token")
     {:ok, xbox_token_valid_until, 0} = DateTime.from_iso8601(json_response["NotAfter"])
-    IO.puts("Successfully completed the xbox setup! We don't have to do anything until " <> DateTime.to_string(xbox_token_valid_until))
+    IO.puts("Successfully completed the xbox setup! We don't have to do anything until #{DateTime.to_string(xbox_token_valid_until)}")
     xbox_token_valid_until = DateTime.to_unix(xbox_token_valid_until)
     {xbox_token, xbox_token_valid_until}
   end

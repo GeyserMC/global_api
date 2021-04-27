@@ -30,7 +30,8 @@ defmodule GlobalApi.MixProject do
       extra_applications: [
         :prom_ex,
         :logger,
-        :runtime_tools
+        :runtime_tools,
+        :ssl
       ]
     ]
   end

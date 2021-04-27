@@ -3,13 +3,15 @@ defmodule GlobalApiWeb.XboxController do
 
   alias GlobalApi.Utils
   alias GlobalApi.XboxApi
+  alias GlobalApi.XboxRepo
   alias GlobalApi.XboxUtils
 
   # we can't specify the cache headers in cloudflare for this
   def got_token(conn, %{"code" => code, "state" => state}) do
     {:ok, correct_state} = Cachex.get(:xbox_api, :state)
-    if String.equivalent?(correct_state, state) do
-      case XboxApi.got_token(code) do
+    is_updater = String.equivalent?(correct_state <> "!updater", state)
+    if String.equivalent?(correct_state, state) || is_updater do
+      case XboxApi.got_token(code, is_updater) do
         :ok -> json(conn, :ok)
         {:error, reason} -> json(conn, %{error: reason})
       end
@@ -27,7 +29,7 @@ defmodule GlobalApiWeb.XboxController do
       false ->
         conn
         |> put_status(:bad_request)
-        |> put_resp_header("cache-control", "max-age=604800, s-max-age=604800, immutable, public")
+        |> put_resp_header("cache-control", "max-age=604800, immutable, public")
         |> json(%{success: false, message: "xuid should be an int"})
 
       true ->
@@ -35,9 +37,17 @@ defmodule GlobalApiWeb.XboxController do
           :get_gamertag,
           xuid,
           fn _ ->
-            case XboxApi.get_gamertag(xuid) do
-              :not_setup -> {:ignore, :not_setup}
-              gamertag -> {:commit, gamertag}
+            xuid = Utils.get_int_if_string(xuid)
+            identity = XboxRepo.get_by_xuid(xuid)
+            if identity != nil do
+              {:commit, identity.gamertag}
+            else
+              gamertag = XboxApi.get_gamertag(xuid)
+              # save if succeeded
+              if is_binary(gamertag) do
+                XboxRepo.insert_new(xuid, gamertag)
+              end
+              {:commit, gamertag}
             end
           end
         )
@@ -45,15 +55,19 @@ defmodule GlobalApiWeb.XboxController do
         case gamertag do
           :not_setup ->
             conn
-            |> put_resp_header("cache-control", "max-age=300, s-maxage=300, public")
+            |> put_resp_header("cache-control", "max-age=300, public")
             |> json(XboxUtils.not_setup_message())
+          {:rate_limit, rate_reset} ->
+            conn
+            |> put_resp_header("cache-control", "max-age=#{rate_reset}, public")
+            |> json(%{success: false, message: "unable to handle request: too much traffic"})
           nil ->
             conn
-            |> put_resp_header("cache-control", "max-age=900, s-maxage=900, public")
+            |> put_resp_header("cache-control", "max-age=900, public")
             |> json(%{success: true, data: %{}})
           gamertag ->
             conn
-            |> put_resp_header("cache-control", "public, max-age=1800, s-maxage=1800")
+            |> put_resp_header("cache-control", "max-age=60, public")
             |> json(
                  %{
                    success: true,
@@ -72,9 +86,16 @@ defmodule GlobalApiWeb.XboxController do
         :get_xuid,
         gamertag,
         fn _ ->
-          case XboxApi.get_xuid(gamertag) do
-            :not_setup -> {:ignore, :not_setup}
-            xuid -> {:commit, xuid}
+          identity = XboxRepo.get_by_gamertag(gamertag)
+          if identity != nil do
+            {:commit, identity.xuid}
+          else
+            xuid = XboxApi.get_xuid(gamertag)
+            # save if succeeded
+            if is_binary(xuid) do
+              XboxRepo.insert_new(xuid, gamertag)
+            end
+            {:commit, xuid}
           end
         end
       )
@@ -82,15 +103,19 @@ defmodule GlobalApiWeb.XboxController do
       case xuid do
         :not_setup ->
           conn
-          |> put_resp_header("cache-control", "max-age=300, s-maxage=300, public")
+          |> put_resp_header("cache-control", "max-age=300, public")
           |> json(XboxUtils.not_setup_message())
+        {:rate_limit, rate_reset} ->
+          conn
+          |> put_resp_header("cache-control", "max-age=#{rate_reset}, public")
+          |> json(%{success: false, message: "unable to handle request: too much traffic"})
         nil ->
           conn
-          |> put_resp_header("cache-control", "max-age=900, s-maxage=900, public")
+          |> put_resp_header("cache-control", "max-age=900, public")
           |> json(%{success: true, data: %{}})
         xuid ->
           conn
-          |> put_resp_header("cache-control", "max-age=1800, s-maxage=1800, public")
+          |> put_resp_header("cache-control", "max-age=60, public")
           |> json(
                %{
                  success: true,
@@ -103,8 +128,8 @@ defmodule GlobalApiWeb.XboxController do
     else
       conn
       |> put_status(:bad_request)
-      |> put_resp_header("cache-control", "max-age=604800, s-maxage=604800, immutable, public")
-      |> json(%{success: false, message: "Gamertag is empty or longer than 16 chars"})
+      |> put_resp_header("cache-control", "max-age=604800, immutable, public")
+      |> json(%{success: false, message: "gamertag is empty or longer than 16 chars"})
     end
   end
 end

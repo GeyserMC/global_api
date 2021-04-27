@@ -11,7 +11,6 @@ defmodule GlobalApi.UniqueSkin do
     field :signature, :string
     field :is_steve, :boolean
     field :inserted_at, :integer
-    has_many :players, GlobalApi.PlayerSkin
   end
 
   def changeset(skin, attrs) do

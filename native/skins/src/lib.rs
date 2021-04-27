@@ -62,6 +62,12 @@ pub fn validate_and_get_png<'a>(env: Env<'a>, chain_data: Term, client_data: &pr
 
     let client_claims = claims.unwrap();
 
+    let extra_data = last_data.get("extraData").unwrap();
+    let xuid = extra_data["XUID"].as_str().unwrap();
+    let gamertag = extra_data["displayName"].as_str().unwrap();
+    let issued_at = last_data["iat"].as_i64().unwrap() * 1000; // seconds to ms
+    let extra_data = make_tuple(env, &[xuid.encode(env), gamertag.encode(env), issued_at.encode(env)]);
+
     let skin_width = &(client_claims["SkinImageWidth"].as_u64().unwrap() as usize);
     let skin_height = &(client_claims["SkinImageHeight"].as_u64().unwrap() as usize);
 
@@ -76,7 +82,7 @@ pub fn validate_and_get_png<'a>(env: Env<'a>, chain_data: Term, client_data: &pr
     let geometry_data_option = client_claims["SkinGeometryData"].as_str();
 
     if geometry_name_option.is_none() || geometry_data_option.is_none() {
-        return invalid_geometry().to_term(env);
+        return make_tuple(env, &[invalid_geometry().to_term(env), extra_data]);
     }
 
     let geometry_data = geometry_data_option.unwrap();
@@ -86,31 +92,31 @@ pub fn validate_and_get_png<'a>(env: Env<'a>, chain_data: Term, client_data: &pr
     let geometry_data_res = base64::decode(geometry_data);
 
     if geometry_name_res.is_err() || geometry_data_res.is_err() {
-        return invalid_geometry().to_term(env);
+        return make_tuple(env, &[invalid_geometry().to_term(env), extra_data]);
     }
 
     let geometry_name_res: Result<Value, _> = serde_json::from_slice(geometry_name_res.unwrap().as_slice());
     if geometry_name_res.is_err() {
-        return invalid_geometry().to_term(env);
+        return make_tuple(env, &[invalid_geometry().to_term(env), extra_data]);
     }
 
     let geometry_name_val = geometry_name_res.unwrap();
     let geometry_name_obj = geometry_name_val.get("geometry");
 
     if geometry_name_obj.is_none() {
-        return invalid_geometry().to_term(env);
+        return make_tuple(env, &[invalid_geometry().to_term(env), extra_data]);
     }
 
     let geometry_name_obj = geometry_name_obj.unwrap();
     let geometry_name_opt = geometry_name_obj.get("default");
 
     if geometry_name_opt.is_none() {
-        return invalid_geometry().to_term(env);
+        return make_tuple(env, &[invalid_geometry().to_term(env), extra_data]);
     }
 
     let geometry_name_opt = geometry_name_opt.unwrap().as_str();
     if geometry_name_opt.is_none() {
-        return invalid_geometry().to_term(env);
+        return make_tuple(env, &[invalid_geometry().to_term(env), extra_data]);
     }
 
     let geometry_name = geometry_name_opt.unwrap();
@@ -128,7 +134,7 @@ pub fn validate_and_get_png<'a>(env: Env<'a>, chain_data: Term, client_data: &pr
 
     let convert_result = get_skin_or_convert_geometry(needs_convert, raw_skin_data, skin_width, client_claims, geometry_data, geometry_name_obj, geometry_name);
     if let Err(err) = convert_result {
-        return make_tuple(env, &[invalid_geometry().to_term(env), err.encode(env)]);
+        return make_tuple(env, &[invalid_geometry().to_term(env), err.encode(env), extra_data]);
     }
 
     let (raw_data, is_steve) = convert_result.unwrap();
@@ -138,8 +144,6 @@ pub fn validate_and_get_png<'a>(env: Env<'a>, chain_data: Term, client_data: &pr
         is_steve = if arm_model == 0 { true_() } else { false_() };
     }
 
-    let xuid = last_data["extraData"]["XUID"].as_str();
-
     let png = lodepng::encode32(raw_data.as_slice(), 64, 64).unwrap();
 
     let mut hasher = Sha256::new();
@@ -147,11 +151,11 @@ pub fn validate_and_get_png<'a>(env: Env<'a>, chain_data: Term, client_data: &pr
 
     let hash = hasher.finalize();
 
-    make_tuple(env, &[xuid.encode(env), is_steve.to_term(env), as_binary(env, &png), as_binary(env, hash.as_slice())])
+    make_tuple(env, &[is_steve.to_term(env), as_binary(env, &png), as_binary(env, hash.as_slice()), extra_data])
 }
 
 fn get_skin_or_convert_geometry(needs_convert: bool, skin_data: Vec<u8>, skin_width: &usize, client_claims: Value, geometry_data: Vec<u8>, geometry_name_obj: &Value, geometry_name: &str) -> Result<(Vec<u8>, bool), &'static str> {
-    if needs_convert {
+    if needs_convert && (skin_width > &0 && !skin_data.is_empty()) {
         let raw_data = convert_geometry(skin_data.as_slice(), skin_width, client_claims, geometry_data, geometry_name_obj, geometry_name);
         if let Err(err) = raw_data {
             return Err(err);
@@ -165,7 +169,10 @@ fn get_skin_or_convert_geometry(needs_convert: bool, skin_data: Vec<u8>, skin_wi
             let mut new_vec: Vec<u8> = Vec::with_capacity(64 * 64 * 4);
             unsafe { new_vec.set_len(new_vec.capacity()) }
 
-            fill_and_scale_texture(skin_data.as_slice(), &mut new_vec, *skin_width, 64, *skin_width, skin_data.len() / 4 / skin_width, 64, 64, 0, 0, 0, 0);
+            // apparently some people have an empty skin so yeah
+            if skin_width > &0 && !skin_data.is_empty() {
+                fill_and_scale_texture(skin_data.as_slice(), &mut new_vec, *skin_width, 64, *skin_width, skin_data.len() / 4 / skin_width, 64, 64, 0, 0, 0, 0);
+            }
 
             return Ok((new_vec, !geometry_name.ends_with("Slim\"")));
         }

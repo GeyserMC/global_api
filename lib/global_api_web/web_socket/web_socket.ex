@@ -6,6 +6,7 @@ defmodule GlobalApiWeb.WebSocket do
   alias GlobalApi.SocketQueue
   alias GlobalApi.UniqueSkin
   alias GlobalApi.Utils
+  alias GlobalApi.XboxRepo
 
   @debug -1
   @info 0
@@ -118,18 +119,31 @@ defmodule GlobalApiWeb.WebSocket do
       case SkinNifUtils.validate_and_get_png(chain_data, client_data) do
         :invalid_chain_data ->
           {[{:close, @invalid_chain_data}], state}
+
         :invalid_client_data ->
           {[{:close, @invalid_client_data}], state}
-        :invalid_size ->
+
+        {:invalid_size, extra_data} ->
+          handle_extra_data(extra_data)
+
           send_log_message(state, @info, "received a skin with an invalid skin size")
           {:ok, state}
-        :invalid_geometry ->
+
+        {:invalid_geometry, extra_data} ->
+          handle_extra_data(extra_data)
+
           send_log_message(state, @info, "received a skin with invalid geometry")
           {:ok, state}
-        {:invalid_geometry, reason} ->
+
+        {:invalid_geometry, reason, extra_data} ->
+          handle_extra_data(extra_data)
+
           send_log_message(state, @info, "received a skin with invalid geometry: #{reason}")
           {:ok, state}
-        {xuid, is_steve, png, rgba_hash} ->
+
+        {is_steve, png, rgba_hash, {xuid, _, _} = extra_data} ->
+          handle_extra_data(extra_data)
+
           # check for cached skin
           {:ok, entry} = Cachex.get(:xuid_to_skin, xuid)
           if entry != nil do
@@ -171,6 +185,10 @@ defmodule GlobalApiWeb.WebSocket do
 
   def websocket_handle({:text, _}, state) do
     {[{:close, 1007, @invalid_action}], state}
+  end
+
+  defp handle_extra_data(extra_data) do
+    XboxRepo.handle_extra_data(extra_data)
   end
 
   defp part_two(state, xuid, is_steve, png, rgba_hash, skin_data) do

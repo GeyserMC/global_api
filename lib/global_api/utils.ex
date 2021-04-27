@@ -13,18 +13,18 @@ defmodule GlobalApi.Utils do
     Application.get_env(:global_api, key)[atom]
   end
 
+  def hash_string(hash) do
+    hash
+    |> Base.encode16
+    |> String.downcase
+  end
+
   @doc """
   If the string is in range. Both min and max are inclusive
   """
   def is_in_range(string, min, max) do
     length = String.length(string)
     length >= min && length <= max
-  end
-
-  def hash_string(hash) do
-    hash
-    |> Base.encode16
-    |> String.downcase
   end
 
   def is_int_and_rounded(xuid) do
@@ -37,6 +37,14 @@ defmodule GlobalApi.Utils do
           _ -> false
         end
     end
+  end
+
+  def get_int_if_string(data) when is_integer(data) do
+    data
+  end
+
+  def get_int_if_string(data) when is_binary(data) do
+    String.to_integer(data)
   end
 
   def update_username_if_needed_array(array) do
