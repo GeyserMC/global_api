@@ -32,7 +32,7 @@ defmodule GlobalApi.IdentityUpdater do
         schedule()
       else
         # we can wait until the least recent entry passed the 24 hours
-        schedule(least_recent.inserted_at + @identity_update_threshold - :os.system_time(:millisecond))
+        schedule(least_recent.inserted_at + @identity_update_threshold - :os.system_time(:millisecond), true)
       end
     else
       schedule(60 * 60)
@@ -62,5 +62,13 @@ defmodule GlobalApi.IdentityUpdater do
     # The rate limit is 30 requests per 300 seconds,
     # that's one request every 10 seconds + 1 second just to be sure
     Process.send_after(self(), :update, max(11, check_time) * 1000)
+  end
+
+  defp schedule(check_time, is_ms) do
+    if is_ms do
+      schedule(ceil(check_time / 1000))
+    else
+      schedule(check_time)
+    end
   end
 end
