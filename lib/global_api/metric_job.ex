@@ -24,7 +24,7 @@ defmodule GlobalApi.MetricJob do
   end
 
   defp schedule do
-    # 30 seconds
-    Process.send_after(self(), :poll, 30 * 1000)
+    # 15 seconds
+    Process.send_after(self(), :poll, 15 * 1000)
   end
 end
