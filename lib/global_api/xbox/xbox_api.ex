@@ -108,27 +108,34 @@ defmodule GlobalApi.XboxApi do
 
         case request do
           {:ok, response} ->
-            #            if response.status_code != 200 do
-            #              IO.inspect(response)
-            #            end
-            json = Jason.decode!(response.body)
-            users = json["profileUsers"]
-            if users != nil do
-              {
-                :ok,
-                Enum.map(
-                  users,
-                  fn user -> {Utils.get_int_if_string(user["id"]), Enum.at(user["settings"], 0)["value"]} end
-                )
-              }
+            if response.status_code != 200 do
+              if response.status_code != 429 do
+                IO.inspect(response)
+              end
+              case List.keyfind(headers, "WWW-Authenticate", 0) do
+                {_, value} -> {:error, Enum.at(String.split(value, "error="), 1)}
+                nil -> {:error, "error while making a request to xbox live"}
+              end
             else
-              description = json["description"]
-              # unfortunately it only shows 1 invalid xuid,
-              # so we have to make multiple requests if there are multiple invalid xuids
-              if String.starts_with?(description, "Xuid ") && String.ends_with?(description, " is invalid") do
-                {:invalid, Enum.at(String.split(description, " "), 1)}
+              json = Jason.decode!(response.body)
+              users = json["profileUsers"]
+              if users != nil do
+                {
+                  :ok,
+                  Enum.map(
+                    users,
+                    fn user -> {Utils.get_int_if_string(user["id"]), Enum.at(user["settings"], 0)["value"]} end
+                  )
+                }
               else
-                {:error, json}
+                description = json["description"]
+                # unfortunately it only shows 1 invalid xuid,
+                # so we have to make multiple requests if there are multiple invalid xuids
+                if String.starts_with?(description, "Xuid ") && String.ends_with?(description, " is invalid") do
+                  {:invalid, Enum.at(String.split(description, " "), 1)}
+                else
+                  {:error, json}
+                end
               end
             end
           {:error, reason} -> {:error, reason}
@@ -255,6 +262,7 @@ defmodule GlobalApi.XboxApi do
     if map_size(state.updater) == 0 do
       {:reply, :not_setup, state}
     else
+      state = get_token_check(state)
       {:reply, {state.updater.xbox_token, state.updater.uhs}, state}
     end
   end
@@ -291,11 +299,11 @@ defmodule GlobalApi.XboxApi do
   defp get_token_check(state) do
     if state.next_check < :os.system_time(:second) do
       case XboxUtils.check_and_save_token_data(state) do
-        {:ok, static} ->
-          %{state | data: static, static: static, next_check: :os.system_time(:second) + 60 * 60}
+        {:ok, token_data} ->
+          %{state | updater: token_data.updater, data: token_data.data, static: token_data.data, next_check: :os.system_time(:second) + 60 * 60}
         {:error, reason} ->
           IO.puts("Error whilst checking! #{reason}. Will reset all accs just to be sure")
-          %{state | data: [], static: [], next_check: :os.system_time(:second) * 2}
+          %{state | updater: [], data: [], static: [], next_check: :os.system_time(:second) * 2}
       end
     else
       state
