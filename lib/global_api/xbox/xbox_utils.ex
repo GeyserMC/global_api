@@ -54,12 +54,11 @@ defmodule GlobalApi.XboxUtils do
           auth_token: auth_token,
           auth_token_valid_until: auth_token_valid_until,
           xbox_token_valid_until: xbox_token_valid_until
-        } = data,
-        is_loading \\ false
+        } = data
       ) do
     current_datetime = :os.system_time(:second)
-    # 10 minutes for stored data and 20 seconds for
-    min_remaining_time = if is_loading, do: 600, else: 20
+    # the updater checks every hour. + 1 minute just to be sure
+    min_remaining_time = 61 * 60
 
     # we're ok when the xbox token is valid
     case (xbox_token_valid_until - current_datetime) > min_remaining_time do
