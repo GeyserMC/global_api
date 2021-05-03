@@ -5,7 +5,7 @@ defmodule GlobalApiWeb.Router do
     plug :accepts, ["json"]
   end
 
-  scope "/v1", GlobalApiWeb, log: false do
+  scope "/v1", GlobalApiWeb, log: Mix.env() == :dev do
     pipe_through :api
 
     scope "/link" do
@@ -23,11 +23,13 @@ defmodule GlobalApiWeb.Router do
     end
   end
 
-  scope "/xbox", GlobalApiWeb, log: false do
+  scope "/xbox", GlobalApiWeb, log: Mix.env() == :dev do
     pipe_through :api
 
     get "/token", XboxController, :got_token
   end
+
+  get "/health", GlobalApiWeb.HealthController, :health
 
   # Enables LiveDashboard only for development
   if Mix.env() == :dev do
