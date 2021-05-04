@@ -59,7 +59,7 @@ defmodule GlobalApi.SkinUploader do
               IO.puts("Error while uploading skin! #{body["errorCode"]} #{error}. First try? #{first_try}")
               IO.puts(inspect(body))
 
-              timeout = ceil(body["nextRequest"] || 0)
+              timeout = ceil(body["nextRequest"] || :os.system_time(:millisecond)) - :os.system_time(:millisecond)
               if first_try do
                 :timer.sleep(timeout)
                 upload_and_store({rgba_hash, is_steve, png}, false)
@@ -68,9 +68,6 @@ defmodule GlobalApi.SkinUploader do
                 :timer.sleep(timeout)
               end
             else
-              timeout = ceil(body["nextRequest"] || 0)
-              next_request = :os.system_time(:millisecond) + (timeout * 1000)
-
               hash_string = Utils.hash_string(rgba_hash)
 
               texture_data = body["data"]["texture"]
@@ -93,9 +90,10 @@ defmodule GlobalApi.SkinUploader do
                 }
               )
 
-              next_request = next_request - :os.system_time(:millisecond)
-              if next_request > 0 do
-                :timer.sleep(next_request)
+              next_request = ceil(body["nextRequest"] || :os.system_time(:millisecond))
+              timeout = next_request - :os.system_time(:millisecond)
+              if timeout > 0 do
+                :timer.sleep(timeout)
               end
             end
           end
