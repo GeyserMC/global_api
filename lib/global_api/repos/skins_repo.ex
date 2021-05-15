@@ -17,7 +17,7 @@ defmodule GlobalApi.SkinsRepo do
   def create_skin(attrs \\ %{}) do
     %PlayerSkin{}
     |> PlayerSkin.changeset(attrs)
-    |> Repo.insert(on_conflict: :replace_all)
+    |> Repo.insert(on_conflict: {:replace_all_except, [:inserted_at]})
   end
 
   def get_unique_skin(hash, is_steve) when is_binary(hash) do
