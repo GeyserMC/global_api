@@ -12,7 +12,6 @@ defmodule GlobalApi.LinksRepo do
   end
 
   def update_link(%Link{} = link, attrs \\ %{}) do
-    #todo add force option, because when there are no changes, the function update is a no-op
     # see the web_socket module
     link
     |> Link.changeset(attrs)
