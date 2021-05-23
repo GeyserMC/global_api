@@ -29,7 +29,8 @@ defmodule GlobalApi.XboxRepo do
   end
 
   def insert_new(xuid, gamertag) do
-    Repo.insert(create({xuid, gamertag, :os.system_time(:millisecond)}))
+    create({xuid, gamertag, :os.system_time(:millisecond)})
+    |> Repo.insert()
   end
 
   def insert_bulk(identities) do

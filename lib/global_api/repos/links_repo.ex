@@ -1,6 +1,7 @@
 defmodule GlobalApi.LinksRepo do
   alias GlobalApi.Link
   alias GlobalApi.Repo
+  alias GlobalApi.UUID
   import Ecto.Query
 
   def get_java_link(uuid) do
@@ -16,5 +17,11 @@ defmodule GlobalApi.LinksRepo do
     link
     |> Link.changeset(attrs)
     |> Repo.update()
+  end
+
+  def create_link(xuid, uuid, username) do
+    %Link{}
+    |> Link.changeset(%{bedrock_id: xuid, java_id: UUID.cast!(uuid), java_name: username})
+    |> Repo.insert(on_conflict: :replace_all) #lazy fix
   end
 end

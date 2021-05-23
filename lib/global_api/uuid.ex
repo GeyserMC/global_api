@@ -5,12 +5,17 @@ defmodule GlobalApi.UUID do
   """
   @type t :: <<_::288>>
 
+  @typedoc """
+  A hex-encoded UUID string without dashes.
+  """
+  @type t_no_dash :: <<_::288>>
+
   @type raw :: <<_::128>>
 
   @doc """
   Casts to UUID.
   """
-  @spec cast(t | raw | any) :: {:ok, t} | :error
+  @spec cast(t | t_no_dash | raw | any) :: {:ok, t} | :error
   def cast(<<
     a1, a2, a3, a4, a5, a6, a7, a8, ?-,
     b1, b2, b3, b4, ?-,
@@ -28,8 +33,32 @@ defmodule GlobalApi.UUID do
   else
     casted -> {:ok, casted}
   end
+
+  def cast(<<
+    a1, a2, a3, a4, a5, a6, a7, a8,
+    b1, b2, b3, b4,
+    c1, c2, c3, c4,
+    d1, d2, d3, d4,
+    e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12
+  >>) do
+    << c(a1), c(a2), c(a3), c(a4), c(a5), c(a6), c(a7), c(a8), ?-,
+      c(b1), c(b2), c(b3), c(b4), ?-,
+      c(c1), c(c2), c(c3), c(c4), ?-,
+      c(d1), c(d2), c(d3), c(d4), ?-,
+      c(e1), c(e2), c(e3), c(e4), c(e5), c(e6), c(e7), c(e8), c(e9), c(e10), c(e11), c(e12) >>
+  catch
+    :error -> :error
+  else
+    casted -> {:ok, casted}
+  end
+
   def cast(<< _::128 >> = binary), do: encode(binary)
   def cast(_), do: :error
+
+  def cast!(data) do
+    {:ok, result} = cast(data)
+    result
+  end
 
   @compile {:inline, c: 1}
 

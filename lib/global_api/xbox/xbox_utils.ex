@@ -33,6 +33,15 @@ defmodule GlobalApi.XboxUtils do
     }
   end
 
+  def get_link_info(query_info) do
+    query_info = if query_info != nil do query_info else "" end
+    {
+      Utils.get_env(:link_app_info, :client_id),
+      Utils.get_env(:link_app_info, :redirect_url) <> "#{query_info}",
+      Utils.get_env(:link_app_info, :client_secret)
+    }
+  end
+
   def not_setup_message() do
     %{
       success: false,
@@ -104,47 +113,55 @@ defmodule GlobalApi.XboxUtils do
     end
   end
 
-  def start_initial_xbox_setup(code, is_refresh \\ false) do
-    json_response = request_token(get_info(), code, is_refresh)
+  def start_initial_xbox_setup(code, is_refresh \\ false, link \\ false, query_info \\ nil, is_java \\ false) do
+    info = if link do get_link_info(query_info) else get_info() end
+    json_response = request_token(info, code, is_refresh, link)
+
     if json_response["error"] != nil do
-      IO.puts("Error while requesting token: " <> json_response["error"])
-      IO.puts("Description: " <> json_response["error_description"])
-    end
-
-    access_token = json_response["access_token"]
-    refresh_token = json_response["refresh_token"]
-
-    json_response = request_authentication(access_token)
-
-    auth_token = json_response["Token"]
-    {:ok, auth_token_valid_until, 0} = DateTime.from_iso8601(json_response["NotAfter"])
-    auth_token_valid_until = DateTime.to_unix(auth_token_valid_until)
-    uhs = Enum.at(json_response["DisplayClaims"]["xui"], 0)["uhs"]
-
-    json_response = request_authorization(auth_token)
-
-    if Map.has_key?(json_response, "XErr") do
-      {:error, json_response["XErr"]}
+      if !link do
+        IO.puts("Error while requesting token: " <> json_response["error"])
+        IO.puts("Description: " <> json_response["error_description"])
+      end
+      {:error, json_response["error_description"]}
     else
-      xbox_token = json_response["Token"]
+      access_token = json_response["access_token"]
+      refresh_token = json_response["refresh_token"]
 
-      {:ok, xbox_token_valid_until, 0} = DateTime.from_iso8601(json_response["NotAfter"])
-      IO.puts("Successfully completed the initial xbox setup! We don't have to do anything until #{DateTime.to_string(xbox_token_valid_until)}")
-      IO.puts("We have to restart this process around #{DateTime.to_string(DateTime.from_unix!(auth_token_valid_until))}")
-      xbox_token_valid_until = DateTime.to_unix(xbox_token_valid_until)
+      json_response = request_authentication(access_token)
 
-      {
-        :ok,
-        %{
-          access_token: access_token,
-          refresh_token: refresh_token,
-          auth_token: auth_token,
-          auth_token_valid_until: auth_token_valid_until,
-          uhs: uhs,
-          xbox_token: xbox_token,
-          xbox_token_valid_until: xbox_token_valid_until
+      auth_token = json_response["Token"]
+      {:ok, auth_token_valid_until, 0} = DateTime.from_iso8601(json_response["NotAfter"])
+      auth_token_valid_until = DateTime.to_unix(auth_token_valid_until)
+      uhs = Enum.at(json_response["DisplayClaims"]["xui"], 0)["uhs"]
+
+      relying_party = if is_java do "rp://api.minecraftservices.com/" else "http://xboxlive.com" end
+      json_response = request_authorization(auth_token, relying_party)
+
+      if Map.has_key?(json_response, "XErr") do
+        {:error, json_response["XErr"]}
+      else
+        xbox_token = json_response["Token"]
+
+        {:ok, xbox_token_valid_until, 0} = DateTime.from_iso8601(json_response["NotAfter"])
+        if !link do
+          IO.puts("Successfully completed the initial xbox setup! We don't have to do anything until #{DateTime.to_string(xbox_token_valid_until)}")
+          IO.puts("We have to restart this process around #{DateTime.to_string(DateTime.from_unix!(auth_token_valid_until))}")
+        end
+        xbox_token_valid_until = DateTime.to_unix(xbox_token_valid_until)
+
+        {
+          :ok,
+          %{
+            access_token: access_token,
+            refresh_token: refresh_token,
+            auth_token: auth_token,
+            auth_token_valid_until: auth_token_valid_until,
+            uhs: uhs,
+            xbox_token: xbox_token,
+            xbox_token_valid_until: xbox_token_valid_until
+          }
         }
-      }
+      end
     end
   end
 
@@ -158,12 +175,14 @@ defmodule GlobalApi.XboxUtils do
     {xbox_token, xbox_token_valid_until}
   end
 
-  defp request_token({client_id, redirect_url, client_secret}, code, is_refresh) do
+  defp request_token({client_id, redirect_url, client_secret}, code, is_refresh, is_link) do
     headers = [
       {"Content-Type", "application/x-www-form-urlencoded"}
     ]
 
-    body = "client_id=" <> client_id <> "&scope=Xboxlive.offline_access&redirect_uri=" <> redirect_url <> "&client_secret=" <> client_secret
+    scope = if is_link do "Xboxlive.signin" else "Xboxlive.offline_access" end
+
+    body = "client_id=" <> client_id <> "&scope=" <> scope <> "&redirect_uri=" <> redirect_url <> "&client_secret=" <> client_secret
     body = body <>
            if is_refresh do
              "&grant_type=refresh_token&refresh_token="
@@ -197,7 +216,7 @@ defmodule GlobalApi.XboxUtils do
     Jason.decode!(response.body)
   end
 
-  defp request_authorization(auth_token) do
+  defp request_authorization(auth_token, relying_party \\ "http://xboxlive.com") do
     headers = [
       {"Content-Type", "application/json"},
       {"x-xbl-contract-version", 1}
@@ -205,7 +224,7 @@ defmodule GlobalApi.XboxUtils do
 
     body = Jason.encode!(
       %{
-        RelyingParty: "http://xboxlive.com",
+        RelyingParty: relying_party,
         TokenType: "JWT",
         Properties: %{
           UserTokens: [auth_token],

@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Online linking - Global Linking</title>
+  <script defer="defer" src="../assets/online.js"></script>
+  <link href="../assets/main.css" rel="stylesheet">
+  <link href="https://rsms.me/inter/inter.css" rel="stylesheet">
+</head>
+<!--<body class="bg-white dark:bg-gray-800">-->
+<body class="bg-white">
+<div class="py-12">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 lg:text-center">
+    <h2 class="text-base text-indigo-600 font-semibold tracking-wide uppercase">Global Linking</h2>
+    <p class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-gray-900 sm:text-4xl">
+      Online linking
+    </p>
+
+    <p class="mt-4 max-w-2xl text-xl text-gray-500 lg:mx-auto">
+      One way to link your Bedrock account to your Java account is logging in with your Bedrock account and your Java
+      account to verify that you have access to them. The only info we store is your xuid (Xbox Id), your gamertag,
+      your Java Edition UUID (Unique Id) and your Java Edition username.
+    </p>
+
+    <noscript class="mt-8 max-w-2xl text-xl text-gray-500 lg:mx-auto">
+      This page requires JavaScript to be enabled. We don't have trackers on our website, it's just to complete the
+      linking steps.
+    </noscript>
+
+    <p class="mt-8 max-w-2xl text-xl lg:mx-auto hidden" id="step-1">
+      <b>Step 1:</b> Login with your Bedrock account
+    </p>
+    <p class="max-w-2xl text-xl lg:mx-auto hidden" id="step-2">
+      <b>Step 2:</b> Login with your Java account
+    </p>
+    <p class="max-w-2xl text-xl lg:mx-auto hidden" id="step-3">
+      <b>Step 3:</b> Validating data
+    </p>
+
+    <div id="step-action-header"></div>
+
+    <div class="mt-8 max-w-2xl lg:mx-auto col-span-2 bg-white shadow overflow-hidden sm:rounded-lg hidden" id="link-details">
+      <div class="px-4 py-5 sm:px-6">
+        <h3 class="text-lg leading-6 font-medium text-gray-900">
+          Link details
+        </h3>
+        <p class="mt-1 max-w-2xl text-sm text-gray-500" id="link-details-desc"></p>
+      </div>
+      <div class="border-t border-gray-200">
+        <dl id="link-details-inner"></dl>
+      </div>
+    </div>
+
+    <div id="step-action"></div>
+
+    <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:py-16 lg:px-8">
+      <div class="inline-flex rounded-md shadow">
+        <a href="../" id="home-screen-btn"
+           class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md">
+          Home screen
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

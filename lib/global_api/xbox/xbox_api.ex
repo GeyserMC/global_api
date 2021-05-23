@@ -203,6 +203,24 @@ defmodule GlobalApi.XboxApi do
     end
   end
 
+  def get_own_profile_info(uhs, xbox_token) do
+    headers = [
+      {"x-xbl-contract-version", 2},
+      {"Authorization", "XBL3.0 x=" <> uhs <> ";" <> xbox_token}
+    ]
+
+    {:ok, response} = HTTPoison.get(
+      "https://profile.xboxlive.com/users/me/profile/settings?settings=Gamertag",
+      headers
+    )
+    response = Jason.decode!(response.body)
+
+    users = response["profileUsers"]
+    user = Enum.at(users, 0)
+    # xuid and gamertag
+    {user["id"], Enum.at(user["settings"], 0)["value"]}
+  end
+
   def get_xbox_token_and_uhs(is_updater \\ false) do
     if is_updater do
       GenServer.call(__MODULE__, :get_updater_token_and_uhs)

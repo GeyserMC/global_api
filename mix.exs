@@ -56,7 +56,8 @@ defmodule GlobalApi.MixProject do
       {:jason, "~> 1.0"},
       {:plug_cowboy, "~> 2.0"},
       {:cachex, "~> 3.3"},
-      {:prom_ex, "~> 1.0.0"},
+      {:prom_ex, "~> 1.1"},
+      {:cors_plug, "~> 2.0"},
       {:unplug, "~> 0.2.1"}
     ]
   end
@@ -69,8 +70,10 @@ defmodule GlobalApi.MixProject do
   # See the documentation for `Mix` for more info on aliases.
   defp aliases do
     [
-      setup: ["deps.get"],
-      test: ["test"]
+      setup: ["deps.get", "ecto.setup", "cmd npm install --prefix assets"],
+      "ecto.setup": ["ecto.create", "ecto.migrate"],
+      "ecto.reset": ["ecto.drop", "ecto.setup"],
+      test: ["ecto.create --quiet", "ecto.migrate --quiet" , "test"]
     ]
   end
 end

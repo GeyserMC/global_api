@@ -41,6 +41,21 @@ defmodule GlobalApiWeb.Endpoint do
   end
 
   plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
+  
+  plug CORSPlug
+
+  # only serve the assets at the link subdomain when running prod
+  plug :static_assets, Mix.env() == :prod
 
   plug GlobalApiWeb.Router
+
+  @static_opts Plug.Static.init(at: "/", from: :global_api, gzip: false)
+
+  def static_assets(conn, is_prod) do
+    if (is_prod && String.starts_with?(conn.host, "link.")) || !is_prod do
+        Plug.Static.call(conn, @static_opts)
+    else
+      conn
+    end
+  end
 end
