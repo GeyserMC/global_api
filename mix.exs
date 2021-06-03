@@ -7,13 +7,7 @@ defmodule GlobalApi.MixProject do
       version: "0.1.0",
       elixir: "~> 1.7",
       elixirc_paths: elixirc_paths(Mix.env()),
-      compilers: [:rustler] ++ [:phoenix] ++ Mix.compilers(),
-      rustler_crates: [
-        skins: [
-          path: "native/skins",
-          mode: (if Mix.env() == :prod, do: :release, else: :debug)
-        ]
-      ],
+      compilers: [:phoenix] ++ Mix.compilers(),
       build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
@@ -56,7 +50,7 @@ defmodule GlobalApi.MixProject do
       {:jason, "~> 1.0"},
       {:plug_cowboy, "~> 2.0"},
       {:cachex, "~> 3.3"},
-      {:prom_ex, "~> 1.1"},
+      {:prom_ex, "~> 1.1.1"},
       {:cors_plug, "~> 2.0"},
       {:unplug, "~> 0.2.1"}
     ]
