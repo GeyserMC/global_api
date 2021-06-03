@@ -1,6 +1,7 @@
 defmodule GlobalApi.SocketQueue do
   use GenServer
 
+  alias GlobalApi.DatabaseQueue
   alias GlobalApi.SkinQueue
   alias GlobalApi.SkinsRepo
   alias GlobalApi.Utils
@@ -135,6 +136,7 @@ defmodule GlobalApi.SocketQueue do
     requested_by = state.pending_skins[rgba_hash]
     {xuids, state} = handle_skin_uploaded(requested_by.subscribers, MapSet.new(), rgba_hash, data_map, state)
 
+    #todo prob. also queue this
     skin_id = SkinsRepo.create_or_get_unique_skin(%{data_map | hash: rgba_hash})
 
     Cachex.put(
@@ -143,7 +145,7 @@ defmodule GlobalApi.SocketQueue do
       {skin_id, data_map.texture_id, data_map.value, data_map.signature}
     )
 
-    Enum.each(xuids, fn xuid -> SkinsRepo.set_skin(xuid, skin_id) end)
+    DatabaseQueue.async_fn_call(&Enum.each/2, [xuids, fn xuid -> SkinsRepo.set_skin(xuid, skin_id) end])
     {:noreply, %{state | pending_skins: Map.delete(state.pending_skins, rgba_hash)}}
   end
 

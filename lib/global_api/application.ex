@@ -9,10 +9,11 @@ defmodule GlobalApi.Application do
   def start(_type, _args) do
     children = [
       GlobalApi.PromEx,
+      {GlobalApi.DatabaseQueue, [pool_size: 7]},
       GlobalApi.SocketQueue,
       GlobalApi.SkinQueue,
       GlobalApi.SkinUploader,
-      create_cache(:xuid_to_skin, 2), # temporarily lowered from 5 to 2 for testing
+      create_cache(:xuid_to_skin, 2),
       create_cache(:hash_to_skin, 15), # skin hashes are static
       create_cache(:xuid_request_cache, 7),
       create_cache(:xbox_api, 60 * 24 * 365),
