@@ -41,6 +41,10 @@ defmodule GlobalApi.DatabaseQueue do
     GenServer.call(__MODULE__, :queue_length)
   end
 
+  def get_pool_size() do
+    GenServer.call(__MODULE__, :pool_size)
+  end
+
   @impl true
   def handle_cast({:push, request}, state) do
     if state.uploaders_waiting != [] do
@@ -92,14 +96,19 @@ defmodule GlobalApi.DatabaseQueue do
     {:noreply, %{state | uploaders: uploaders, uploaders_waiting: waiting}}
   end
 
-  defp create_uploader(supervisor_pid) do
-    {:ok, upload_pid} = DynamicSupervisor.start_child(supervisor_pid, {DatabaseUploader, [1]})
-    upload_pid
-  end
-
   @impl true
   def handle_call(:queue_length, _, state) do
     # this is not very efficient
     {:reply, :queue.len(state.queue), state}
+  end
+
+  @impl true
+  def handle_call(:pool_size, _, state) do
+    {:reply, state.pool_size, state}
+  end
+
+  defp create_uploader(supervisor_pid) do
+    {:ok, upload_pid} = DynamicSupervisor.start_child(supervisor_pid, {DatabaseUploader, [1]})
+    upload_pid
   end
 end
