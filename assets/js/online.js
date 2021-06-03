@@ -122,7 +122,7 @@ function updatePage() {
           java: queryParams.get('java'),
           bedrock: queryParams.get('bedrock')
         }, responseHandler, errorHandler);
-      }, 20_000)
+      }, 20000)
     };
 
     const responseHandler = function (status, content) {
@@ -288,44 +288,43 @@ function setButton(link, content) {
   const buttonElement = window.document.getElementById('step-action-button');
   if (buttonElement == null) {
     window.document.getElementById('step-action').innerHTML +=
-        '      <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8" id="step-action-button">'
-        + '      <div class="inline-flex rounded-md shadow">'
-        + '        <a href="' + link + '"'
-        + '           class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">'
-        + content
-        + '        </a>'
-        + '      </div>'
-        + '    </div>';
+        '<div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8" id="step-action-button">' +
+        '  <div class="inline-flex rounded-md shadow">' +
+        '    <a href="' + link + '"' +
+        '       class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">' +
+        content +
+        '    </a>' +
+        '  </div>' +
+        '</div>';
   }
 }
 
 function setLoginButton(loginTo, link, addLogoutButton = false) {
   const stepAction = window.document.getElementById('step-action');
   stepAction.innerHTML +=
-      '      <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">'
-      + '      <div class="inline-flex rounded-md shadow">'
-      + '        <a href=\'' + link + '\''
-      + '           class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">'
-      + '          Login to ' + loginTo
-      + '        </a>'
-      + '      </div>'
-      + '    </div>';
+      '<div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">' +
+      '  <div class="inline-flex rounded-md shadow">' +
+      '    <a href="' + link + '"' +
+      '       class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">' +
+      '      Login to ' + loginTo +
+      '    </a>' +
+      '  </div>' +
+      '</div>';
 
   if (addLogoutButton) {
     stepAction.innerHTML +=
-        '      <p class="mt-4 max-w-2xl text-xl text-gray-500 lg:mx-auto" id="step-2">'
-        + '      Click the logout button below to logout from your current Microsoft account.'
-        + '      Microsoft remembers if you gave approval before, so if you have ever used this linking tool before or if you are currently in step 2 Microsoft will automatically approve the request without giving you an option to logout or switch accounts.'
-        + '      The logout page will open in a new tab and you\'ll be redirected to the msn page once you\'re logged out successfully. After that you can come back to this page and click the login button.'
-        + '    </p>'
-        + '    <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">'
-        + '      <div class="inline-flex rounded-md shadow">'
-        + '        <a href="https://login.live.com/logout.srf" target="_blank"'
-        + '           class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">'
-        + '          Logout'
-        + '        </a>'
-        + '      </div>'
-        + '    </div>';
+        '<p class="mt-4 max-w-2xl text-xl text-gray-500 lg:mx-auto" id="step-2">' +
+        '  Click the logout button below to logout from your current Microsoft account.' +
+        '  Microsoft remembers if you gave approval before, so if you have ever used this linking tool before or if you are currently in step 2 Microsoft will automatically approve the request without giving you an option to logout or switch accounts.' +
+        '  The logout page will open in a new tab and you\'ll be redirected to the msn page once you\'re logged out successfully. After that you can come back to this page and click the login button.' +
+        '</p>' +
+        '<div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">' +
+        '  <div class="inline-flex rounded-md shadow">' +
+        '    <a href="https://login.live.com/logout.srf" target="_blank" class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">' +
+        '      Logout' +
+        '    </a>' +
+        '  </div>' +
+        '</div>';
   }
 }
 
@@ -353,14 +352,14 @@ function clearFormElements() {
 
 function addFormElement(key, value) {
   window.document.getElementById('link-details-inner').innerHTML +=
-      '          <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">'
-      + '            <dt class="text-sm font-medium text-gray-500">'
-      + key
-      + '            </dt>'
-      + '            <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">'
-      + value
-      + '            </dd>'
-      + '          </div>'
+      '<div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">' +
+      '  <dt class="text-sm font-medium text-gray-500">' +
+      key +
+      '  </dt>' +
+      '  <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">' +
+      value +
+      '  </dd>' +
+      '</div>';
 }
 
 function setHomeScreenColor(isPrimary) {

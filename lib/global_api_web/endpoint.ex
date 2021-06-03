@@ -14,8 +14,9 @@ defmodule GlobalApiWeb.Endpoint do
 
     socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
 
-    socket "/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket
-    plug Phoenix.LiveReloader
+    # Doesn't work because I removed PubSub
+#    socket "/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket
+#    plug Phoenix.LiveReloader
     plug Phoenix.CodeReloader
 
     plug Phoenix.LiveDashboard.RequestLogger,

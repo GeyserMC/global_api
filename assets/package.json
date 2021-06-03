@@ -3,39 +3,23 @@
   "description": " ",
   "license": "MIT",
   "scripts": {
-    "deploy": "webpack --mode production",
-    "dev": "webpack serve --mode production",
-    "watch": "webpack --mode development --watch"
+    "deploy": "snowpack build",
+    "dev": "snowpack dev"
   },
   "dependencies": {
-    "css-minimizer-webpack-plugin": "^2.0.0",
-    "html-minimizer-webpack-plugin": "^2.1.0",
-    "html-webpack-plugin": "^5.3.1",
     "phoenix": "file:../deps/phoenix",
-    "phoenix_html": "file:../deps/phoenix_html",
-    "webpack-dev-server": "^3.11.2"
+    "phoenix_html": "file:../deps/phoenix_html"
   },
   "devDependencies": {
-    "@babel/core": "^7.0.0",
-    "@babel/preset-env": "^7.0.0",
-    "autoprefixer": "^10.2.5",
-    "babel-loader": "^8.0.0",
-    "clean-webpack-plugin": "^4.0.0-alpha.0",
-    "copy-webpack-plugin": "^8.1.1",
-    "css-loader": "^5.2.4",
-    "hard-source-webpack-plugin": "^0.13.1",
-    "html-minifier-webpack-plugin": "^2.2.3",
-    "mini-css-extract-plugin": "^1.6.0",
-    "node-sass": "^5.0.0",
-    "optimize-css-assets-webpack-plugin": "^6.0.0",
-    "postcss": "^8.2.15",
+    "@snowpack/plugin-postcss": "^1.4.0",
+    "@snowpack/plugin-webpack": "^2.3.1",
+    "autoprefixer": "^10.2.6",
+    "cssnano": "^4.1.11",
+    "glob": "^7.1.7",
+    "postcss": "^8.3.0",
     "postcss-cli": "^8.3.1",
-    "postcss-loader": "^5.3.0",
-    "sass-loader": "^11.0.1",
-    "style-loader": "^2.0.0",
-    "tailwindcss": "^2.1.2",
-    "terser-webpack-plugin": "^5.1.1",
-    "webpack": "^5.36.2",
-    "webpack-cli": "^4.7.0"
+    "remove-files-webpack-plugin": "^1.4.5",
+    "snowpack": "^3.5.2",
+    "tailwindcss": "^2.1.2"
   }
 }
