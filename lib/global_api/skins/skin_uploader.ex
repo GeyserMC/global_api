@@ -5,7 +5,11 @@ defmodule GlobalApi.SkinUploader do
   alias GlobalApi.SocketQueue
   alias GlobalApi.Utils
 
-  @headers [{"Content-Type", "multipart/form-data"}, {"User-Agent", "GeyserMC/global_api"}]
+  @headers [
+    {"Content-Type", "multipart/form-data"},
+    {"User-Agent", "GeyserMC/global_api"},
+    {"Authorization", Application.get_env(:global_api, :app)[:mineskin_api_key]}
+  ]
 
   def start_link(init_arg) do
     GenServer.start_link(__MODULE__, init_arg, name: __MODULE__)
@@ -103,7 +107,13 @@ defmodule GlobalApi.SkinUploader do
           upload_and_store({rgba_hash, is_steve, png}, true)
       end
     rescue
-      e -> IO.puts("error! #{inspect(e)}") #todo always return `skin_upload_failed` if it failed to upload. Otherwise the `pending uploads` messes up
+      e ->
+        IO.puts("error! #{inspect(e)}")
+        if first_try do
+          upload_and_store({rgba_hash, is_steve, png}, false)
+        else
+          SocketQueue.skin_upload_failed(rgba_hash)
+        end
     end
   end
 
