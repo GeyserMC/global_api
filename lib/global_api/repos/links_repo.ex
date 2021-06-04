@@ -16,7 +16,7 @@ defmodule GlobalApi.LinksRepo do
     # see the web_socket module
     link
     |> Link.changeset(attrs)
-    |> Repo.update()
+    |> Repo.update!()
   end
 
   def create_link(xuid, uuid, username) do

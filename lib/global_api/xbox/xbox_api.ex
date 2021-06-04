@@ -33,7 +33,7 @@ defmodule GlobalApi.XboxApi do
       IO.puts("Hey! Don't forgot to add a xbox account for the identity updater! >:(")
     end
 
-    if is_nil(cached_token_data) || length(cached_token_data.data) == 0 do
+    if is_nil(cached_token_data) do
       IO.puts("No cached token data found! Please sign in with state = " <> state)
       {
         :ok,
@@ -55,13 +55,14 @@ defmodule GlobalApi.XboxApi do
       # so we have a round count, a round reset time, next action and time between actions for that
       case XboxUtils.check_and_save_token_data(cached_token_data) do
         {:ok, token_data} ->
+          data_acc_count = length(token_data.data)
           {
             :ok,
             %{
               data: token_data.data,
               static: token_data.data,
               updater: token_data.updater,
-              time_between_actions: 11 / length(token_data.data),
+              time_between_actions: if data_acc_count == 0 do 0 else 11 / data_acc_count end,
               next_action: 0,
               round: 31,
               round_reset: 0,

@@ -76,20 +76,16 @@ defmodule GlobalApi.Utils do
   end
 
   def update_username_if_needed(%Link{java_id: java_id, java_name: java_name, updated_at: updated_at} = result) do
-    updated_at = DateTime.to_unix(updated_at)
     time_since_update = :os.system_time(:millisecond) - updated_at
     if time_since_update >= 86_400 * 1000 do # one day
       username = MojangApi.get_current_username(java_id)
-      if username != java_name,
-         do: (
-           {:ok, result} = LinksRepo.update_link(result, %{java_name: username})
-           result
-           ),
-         else: (
-           x = LinksRepo.update_link(result)
-           {:ok, _} = x #just update the updated_at timestamp
-           result
-           )
+      if username != java_name do
+        LinksRepo.update_link(result, %{java_name: username})
+      else
+        # just update the updated_at timestamp
+        LinksRepo.update_link(result)
+        result
+      end
     else
       result
     end

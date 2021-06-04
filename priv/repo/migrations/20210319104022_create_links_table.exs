@@ -7,14 +7,16 @@ defmodule GlobalApi.Repo.Migrations.CreateLinksTable do
       add :java_id, :string, size: 36
       add :java_name, :string, size: 16
 
-      timestamps(type: :utc_datetime)
+      timestamps(type: :bigint)
     end
 
     alter table(:links) do
-      modify(:inserted_at, :timestamp, default: fragment("NOW()"))
-      modify(:updated_at, :timestamp, default: fragment("NOW()"))
+      # default value is the current unix time in ms
+      modify(:inserted_at, :timestamp, default: fragment("FLOOR(UNIX_TIMESTAMP(NOW(3)) * 1000)"))
+      modify(:updated_at, :timestamp, default: fragment("FLOOR(UNIX_TIMESTAMP(NOW(3)) * 1000)"))
     end
 
     create(index("links", [:java_id]))
+    create(unique_index("links", [:bedrock_id, :java_id]))
   end
 end

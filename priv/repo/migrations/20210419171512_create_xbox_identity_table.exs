@@ -13,6 +13,6 @@ defmodule GlobalApi.Repo.Migrations.CreateXboxIdentityTable do
     create(index("xbox_identity", [:gamertag]))
 
     # used for updating an identity only when the row older than the given timestamp
-    create(index("xbox_identity", [:xuid, :inserted_at]))
+    create(index("xbox_identity", [:inserted_at, :xuid]))
   end
 end

@@ -34,7 +34,7 @@ defmodule GlobalApi.XboxRepo do
   end
 
   def insert_bulk(identities) do
-    Repo.insert_all(XboxIdentity, identities, on_conflict: :nothing)
+    Repo.insert_all(XboxIdentity, identities, on_conflict: :replace_all)
   end
 
   def remove_by_xuid(xuid) do
