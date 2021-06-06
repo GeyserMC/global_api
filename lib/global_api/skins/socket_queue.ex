@@ -24,7 +24,8 @@ defmodule GlobalApi.SocketQueue do
     Enum.each(state.id_subscribers, fn subscriber ->
       Enum.each(subscriber.channels, fn channel ->
         send(channel, {:disconnect, :internal_error})
-      end) end)
+      end)
+    end)
   end
 
   def create_subscriber(socket) do
@@ -136,16 +137,21 @@ defmodule GlobalApi.SocketQueue do
     requested_by = state.pending_skins[rgba_hash]
     {xuids, state} = handle_skin_uploaded(requested_by.subscribers, MapSet.new(), rgba_hash, data_map, state)
 
-    #todo prob. also queue this
-    skin_id = SkinsRepo.create_or_get_unique_skin(%{data_map | hash: rgba_hash})
+    DatabaseQueue.async_fn_call(
+      fn ->
+        skin_id = SkinsRepo.create_or_get_unique_skin(%{data_map | hash: rgba_hash})
 
-    Cachex.put(
-      :hash_to_skin,
-      {rgba_hash, data_map.is_steve},
-      {skin_id, data_map.texture_id, data_map.value, data_map.signature}
+        Cachex.put(
+          :hash_to_skin,
+          {rgba_hash, data_map.is_steve},
+          {skin_id, data_map.texture_id, data_map.value, data_map.signature}
+        )
+
+        Enum.each(xuids, fn xuid -> SkinsRepo.set_skin(xuid, skin_id) end)
+      end,
+      []
     )
 
-    DatabaseQueue.async_fn_call(&Enum.each/2, [xuids, fn xuid -> SkinsRepo.set_skin(xuid, skin_id) end])
     {:noreply, %{state | pending_skins: Map.delete(state.pending_skins, rgba_hash)}}
   end
 
