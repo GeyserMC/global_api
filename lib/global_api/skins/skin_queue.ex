@@ -5,7 +5,7 @@ defmodule GlobalApi.SkinQueue do
 
   @type t :: %__MODULE__{queue: List.t(), uploader_ready: bool}
 
-  defstruct queue: [], uploader_ready: true
+  defstruct queue: :queue.new(), uploader_ready: true
 
   def start_link(init_arg) do
     GenServer.start_link(__MODULE__, init_arg, name: __MODULE__)
@@ -35,7 +35,7 @@ defmodule GlobalApi.SkinQueue do
       SkinUploader.send_next(self(), request)
       {:noreply, state}
     else
-      {:noreply, %{state | queue: [request | state.queue]}}
+      {:noreply, %{state | queue: :queue.in(request, state.queue)}}
     end
   end
 
@@ -44,17 +44,18 @@ defmodule GlobalApi.SkinQueue do
   Send once the SkinUploader is ready to handle another request
   """
   def handle_info(:next, state) do
-    if length(state.queue) == 0 do
+    if :queue.is_empty(state.queue) do
       {:noreply, %{state | uploader_ready: true}}
     else
-      [next | remain] = state.queue
-      SkinUploader.send_next(self(), next)
-      {:noreply, %{state | queue: remain}}
+      {{:value, result}, queue} = :queue.out(state.queue)
+      SkinUploader.send_next(self(), result)
+      {:noreply, %{state | queue: queue}}
     end
   end
 
   @impl true
   def handle_call(:queue_length, _, state) do
-    {:reply, length(state.queue), state}
+    # this is not very efficient
+    {:reply, :queue.len(state.queue), state}
   end
 end
