@@ -2,6 +2,7 @@ defmodule GlobalApi.SocketQueue do
   use GenServer
 
   alias GlobalApi.DatabaseQueue
+  alias GlobalApi.JavaSkinsRepo
   alias GlobalApi.SkinPreQueue
   alias GlobalApi.SkinsRepo
   alias GlobalApi.Utils
@@ -21,11 +22,17 @@ defmodule GlobalApi.SocketQueue do
 
   @impl true
   def terminate(_reason, state) do
-    Enum.each(state.id_subscribers, fn subscriber ->
-      Enum.each(subscriber.channels, fn channel ->
-        send(channel, {:disconnect, :internal_error})
-      end)
-    end)
+    Enum.each(
+      state.id_subscribers,
+      fn subscriber ->
+        Enum.each(
+          subscriber.channels,
+          fn channel ->
+            send(channel, {:disconnect, :internal_error})
+          end
+        )
+      end
+    )
   end
 
   def create_subscriber(socket) do
@@ -48,8 +55,8 @@ defmodule GlobalApi.SocketQueue do
     GenServer.cast(__MODULE__, {:skin_uploaded, rgba_hash, data_to_send})
   end
 
-  def add_pending_upload(id, xuid, is_steve, raw_png, rgba_hash) do
-    GenServer.cast(__MODULE__, {:add_pending_upload, id, xuid, is_steve, raw_png, rgba_hash})
+  def add_pending_upload(id, xuid, is_steve, raw_png, rgba_hash, minecraft_hash) do
+    GenServer.cast(__MODULE__, {:add_pending_upload, id, xuid, is_steve, raw_png, rgba_hash, minecraft_hash})
   end
 
   def broadcast_message(id, message, channel \\ :broadcast) do
@@ -156,7 +163,7 @@ defmodule GlobalApi.SocketQueue do
   end
 
   @impl true
-  def handle_cast({:add_pending_upload, id, xuid, is_steve, png, rgba_hash}, state) do
+  def handle_cast({:add_pending_upload, id, xuid, is_steve, png, rgba_hash, minecraft_hash}, state) do
     # key has to exist, because subscribers can't upload skins
     entry = state.id_subscribers[id]
     entry = %{entry | pending_uploads: entry.pending_uploads + 1}
@@ -169,7 +176,29 @@ defmodule GlobalApi.SocketQueue do
     }
 
     if !is_present do
-      SkinPreQueue.add_request({rgba_hash, is_steve, png})
+      # we don't have to cache this because this is only called once.
+      # after the first try the skin will be in the queue, or the skin will be in the unique skins table
+      DatabaseQueue.async_fn_call(
+        fn ->
+          minecraft_hash = Utils.hash_string(minecraft_hash)
+          skin = JavaSkinsRepo.get_skin(minecraft_hash, is_steve)
+          if skin != nil do
+            skin_uploaded(
+              rgba_hash,
+              %{
+                hash: Utils.hash_string(rgba_hash),
+                texture_id: minecraft_hash,
+                value: skin.value,
+                signature: skin.signature,
+                is_steve: is_steve
+              }
+            )
+          else
+            SkinPreQueue.add_request({rgba_hash, is_steve, png})
+          end
+        end,
+        []
+      )
     end
 
     broadcast_message(id, %{event_id: 2, xuid: xuid}) # added to queue

@@ -1,7 +1,7 @@
 defmodule GlobalApiWeb.WebSocket do
   @behaviour :cowboy_websocket
 
-  alias GlobalApi.SkinNifUtils
+  alias GlobalApi.SkinsNif
   alias GlobalApi.SkinsRepo
   alias GlobalApi.SocketQueue
   alias GlobalApi.UniqueSkin
@@ -141,14 +141,14 @@ defmodule GlobalApiWeb.WebSocket do
           send_log_message(state, @info, "received a skin with invalid geometry: #{reason}")
           {:ok, state}
 
-        {is_steve, png, rgba_hash, {xuid, _, _} = extra_data} ->
+        {is_steve, png, rgba_hash, minecraft_hash, {xuid, _, _} = extra_data} ->
           handle_extra_data(extra_data)
 
           # check for cached skin
           {:ok, entry} = Cachex.get(:xuid_to_skin, xuid)
           if entry != nil do
             # the player's skin is cached, let's go to part 2
-            part_two(state, xuid, is_steve, png, rgba_hash, entry)
+            part_two(state, xuid, is_steve, png, rgba_hash, minecraft_hash, entry)
           else
             #todo should probably get the player skin first
             # and when the actual skin isn't cached get the unique_skin
@@ -165,9 +165,9 @@ defmodule GlobalApiWeb.WebSocket do
               Cachex.put(:hash_to_skin, {unique_skin.hash, unique_skin.is_steve}, entry)
 
               # the player's skin isn't cached, let's go to part 2
-              part_two(state, xuid, is_steve, png, rgba_hash, UniqueSkin.to_protected(player_skin.skin, player_skin))
+              part_two(state, xuid, is_steve, png, rgba_hash, minecraft_hash, UniqueSkin.to_protected(player_skin.skin, player_skin))
             else
-              part_two(state, xuid, is_steve, png, rgba_hash, %{})
+              part_two(state, xuid, is_steve, png, rgba_hash, minecraft_hash, %{})
             end
           end
           {:ok, state}
@@ -191,7 +191,7 @@ defmodule GlobalApiWeb.WebSocket do
     XboxRepo.handle_extra_data(extra_data)
   end
 
-  defp part_two(state, xuid, is_steve, png, rgba_hash, skin_data) do
+  defp part_two(state, xuid, is_steve, png, rgba_hash, minecraft_hash, skin_data) do
     hash = if map_size(skin_data) != 0 do
       skin_data[:hash]
     else
@@ -312,7 +312,7 @@ defmodule GlobalApiWeb.WebSocket do
           #todo probably check the timestamp as well. When the saved timestamp is higher than the current one, ignore it
 
           # if the skin isn't cached and isn't in the database then we have to upload it
-          SocketQueue.add_pending_upload(state.subscribed_to, xuid, is_steve, png, rgba_hash)
+          SocketQueue.add_pending_upload(state.subscribed_to, xuid, is_steve, png, rgba_hash, minecraft_hash)
         end
       end
     end

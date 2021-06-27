@@ -10,6 +10,7 @@ extern crate sha2;
 use std::primitive;
 
 use jsonwebtokens::{Algorithm, AlgorithmID, Verifier};
+use lodepng::{FilterStrategy};
 use rustler::{Binary, Encoder, Env, ListIterator, OwnedBinary, Term};
 use rustler::atoms;
 use rustler::types::atom::{false_, true_};
@@ -144,14 +145,27 @@ pub fn validate_and_get_png<'a>(env: Env<'a>, chain_data: Term, client_data: &pr
         is_steve = if arm_model == 0 { true_() } else { false_() };
     }
 
-    let png = lodepng::encode32(raw_data.as_slice(), 64, 64).unwrap();
+    // encode images like Minecraft does
+    let mut encoder = lodepng::Encoder::new();
+    encoder.set_auto_convert(false);
+    encoder.info_png_mut().interlace_method = 0; // should be 0 but just to be sure
+
+    let mut encoder_settings = encoder.settings_mut();
+    encoder_settings.zlibsettings.set_level(4);
+    encoder_settings.filter_strategy = FilterStrategy::ZERO;
+
+    let png = encoder.encode(raw_data.as_slice(), 64, 64).unwrap();
 
     let mut hasher = Sha256::new();
-    hasher.update(raw_data.as_slice());
 
+    hasher.update(&png);
+    let minecraft_hash = hasher.finalize_reset();
+
+    // make our own hash
+    hasher.update(raw_data.as_slice());
     let hash = hasher.finalize();
 
-    make_tuple(env, &[is_steve.to_term(env), as_binary(env, &png), as_binary(env, hash.as_slice()), extra_data])
+    make_tuple(env, &[is_steve.to_term(env), as_binary(env, &png), as_binary(env, hash.as_slice()), as_binary(env, minecraft_hash.as_slice()), extra_data])
 }
 
 fn get_skin_or_convert_geometry(needs_convert: bool, skin_data: Vec<u8>, skin_width: &usize, client_claims: Value, geometry_data: Vec<u8>, geometry_name_obj: &Value, geometry_name: &str) -> Result<(Vec<u8>, bool), &'static str> {
@@ -688,12 +702,12 @@ fn as_binary<'a>(env: Env<'a>, data: &[u8]) -> Term<'a> {
     Binary::from_owned(erl_bin, env).to_term(env)
 }
 
-pub fn create_key(pub_key: &primitive::str) -> Algorithm {
+fn create_key(pub_key: &primitive::str) -> Algorithm {
     Algorithm::new_ecdsa_pem_verifier(AlgorithmID::ES384, create_key_from(pub_key).as_bytes()).unwrap()
 }
 
-pub fn create_key_from<'a>(pub_key: &primitive::str) -> String {
+fn create_key_from<'a>(pub_key: &primitive::str) -> String {
     vec!["-----BEGIN PUBLIC KEY-----", pub_key, "-----END PUBLIC KEY-----"].concat()
 }
 
-rustler::init!("Elixir.GlobalApi.SkinNifUtils", [validate_and_get_png]);
+rustler::init!("Elixir.GlobalApi.SkinsNif", [validate_and_get_png]);
