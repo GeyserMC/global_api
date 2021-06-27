@@ -116,7 +116,7 @@ defmodule GlobalApiWeb.WebSocket do
   def websocket_handle({:json, %{"chain_data" => chain_data, "client_data" => client_data}}, state)
       when is_list(chain_data) and is_binary(client_data) do
     try do
-      case SkinNifUtils.validate_and_get_png(chain_data, client_data) do
+      case SkinsNif.validate_and_get_png(chain_data, client_data) do
         :invalid_chain_data ->
           {[{:close, @invalid_chain_data}], state}
 

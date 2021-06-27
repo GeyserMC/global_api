@@ -1,4 +1,4 @@
-defmodule GlobalApi.SkinNifUtils do
+defmodule GlobalApi.SkinsNif do
   use Rustler,
       otp_app: :global_api,
       crate: :skins,

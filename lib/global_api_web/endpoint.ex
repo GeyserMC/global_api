@@ -28,11 +28,6 @@ defmodule GlobalApiWeb.Endpoint do
     plug Plug.Session, @session_options
   end
 
-  plug Plug.Parsers,
-    parsers: [:multipart, :json],
-    pass: ["*/*"],
-    json_decoder: Phoenix.json_library()
-
   plug Unplug,
        if: {GlobalApi.UnplugPredicates.SecureMetricsEndpoint, []},
        do: {PromEx.Plug, prom_ex_module: GlobalApi.PromEx}
@@ -41,12 +36,23 @@ defmodule GlobalApiWeb.Endpoint do
     plug Plug.SSL
   end
 
-  plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
-  
-  plug CORSPlug
+  plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint], log: Mix.env() != :prod
 
   # only serve the assets at the link subdomain when running prod
   plug :static_assets, Mix.env() == :prod
+
+  # let's encrypt stuff
+  plug Plug.Static,
+       at: "/",
+       from: :global_api,
+       only: ~w(.well-known)
+
+  plug Plug.Parsers,
+       parsers: [:multipart, :json],
+       pass: ["*/*"],
+       json_decoder: Phoenix.json_library()
+
+  plug CORSPlug
 
   plug GlobalApiWeb.Router
 

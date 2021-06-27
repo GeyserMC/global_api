@@ -11,7 +11,9 @@ defmodule GlobalApi.Application do
       GlobalApi.PromEx,
       {GlobalApi.DatabaseQueue, [pool_size: 7]},
       GlobalApi.SocketQueue,
-      GlobalApi.SkinQueue,
+      GlobalApi.SkinPreQueue,
+      GlobalApi.SkinPreUploader,
+      GlobalApi.SkinUploadQueue,
       GlobalApi.SkinUploader,
       create_cache(:xuid_to_skin, 2),
       create_cache(:hash_to_skin, 15), # skin hashes are static

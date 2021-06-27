@@ -2,7 +2,8 @@ defmodule GlobalApi.MetricJob do
   use GenServer
 
   alias GlobalApi.MetricsRepo
-  alias GlobalApi.SkinQueue
+  alias GlobalApi.SkinPreQueue
+  alias GlobalApi.SkinUploadQueue
   alias GlobalApi.DatabaseQueue
 
   def start_link(_) do
@@ -11,15 +12,20 @@ defmodule GlobalApi.MetricJob do
 
   def init(_) do
     schedule()
-    {:ok, {nil, nil, nil}}
+    {:ok, {nil, nil, nil, nil}}
   end
 
   def handle_info(:poll, state) do
-    {last_queue_length, last_db_queue_length, last_db_pool_size} = state
+    {last_skin_pre_queue_length, last_skin_queue_length, last_db_queue_length, last_db_pool_size} = state
 
-    queue_length = SkinQueue.get_queue_length()
-    if queue_length != last_queue_length do
-      MetricsRepo.set_metric("queue_length", queue_length)
+    skin_pre_queue_length = SkinPreQueue.get_queue_length()
+    if skin_pre_queue_length != last_skin_pre_queue_length do
+      MetricsRepo.set_metric("skin_pre_queue_length", skin_pre_queue_length)
+    end
+
+    skin_queue_length = SkinUploadQueue.get_queue_length()
+    if skin_queue_length != last_skin_queue_length do
+      MetricsRepo.set_metric("skin_queue_length", skin_queue_length)
     end
 
     db_queue_length = DatabaseQueue.get_queue_length()
@@ -33,11 +39,11 @@ defmodule GlobalApi.MetricJob do
     end
 
     schedule()
-    {:noreply, {queue_length, db_queue_length, db_pool_size}}
+    {:noreply, {skin_pre_queue_length, skin_queue_length, db_queue_length, db_pool_size}}
   end
 
   defp schedule do
-    # 15 seconds
-    Process.send_after(self(), :poll, 15 * 1000)
+    # 10 seconds
+    Process.send_after(self(), :poll, 10 * 1000)
   end
 end

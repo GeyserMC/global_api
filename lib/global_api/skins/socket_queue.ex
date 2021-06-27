@@ -2,7 +2,7 @@ defmodule GlobalApi.SocketQueue do
   use GenServer
 
   alias GlobalApi.DatabaseQueue
-  alias GlobalApi.SkinQueue
+  alias GlobalApi.SkinPreQueue
   alias GlobalApi.SkinsRepo
   alias GlobalApi.Utils
 
@@ -169,7 +169,7 @@ defmodule GlobalApi.SocketQueue do
     }
 
     if !is_present do
-      SkinQueue.add_request({rgba_hash, is_steve, png})
+      SkinPreQueue.add_request({rgba_hash, is_steve, png})
     end
 
     broadcast_message(id, %{event_id: 2, xuid: xuid}) # added to queue
