@@ -16,24 +16,35 @@ defmodule GlobalApi.DatabaseUploader do
   end
 
   def init(_) do
-    DatabaseQueue.resume(self())
-    run()
+    continue()
   end
 
   def run() do
-    try do
       receive do
         {:exec, {fn_ref, args}} ->
-          apply(fn_ref, args)
-          DatabaseQueue.resume(self())
-          run()
+          try_apply(fn_ref, args, 0)
         {:exit} ->
           DatabaseQueue.exit(self())
       end
+  end
+
+  def try_apply(fn_ref, args, try_number) when try_number < 10 do
+    try do
+      apply(fn_ref, args)
+      continue()
     catch
       e ->
-        Logger.error(Exception.format(:error, e, __STACKTRACE__))
-        run()
+        Logger.error("try number: #{try_number}. Exception: #{Exception.format(:error, e, __STACKTRACE__)}")
+        :timer.sleep(1000)
+        try_apply(fn_ref, args, try_number + 1)
     end
+  end
+
+  # we can't try it indefinitely
+  def try_apply(_fn_ref, _args, _try_number), do: continue()
+
+  def continue() do
+    DatabaseQueue.resume(self())
+    run()
   end
 end
