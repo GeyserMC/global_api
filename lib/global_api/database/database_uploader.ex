@@ -28,13 +28,14 @@ defmodule GlobalApi.DatabaseUploader do
       end
   end
 
-  def try_apply(fn_ref, args, try_number) when try_number < 10 do
+  def try_apply(fn_ref, args, try_number) when try_number < 15 do
     try do
       apply(fn_ref, args)
       continue()
     catch
-      e ->
-        Logger.error("try number: #{try_number}. Exception: #{Exception.format(:error, e, __STACKTRACE__)}")
+      _, error ->
+        stacktrace = if Mix.env() == :dev do __STACKTRACE__ else [] end
+        Logger.error("try number: #{try_number}. Exception: #{Exception.format(:error, error, stacktrace)}")
         :timer.sleep(1000)
         try_apply(fn_ref, args, try_number + 1)
     end
