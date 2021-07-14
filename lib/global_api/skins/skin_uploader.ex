@@ -95,6 +95,7 @@ defmodule GlobalApi.SkinUploader do
                   is_steve: is_steve
                 }
               )
+              :telemetry.execute([:global_api, :metrics, :skins, :skin_uploaded], %{count: 1, first_try: first_try})
 
               timeout = ceil((body["nextRequest"] || 0) * 1_000) - :os.system_time(:millisecond)
               if timeout > 0 do

@@ -30,7 +30,7 @@ defmodule GlobalApi.XboxRepo do
 
   def insert_new(xuid, gamertag) do
     create({xuid, gamertag, :os.system_time(:millisecond)})
-    |> Repo.insert()
+    |> Repo.insert(source: :xbox_identity)
   end
 
   def insert_bulk(identities) do
@@ -45,7 +45,7 @@ defmodule GlobalApi.XboxRepo do
     #todo use the cache
     # we can't combine on_conflict with a where in mysql
     # it also doesn't support 'read after writes' for non-primary keys
-    case Repo.insert(create(data)) do
+    case Repo.insert(create(data), source: :xbox_identity) do
       {:ok, _} -> :ok
       {:error, _} ->
         # we only expect a duplicate key error

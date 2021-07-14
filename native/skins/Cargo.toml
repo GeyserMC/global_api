@@ -10,14 +10,14 @@ path = "src/lib.rs"
 crate-type = ["cdylib"]
 
 [dependencies]
-rustler = "0.22.0-rc.1"
+rustler = {git = "git://github.com/rusterlium/rustler.git", branch = "master"}
 lodepng = { version = "3.4.6", default-features = false }
 flate2 = { package = "flate2", version = "1.0.20", features = ["zlib"], default-features = false }
 rgb = "0.8.27"
 sha2 = "0.9.5"
 
-jsonwebtokens = "1.0.0-alpha.13"
-serde_json = "1.0.61"
+jsonwebtokens = "1.0.0"
+serde_json = "1.0.64"
 base64 = "0.13.0"
-reqwest = { version = "0.11", features = ["blocking", "json"] }
+reqwest = { version = "0.11.4", features = ["blocking", "json"] }
 bytes = "1.0.1"

@@ -30,7 +30,6 @@ global_api-*.tar
 
 /.idea/
 *.iml
-mix.lock
 # Ignore configs so we can change them locally
 /config/
 .elixir_ls

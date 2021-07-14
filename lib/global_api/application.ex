@@ -27,7 +27,7 @@ defmodule GlobalApi.Application do
       create_cache(:java_link, 5),
       create_cache(:bedrock_link, 5),
       GlobalApi.Repo,
-      GlobalApi.MetricJob,
+      GlobalApi.Telemetry,
       # Start the Endpoint (http/https)
       GlobalApiWeb.Endpoint
     ]

@@ -6,12 +6,13 @@ defmodule GlobalApi.DatabaseQueue do
   @type t :: %__MODULE__{
                supervisor: pid,
                queue: List.t(),
-               pool_size: Integer,
+               queue_length: integer,
+               pool_size: integer,
                uploaders: List.t(),
                uploaders_waiting: List.t()
              }
 
-  defstruct supervisor: nil, queue: :queue.new(), pool_size: 0, uploaders: [], uploaders_waiting: []
+  defstruct supervisor: nil, queue: :queue.new(), queue_length: 0, pool_size: 0, uploaders: [], uploaders_waiting: []
 
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -22,6 +23,7 @@ defmodule GlobalApi.DatabaseQueue do
     pool_size = Keyword.get(opts, :pool_size)
     {:ok, pid} = DynamicSupervisor.start_link([strategy: :one_for_one])
     uploaders = Enum.map_every(1..pool_size, 1, fn _ -> create_uploader(pid) end)
+    :telemetry.execute([:global_api, :metrics, :queues, :db_queue_pool], %{count: length(uploaders)})
     {:ok, %__MODULE__{supervisor: pid, pool_size: pool_size, uploaders: uploaders}}
   end
 
@@ -37,14 +39,6 @@ defmodule GlobalApi.DatabaseQueue do
     send __MODULE__, {:exit, uploader_pid}
   end
 
-  def get_queue_length() do
-    GenServer.call(__MODULE__, :queue_length)
-  end
-
-  def get_pool_size() do
-    GenServer.call(__MODULE__, :pool_size)
-  end
-
   @impl true
   def handle_cast({:push, request}, state) do
     if state.uploaders_waiting != [] do
@@ -53,7 +47,8 @@ defmodule GlobalApi.DatabaseQueue do
       send uploader_pid, {:exec, request}
       {:noreply, state}
     else
-      {:noreply, %{state | queue: :queue.in(request, state.queue)}}
+      :telemetry.execute([:global_api, :metrics, :queues, :db_queue], %{length: state.queue_length + 1})
+      {:noreply, %{state | queue: :queue.in(request, state.queue), queue_length: state.queue_length + 1}}
     end
   end
 
@@ -62,7 +57,8 @@ defmodule GlobalApi.DatabaseQueue do
   Send once one of the DatabaseUploaders is ready to handle another request
   """
   def handle_info({:next, uploader_pid}, state) do
-    if :queue.is_empty(state.queue) do
+    if state.queue_length == 0 do
+      :telemetry.execute([:global_api, :metrics, :queues, :db_queue], %{length: 0})
       # this uploader is ready to be used
       waiting = state.uploaders_waiting
       found = Enum.find(waiting, fn pid -> pid == uploader_pid end)
@@ -73,17 +69,19 @@ defmodule GlobalApi.DatabaseQueue do
         {:noreply, state}
       end
     else
+      :telemetry.execute([:global_api, :metrics, :queues, :db_queue], %{length: state.queue_length - 1})
       # send next request
       # cannot be :empty since we already did an empty check
       {{:value, result}, queue} = :queue.out(state.queue)
       send uploader_pid, {:exec, result}
-      {:noreply, %{state | queue: queue}}
+      {:noreply, %{state | queue: queue, queue_length: state.queue_length - 1}}
     end
   end
 
   def handle_info({:exit, uploader_pid}, state) do
     waiting = Enum.reject(state.uploaders_waiting, fn pid -> uploader_pid == pid end)
     uploaders = Enum.reject(state.uploaders, fn pid -> uploader_pid == pid end)
+    :telemetry.execute([:global_api, :metrics, :queues, :db_queue_pool], %{count: length(state.uploaders)})
 
     uploaders =
       if length(state.uploaders) < state.pool_size do
@@ -92,19 +90,9 @@ defmodule GlobalApi.DatabaseQueue do
       else
         uploaders
       end
+    :telemetry.execute([:global_api, :metrics, :queues, :db_queue_pool], %{count: length(state.uploaders)})
 
     {:noreply, %{state | uploaders: uploaders, uploaders_waiting: waiting}}
-  end
-
-  @impl true
-  def handle_call(:queue_length, _, state) do
-    # this is not very efficient
-    {:reply, :queue.len(state.queue), state}
-  end
-
-  @impl true
-  def handle_call(:pool_size, _, state) do
-    {:reply, state.pool_size, state}
   end
 
   defp create_uploader(supervisor_pid) do

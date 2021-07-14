@@ -192,11 +192,7 @@ defmodule GlobalApiWeb.WebSocket do
   end
 
   defp part_two(state, xuid, is_steve, png, rgba_hash, minecraft_hash, skin_data) do
-    hash = if map_size(skin_data) != 0 do
-      skin_data[:hash]
-    else
-      nil
-    end
+    hash = if map_size(skin_data) != 0, do: skin_data[:hash]
 
     # since the skin hasn't changed since we last cached it we have to do nothing
     if rgba_hash == hash do
@@ -250,6 +246,10 @@ defmodule GlobalApiWeb.WebSocket do
         )
         #todo we can prob also use the return value of set_skin as last_update
 
+        if hash == nil do
+          new_player_notify()
+        end
+
         # set skin and return response
         SkinsRepo.set_skin(xuid, skin_id)
 
@@ -296,6 +296,10 @@ defmodule GlobalApiWeb.WebSocket do
           }
           Cachex.put(:hash_to_skin, {rgba_hash, is_steve}, entry)
 
+          if hash == nil do
+            new_player_notify()
+          end
+
           # set the skin and return
           SkinsRepo.set_skin(xuid, unique_skin)
 
@@ -311,6 +315,13 @@ defmodule GlobalApiWeb.WebSocket do
         else
           #todo probably check the timestamp as well. When the saved timestamp is higher than the current one, ignore it
 
+          #todo find better solution for this.
+          # we don't write to the db instantly (the queue can be hours long),
+          # so there is a higher chance for duplicates
+          if hash == nil do
+            new_player_notify()
+          end
+
           # if the skin isn't cached and isn't in the database then we have to upload it
           SocketQueue.add_pending_upload(state.subscribed_to, xuid, is_steve, png, rgba_hash, minecraft_hash)
         end
@@ -320,6 +331,10 @@ defmodule GlobalApiWeb.WebSocket do
 
   def send_log_message(state, priority, message) do
     SocketQueue.broadcast_message(state.subscribed_to, %{event_id: 5, priority: priority, message: message})
+  end
+
+  defp new_player_notify do
+    :telemetry.execute([:global_api, :metrics, :skins, :new_player], %{count: 1})
   end
 
   def websocket_info({:disconnect, :creator_disconnected}, state) do

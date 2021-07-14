@@ -17,7 +17,7 @@ defmodule GlobalApi.SkinsRepo do
   def create_skin(attrs \\ %{}) do
     %PlayerSkin{}
     |> PlayerSkin.changeset(attrs)
-    |> Repo.insert(on_conflict: {:replace_all_except, [:inserted_at]})
+    |> Repo.insert(on_conflict: {:replace_all_except, [:inserted_at]}, source: :player_skins)
   end
 
   def get_unique_skin(hash, is_steve) when is_binary(hash) do
@@ -27,7 +27,7 @@ defmodule GlobalApi.SkinsRepo do
   def create_unique_skin(attrs) when is_map(attrs) do
     %UniqueSkin{}
     |> UniqueSkin.changeset(attrs)
-    |> Repo.insert!(on_conflict: :nothing)
+    |> Repo.insert!(on_conflict: :nothing, source: :unique_skins)
     # on conflict id will be nil
   end
 
@@ -46,6 +46,9 @@ defmodule GlobalApi.SkinsRepo do
   end
 
   def set_skin(xuid, skin_id) when is_integer(skin_id) do
+    # easiest place to place this
+    :telemetry.execute([:global_api, :metrics, :skins, :player_updated], %{count: 1})
+
     %{
       bedrock_id: xuid,
       skin_id: skin_id
