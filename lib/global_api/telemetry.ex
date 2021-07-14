@@ -77,13 +77,13 @@ defmodule GlobalApi.Telemetry do
         "phoenix.router_dispatch.stop.duration",
         unit: {:native, :millisecond},
         tag_values: &__MODULE__.endpoint_duration_metadata/1,
-        tags: [:request_path, :route, :status, :server_id]
+        tags: [:route, :status, :server_id]
       ),
       # response count
       counter(
         "phoenix.router_dispatch.stop.count",
         tag_values: &__MODULE__.endpoint_metadata/1,
-        tags: [:method, :request_path, :route, :status, :server_id]
+        tags: [:method, :route, :status, :server_id]
       ),
       # errors returned count
       counter(
@@ -123,26 +123,24 @@ defmodule GlobalApi.Telemetry do
   def endpoint_duration_metadata(
         %{
           conn: %{
-            request_path: path,
             status: status
           },
           route: route
         }
       ) do
-    %{request_path: path, status: status, route: route}
+    %{status: status, route: route}
   end
 
   def endpoint_metadata(
         %{
           conn: %{
             method: method,
-            request_path: path,
             status: status
           },
           route: route
         }
       ) do
-    %{method: method, request_path: path, status: status, route: route}
+    %{method: method, status: status, route: route}
   end
 
 
