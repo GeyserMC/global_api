@@ -1,4 +1,7 @@
 defmodule GlobalApi.UUID do
+  use Bitwise, only_operators: true
+
+  alias GlobalApi.Utils
 
   @typedoc """
   A hex-encoded UUID string.
@@ -129,5 +132,28 @@ defmodule GlobalApi.UUID do
   def to_small(uuid) do
     <<s1::binary-8, _::binary-1, s2::binary-4, _::binary-1, s3::binary-4, _::binary-1, s4::binary-4, _::binary-1, s5::binary-12>> = uuid
     s1 <> s2 <> s3 <> s4 <> s5
+  end
+
+  def int_to_hex(int) do
+    int_to_hex("", int, int, 0)
+  end
+  defp int_to_hex(result, number, rem, count) when rem > 0 do
+    byte = number >>> div(count, 2) * 8
+    byte = if rem(count, 2) == 1 do byte >>> 4 else byte end
+    int_to_hex(<<e(byte &&& 0xF)>> <> result, number, byte &&& ~~~0xF, count + 1)
+  end
+  defp int_to_hex(result, _number, _rem, _count), do: result
+
+  @doc """
+  Convert a XUID to an encoded Floodgate UUID
+  """
+  def from_xuid(xuid) when is_integer(xuid) do
+    hex_xuid = int_to_hex(xuid)
+    byte_size = byte_size(hex_xuid)
+    if byte_size > 16 do
+      :illegal_xuid
+    else
+      Utils.repeat_or_return(hex_xuid, 32, "0")
+    end
   end
 end

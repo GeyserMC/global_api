@@ -20,6 +20,22 @@ defmodule GlobalApi.Utils do
   end
 
   @doc """
+  Makes a specific string as long as desired by appending 'repeat string' as long as needed
+  """
+  def repeat_or_return(string, desired_size, repeat_string) when not is_binary(string) do
+    repeat_or_return("", desired_size, repeat_string)
+  end
+  def repeat_or_return(string, desired_size, repeat_string) when byte_size(string) < desired_size do
+    repeat_or_return(repeat_string <> string, desired_size, repeat_string)
+  end
+  def repeat_or_return(string, _desired_size, _repeat_string), do: string
+
+  def bit_count(0), do: 1
+  def bit_count(int), do: bit_count(int, 1)
+  defp bit_count(1, count), do: count
+  defp bit_count(int, count), do: bit_count(div(int, 2), count + 1)
+
+  @doc """
   If the string is in range. Both min and max are inclusive
   """
   def is_in_range(string, min, max) do

@@ -28,6 +28,10 @@ defmodule GlobalApiWeb.Router do
         get "/:xuid", SkinController, :get_skin
       end
 
+      scope "/utils" do
+        get "/uuid/bedrock_or_java/:username", UtilsController, :get_bedrock_or_java_uuid
+      end
+
       scope "/xbox" do
         get "/gamertag/:xuid", XboxController, :get_gamertag
         get "/xuid/:gamertag", XboxController, :get_xuid
