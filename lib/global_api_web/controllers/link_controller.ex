@@ -16,7 +16,7 @@ defmodule GlobalApiWeb.LinkController do
         |> put_status(:bad_request)
         |> json(%{success: false, message: "uuid has to be a valid uuid (36 chars long)"})
 
-      _ ->
+      uuid ->
         {_, link} = Cachex.fetch(
           :java_link,
           uuid,

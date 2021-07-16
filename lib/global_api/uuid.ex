@@ -34,7 +34,7 @@ defmodule GlobalApi.UUID do
   catch
     :error -> :error
   else
-    casted -> {:ok, casted}
+    casted -> casted
   end
 
   def cast(<<
@@ -52,14 +52,17 @@ defmodule GlobalApi.UUID do
   catch
     :error -> :error
   else
-    casted -> {:ok, casted}
+    casted -> casted
   end
 
   def cast(<< _::128 >> = binary), do: encode(binary)
   def cast(_), do: :error
 
   def cast!(data) do
-    {:ok, result} = cast(data)
+    result = cast(data)
+    if result == :error do
+      raise ArgumentError, "data should be a valid uuid"
+    end
     result
   end
 
