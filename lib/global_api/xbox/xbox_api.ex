@@ -14,7 +14,7 @@ defmodule GlobalApi.XboxApi do
   @impl true
   def init(_) do
     state = Utils.random_string(40)
-    Cachex.put(:xbox_api, :state, state)
+    Cachex.put(:general, :state, state)
 
     cached_token_data = XboxUtils.load_token_data()
 

@@ -18,7 +18,7 @@ defmodule GlobalApi.Application do
       create_cache(:xuid_to_skin, 2),
       create_cache(:hash_to_skin, 15), # skin hashes are static
       create_cache(:xuid_request_cache, 7),
-      create_cache(:xbox_api, 60 * 24 * 365),
+      create_cache(:general, 60 * 24 * 365),
       create_cache(:get_xuid, 15),
       create_cache(:get_gamertag, 15),
       create_cache(:link_token_cache, 15),

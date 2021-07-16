@@ -8,7 +8,7 @@ defmodule GlobalApiWeb.XboxController do
 
   # we can't specify the cache headers in cloudflare for this
   def got_token(conn, %{"code" => code, "state" => state}) do
-    {:ok, correct_state} = Cachex.get(:xbox_api, :state)
+    {:ok, correct_state} = Cachex.get(:general, :state)
     is_updater = String.equivalent?(correct_state <> "!updater", state)
     if String.equivalent?(correct_state, state) || is_updater do
       case XboxApi.got_token(code, is_updater) do

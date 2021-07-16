@@ -24,6 +24,10 @@ defmodule GlobalApi.SkinPreQueue do
     send __MODULE__, :next
   end
 
+  def queue_length() do
+    GenServer.call(__MODULE__, :queue_length)
+  end
+
   @impl true
   def handle_cast({:push, request}, state) do
     if state.uploader_ready do
@@ -50,5 +54,10 @@ defmodule GlobalApi.SkinPreQueue do
       :telemetry.execute([:global_api, :metrics, :queues, :skin_pre_queue], %{length: state.queue_length - 1})
       {:noreply, %{state | queue: queue, queue_length: state.queue_length - 1}}
     end
+  end
+
+  @impl true
+  def handle_call(:queue_length, _, state) do
+    {:reply, state.queue_length, state}
   end
 end

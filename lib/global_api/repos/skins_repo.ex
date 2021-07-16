@@ -14,6 +14,15 @@ defmodule GlobalApi.SkinsRepo do
     )
   end
 
+  # max_age in seconds
+  def get_recently_uploaded(max_age) do
+    Repo.one(
+      from s in UniqueSkin,
+      select: count(),
+      where: fragment("inserted_at > (UNIX_TIMESTAMP() - ?) * 1000", ^max_age)
+    )
+  end
+
   def create_skin(attrs \\ %{}) do
     %PlayerSkin{}
     |> PlayerSkin.changeset(attrs)
