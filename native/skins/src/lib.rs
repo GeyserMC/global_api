@@ -10,7 +10,7 @@ extern crate sha2;
 use std::primitive;
 
 use jsonwebtokens::{Algorithm, AlgorithmID, Verifier};
-use lodepng::{FilterStrategy};
+use lodepng::FilterStrategy;
 use rustler::{Binary, Encoder, Env, ListIterator, OwnedBinary, Term};
 use rustler::atoms;
 use rustler::types::atom::{false_, true_};
@@ -20,6 +20,7 @@ use serde_json::Value;
 use sha2::{Digest, Sha256};
 
 const TEXTURE_TYPE_FACE: i64 = 1;
+const MOJANG_PUBLIC_KEY: &primitive::str = "MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAE8ELkixyLcwlZryUQcu1TvPOmI2B7vX83ndnWRUaXm74wFfa5f/lwQNTfrLVHa2PmenpGI6JhIMUJaWZrjmMj90NoKNFSNBuKdm8rYiXsfaz3K36x/1U26HpG0ZxK/V1V";
 
 atoms! {
     invalid_chain_data,
@@ -34,16 +35,35 @@ atoms! {
 pub fn validate_and_get_png<'a>(env: Env<'a>, chain_data: Term, client_data: &primitive::str) -> Term<'a> {
     let list_iterator: ListIterator = chain_data.decode().unwrap();
 
-    let mojang_key: Algorithm = create_key("MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAE8ELkixyLcwlZryUQcu1TvPOmI2B7vX83ndnWRUaXm74wFfa5f/lwQNTfrLVHa2PmenpGI6JhIMUJaWZrjmMj90NoKNFSNBuKdm8rYiXsfaz3K36x/1U26HpG0ZxK/V1V");
     let verifier = Verifier::create().build().unwrap();
 
+    let mut current_key: Algorithm = create_key(MOJANG_PUBLIC_KEY);
     let mut last_data = Value::Null;
-    let mut current_key = mojang_key;
+    let mut list_size: i32 = 0;
+
+    let mut was_mojang = false;
+    let mut auth_completed = false;
 
     for x in list_iterator {
+        list_size += 1;
+        if list_size > 3 {
+            return invalid_chain_data().to_term(env);
+        }
+
+        if auth_completed {
+            return invalid_chain_data().to_term(env);
+        }
+
         let data: &primitive::str = x.decode::<&primitive::str>().unwrap();
+
         let claims = verifier.verify(data, &current_key);
         if let Ok(data) = claims {
+            if was_mojang {
+                auth_completed = true;
+            } else {
+                was_mojang = true;
+            }
+
             last_data = data;
             current_key = create_key(last_data["identityPublicKey"].as_str().unwrap())
         } else if last_data != Value::Null {
@@ -51,7 +71,7 @@ pub fn validate_and_get_png<'a>(env: Env<'a>, chain_data: Term, client_data: &pr
         }
     }
 
-    if last_data == Value::Null {
+    if !auth_completed {
         return invalid_chain_data().to_term(env);
     }
 
@@ -138,12 +158,14 @@ pub fn validate_and_get_png<'a>(env: Env<'a>, chain_data: Term, client_data: &pr
         return make_tuple(env, &[invalid_geometry().to_term(env), err.encode(env), extra_data]);
     }
 
-    let (raw_data, is_steve) = convert_result.unwrap();
+    let (mut raw_data, is_steve) = convert_result.unwrap();
     let mut is_steve = if is_steve { true_() } else { false_() };
 
     if arm_model != -1 {
         is_steve = if arm_model == 0 { true_() } else { false_() };
     }
+
+    let clean_data = clear_unused_pixels(&mut raw_data);
 
     // encode images like Minecraft does
     let mut encoder = lodepng::Encoder::new();
@@ -154,7 +176,7 @@ pub fn validate_and_get_png<'a>(env: Env<'a>, chain_data: Term, client_data: &pr
     encoder_settings.zlibsettings.set_level(4);
     encoder_settings.filter_strategy = FilterStrategy::ZERO;
 
-    let png = encoder.encode(raw_data.as_slice(), 64, 64).unwrap();
+    let png = encoder.encode(clean_data.as_slice(), 64, 64).unwrap();
 
     let mut hasher = Sha256::new();
 
@@ -162,7 +184,7 @@ pub fn validate_and_get_png<'a>(env: Env<'a>, chain_data: Term, client_data: &pr
     let minecraft_hash = hasher.finalize_reset();
 
     // make our own hash
-    hasher.update(raw_data.as_slice());
+    hasher.update(clean_data.as_slice());
     let hash = hasher.finalize();
 
     make_tuple(env, &[is_steve.to_term(env), as_binary(env, &png), as_binary(env, hash.as_slice()), as_binary(env, minecraft_hash.as_slice()), extra_data])
@@ -679,6 +701,7 @@ fn size_to_tex_size(size: &[Value]) -> (bool, i32, usize, usize) {
 }
 
 fn get_texture_offset(bone_name: &primitive::str) -> (usize, usize, usize, usize) {
+    // start x, start y, width, height
     match bone_name {
         "body" => (16, 16, 24, 16),
         "head" => (0, 0, 32, 16),
@@ -694,6 +717,110 @@ fn get_texture_offset(bone_name: &primitive::str) -> (usize, usize, usize, usize
         "jacket" => (16, 32, 24, 16),
         _ => (0, 0, 0, 0),
     }
+}
+
+fn clear_unused_pixels(raw_data: &mut Vec<u8>) -> &mut Vec<u8> {
+    // clear the unused sections of a 64x64 skin
+
+    // first row
+    for x in 0..8 {
+        for y in 0..8 {
+            set_pixel(raw_data, x, y, 64, 0, 0, 0, 0);
+        }
+    }
+    for x in 24..40 {
+        for y in 0..8 {
+            set_pixel(raw_data, x, y, 64, 0, 0, 0, 0);
+        }
+    }
+    for x in 56..64 {
+        for y in 0..8 {
+            set_pixel(raw_data, x, y, 64, 0, 0, 0, 0);
+        }
+    }
+    // second row
+    for x in 0..4 {
+        for y in 16..20 {
+            set_pixel(raw_data, x, y, 64, 0, 0, 0, 0);
+        }
+    }
+    for x in 12..20 {
+        for y in 16..20 {
+            set_pixel(raw_data, x, y, 64, 0, 0, 0, 0);
+        }
+    }
+    for x in 36..44 {
+        for y in 16..20 {
+            set_pixel(raw_data, x, y, 64, 0, 0, 0, 0);
+        }
+    }
+    for x in 52..56 {
+        for y in 16..20 {
+            set_pixel(raw_data, x, y, 64, 0, 0, 0, 0);
+        }
+    }
+    // third row
+    for x in 0..4 {
+        for y in 32..36 {
+            set_pixel(raw_data, x, y, 64, 0, 0, 0, 0);
+        }
+    }
+    for x in 12..20 {
+        for y in 32..36 {
+            set_pixel(raw_data, x, y, 64, 0, 0, 0, 0);
+        }
+    }
+    for x in 36..44 {
+        for y in 32..36 {
+            set_pixel(raw_data, x, y, 64, 0, 0, 0, 0);
+        }
+    }
+    for x in 52..56 {
+        for y in 32..36 {
+            set_pixel(raw_data, x, y, 64, 0, 0, 0, 0);
+        }
+    }
+    // fourth row
+    for x in 0..4 {
+        for y in 48..52 {
+            set_pixel(raw_data, x, y, 64, 0, 0, 0, 0);
+        }
+    }
+    for x in 12..20 {
+        for y in 48..52 {
+            set_pixel(raw_data, x, y, 64, 0, 0, 0, 0);
+        }
+    }
+    for x in 28..36 {
+        for y in 48..52 {
+            set_pixel(raw_data, x, y, 64, 0, 0, 0, 0);
+        }
+    }
+    for x in 44..52 {
+        for y in 48..52 {
+            set_pixel(raw_data, x, y, 64, 0, 0, 0, 0);
+        }
+    }
+    for x in 60..64 {
+        for y in 48..52 {
+            set_pixel(raw_data, x, y, 64, 0, 0, 0, 0);
+        }
+    }
+    // big unused area in row 2 and 3
+    for x in 56..64 {
+        for y in 16..48 {
+            set_pixel(raw_data, x, y, 64, 0, 0, 0, 0);
+        }
+    }
+
+    raw_data
+}
+
+fn set_pixel(vec: &mut Vec<u8>, x: usize, y: usize, width: usize, r: u8, g: u8, b: u8, a: u8) {
+    vec[(y * width + x) * 4] = r;
+    vec[(y * width + x) * 4 + 1] = g;
+    vec[(y * width + x) * 4 + 2] = b;
+    vec[(y * width + x) * 4 + 3] = a;
 }
 
 fn as_binary<'a>(env: Env<'a>, data: &[u8]) -> Term<'a> {
