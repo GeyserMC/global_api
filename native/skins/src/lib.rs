@@ -165,7 +165,7 @@ pub fn validate_and_get_png<'a>(env: Env<'a>, chain_data: Term, client_data: &pr
         is_steve = if arm_model == 0 { true_() } else { false_() };
     }
 
-    let clean_data = clear_unused_pixels(&mut raw_data);
+    let clean_data = clear_unused_pixels(&mut raw_data, arm_model == 0);
 
     // encode images like Minecraft does
     let mut encoder = lodepng::Encoder::new();
@@ -719,7 +719,7 @@ fn get_texture_offset(bone_name: &primitive::str) -> (usize, usize, usize, usize
     }
 }
 
-fn clear_unused_pixels(raw_data: &mut Vec<u8>) -> &mut Vec<u8> {
+fn clear_unused_pixels(raw_data: &mut Vec<u8>, is_steve: bool) -> &mut Vec<u8> {
     // clear the unused sections of a 64x64 skin
 
     // first row
@@ -754,11 +754,6 @@ fn clear_unused_pixels(raw_data: &mut Vec<u8>) -> &mut Vec<u8> {
             set_pixel(raw_data, x, y, 64, 0, 0, 0, 0);
         }
     }
-    for x in 52..56 {
-        for y in 16..20 {
-            set_pixel(raw_data, x, y, 64, 0, 0, 0, 0);
-        }
-    }
     // third row
     for x in 0..4 {
         for y in 32..36 {
@@ -771,11 +766,6 @@ fn clear_unused_pixels(raw_data: &mut Vec<u8>) -> &mut Vec<u8> {
         }
     }
     for x in 36..44 {
-        for y in 32..36 {
-            set_pixel(raw_data, x, y, 64, 0, 0, 0, 0);
-        }
-    }
-    for x in 52..56 {
         for y in 32..36 {
             set_pixel(raw_data, x, y, 64, 0, 0, 0, 0);
         }
@@ -796,23 +786,79 @@ fn clear_unused_pixels(raw_data: &mut Vec<u8>) -> &mut Vec<u8> {
             set_pixel(raw_data, x, y, 64, 0, 0, 0, 0);
         }
     }
-    for x in 44..52 {
-        for y in 48..52 {
-            set_pixel(raw_data, x, y, 64, 0, 0, 0, 0);
+    // Alex skins have more empty space then Steve skins
+    if is_steve {
+        // second row
+        for x in 52..56 {
+            for y in 16..20 {
+                set_pixel(raw_data, x, y, 64, 0, 0, 0, 0);
+            }
         }
-    }
-    for x in 60..64 {
-        for y in 48..52 {
-            set_pixel(raw_data, x, y, 64, 0, 0, 0, 0);
+        // third row
+        for x in 52..56 {
+            for y in 32..36 {
+                set_pixel(raw_data, x, y, 64, 0, 0, 0, 0);
+            }
         }
-    }
-    // big unused area in row 2 and 3
-    for x in 56..64 {
-        for y in 16..48 {
-            set_pixel(raw_data, x, y, 64, 0, 0, 0, 0);
+        // fourth row
+        for x in 44..52 {
+            for y in 48..52 {
+                set_pixel(raw_data, x, y, 64, 0, 0, 0, 0);
+            }
         }
-    }
+        for x in 60..64 {
+            for y in 48..52 {
+                set_pixel(raw_data, x, y, 64, 0, 0, 0, 0);
+            }
+        }
+        // big unused area in row 2 and 3
+        for x in 56..64 {
+            for y in 16..48 {
+                set_pixel(raw_data, x, y, 64, 0, 0, 0, 0);
+            }
+        }
+    } else {
+        // second row
+        for x in 50..54 {
+            for y in 16..20 {
+                set_pixel(raw_data, x, y, 64, 0, 0, 0, 0);
+            }
+        }
+        // third row
+        for x in 50..52 {
+            for y in 32..36 {
+                set_pixel(raw_data, x, y, 64, 0, 0, 0, 0);
+            }
+        }
+        // fourth row
+        for x in 42..52 {
+            for y in 48..52 {
+                set_pixel(raw_data, x, y, 64, 0, 0, 0, 0);
+            }
+        }
+        for x in 46..48 {
+            for y in 52..64 {
+                set_pixel(raw_data, x, y, 64, 0, 0, 0, 0);
+            }
+        }
+        for x in 58..64 {
+            for y in 48..52 {
+                set_pixel(raw_data, x, y, 64, 0, 0, 0, 0);
+            }
+        }
+        for x in 62..64 {
+            for y in 52..64 {
+                set_pixel(raw_data, x, y, 64, 0, 0, 0, 0);
+            }
+        }
+        // big unused area in row 2 and 3
+        for x in 54..64 {
+            for y in 16..48 {
+                set_pixel(raw_data, x, y, 64, 0, 0, 0, 0);
+            }
+        }
 
+    }
     raw_data
 }
 
