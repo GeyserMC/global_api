@@ -11,11 +11,13 @@ defmodule GlobalApiWeb.Router do
 
   # only allow the skin subdomain when running in prod
   skin_opts = if Mix.env() == :dev do [] else [host: "skin."] end
-  scope "/", GlobalApiWeb.Skin, skin_opts do
+  scope "/", skin_opts do
     pipe_through :browser
 
-    get "/", SkinsController, :index
-    get "/preview", SkinsController, :preview
+    get "/", GlobalApiWeb.Skin.SkinsController, :index
+
+    #todo reserve the cdn subdomain
+    get "/preview", GlobalApiWeb.Cdn.PreviewController, :preview
   end
 
   # only allow the link subdomain when running in prod

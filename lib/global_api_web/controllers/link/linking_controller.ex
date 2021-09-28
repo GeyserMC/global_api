@@ -2,6 +2,17 @@ defmodule GlobalApiWeb.Link.LinkingController do
   @moduledoc false
   use GlobalApiWeb, :controller
 
+  # used for previews
+  def preview_info(page) do
+    case page do
+      :index -> {:link, "Global Linking"}
+      :start -> {:link, "Start Global Linking"}
+      :online -> {:link, "Online linking"}
+      :server -> {:link, "Server linking"}
+      _ -> nil
+    end
+  end
+
   def index(conn, _) do
     render(
       conn,
@@ -9,7 +20,7 @@ defmodule GlobalApiWeb.Link.LinkingController do
       page_title: "Global Linking",
       page_description: "Link once, join on every server with Global Linking enabled",
       page_host: "https://link.geysermc.org",
-      page_image: "link/index",
+      page_preview_image: true,
       render_navbar: false
     )
   end
@@ -21,7 +32,7 @@ defmodule GlobalApiWeb.Link.LinkingController do
       page_title: "Start - Global Linking",
       page_description: "Let's start linking. Link once, join on every server with Global Linking enabled",
       page_host: "https://link.geysermc.org",
-      page_image: "link/start",
+      page_preview_image: true,
       render_navbar: false
     )
   end
@@ -33,7 +44,7 @@ defmodule GlobalApiWeb.Link.LinkingController do
       page_title: "Online linking - Global Linking",
       page_description: "Link your Bedrock and Java accounts online",
       page_host: "https://link.geysermc.org",
-      page_image: "link/online",
+      page_preview_image: true,
       render_navbar: false
     )
   end
@@ -45,7 +56,7 @@ defmodule GlobalApiWeb.Link.LinkingController do
       page_title: "Server linking - Global Linking",
       page_description: "Link your Bedrock and Java accounts online",
       page_host: "https://link.geysermc.org",
-      page_image: "link/server",
+      page_preview_image: true,
       render_navbar: false
     )
   end

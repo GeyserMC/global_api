@@ -167,8 +167,12 @@ defmodule GlobalApi.Telemetry do
     end
   end
 
+  # there are 2 options. it's either an ip '{127, 0, 0, 1}' or a hostname 'localhost'.
+  # however, these methods require hostnames to be a char list
+  def startup_stuff(host, port, server_id) when is_binary(host),
+      do: startup_stuff(to_charlist(host), port, server_id)
+
   def startup_stuff(host, port, server_id) do
-    host = to_charlist(host)
     case :gen_udp.open(0, [active: false]) do
       {:ok, socket} ->
         tags = [server_id: server_id]

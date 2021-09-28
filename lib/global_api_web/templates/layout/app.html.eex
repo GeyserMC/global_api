@@ -14,9 +14,8 @@
   <link href="<%= Routes.static_path(@conn, "/css/main.css") %>" rel="stylesheet" />
   <link href="https://rsms.me/inter/inter.css" rel="stylesheet">
 
-  <%= if assigns[:page_image] do %>
-  <!-- todo check if :conn works here -->
-  <meta property="og:image" content="http://192.167.178.10:4000/preview?page=<%= assigns.page_image %>" />
+  <%= if assigns[:page_preview_image] do %>
+  <meta property="og:image" content="<%= cdn_domain(assigns[:conn]) %>/preview?controller=<%= assigns.conn.private[:phoenix_controller] %>&action=<%= assigns.conn.private[:phoenix_action] %>" />
   <% end %>
   <!-- todo add og:image and maybe twitter -->
   <%= if assigns[:custom_meta] do %>
@@ -154,8 +153,8 @@
             </div>
             <div class="w-full lg:w-1/2 px-6">
               <ul>
-                <li><a class="focus:outline-none focus:underline text-xs lg:text-sm leading-none hover:text-brand dark:hover:text-brand text-gray-800 dark:text-gray-50" href="https://skin.geysermc.org/">Skins</a></li>
-                <li class="mt-6"><a class="focus:outline-none focus:underline text-xs lg:text-sm leading-none hover:text-brand dark:hover:text-brand text-gray-800 dark:text-gray-50" href="https://link.geysermc.org/">Global linking</a></li>
+                <li><a class="focus:outline-none focus:underline text-xs lg:text-sm leading-none hover:text-brand dark:hover:text-brand text-gray-800 dark:text-gray-50" href="<%= skin_domain(assigns.conn) %>">Skins</a></li>
+                <li class="mt-6"><a class="focus:outline-none focus:underline text-xs lg:text-sm leading-none hover:text-brand dark:hover:text-brand text-gray-800 dark:text-gray-50" href="<%= link_domain(assigns.conn) %>">Global linking</a></li>
                 <li class="mt-6"><a class="focus:outline-none focus:underline text-xs lg:text-sm leading-none hover:text-brand dark:hover:text-brand text-gray-800 dark:text-gray-50" href="https://geysermc.org/">GeyserMC home page</a></li>
               </ul>
             </div>
