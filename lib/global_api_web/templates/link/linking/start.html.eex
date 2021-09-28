@@ -1,0 +1,45 @@
+<div class="py-12">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 lg:text-center">
+    <h2 class="text-base text-indigo-600 dark:text-indigo-400 font-semibold tracking-wide uppercase">Global Linking</h2>
+    <p class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-gray-900 dark:text-gray-100 sm:text-4xl">
+      Lets start linking!
+    </p>
+
+    <p class="mt-4 max-w-2xl text-xl text-gray-500 dark:text-gray-400 lg:mx-auto">
+      There are two ways to connect your Bedrock account to your Java account.
+    </p>
+    <div class="mt-4 max-w-2xl text-xl lg:mx-auto">
+      <p class="max-w-2xl text-xl font-semibold text-gray-700 dark:text-gray-200 lg:mx-auto">
+        Online account linking
+      </p>
+      <p class="max-w-2xl text-xl text-gray-500 dark:text-gray-400 lg:mx-auto">
+        The first way to link your account is by logging in to your Bedrock and Java account online, which verifies
+        that you have access to both accounts. The Java part only works on a Microsoft account that owns Java edition.
+      </p>
+
+      <p class="mt-2 max-w-2xl text-xl font-semibold text-gray-700 dark:text-gray-200 lg:mx-auto">
+        Joining our global linking server
+      </p>
+      <p class="max-w-2xl text-xl text-gray-500 dark:text-gray-400 lg:mx-auto">
+        By logging in to the global linking server with both your Bedrock and your Java account we know that you have
+        access to both accounts.
+      </p>
+    </div>
+    <p class="mt-4 max-w-2xl text-xl text-gray-500 dark:text-gray-400 lg:mx-auto">
+      Both linking methods should take less than five minutes.
+    </p>
+
+    <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:py-16 lg:px-8">
+      <div class="inline-flex rounded-md shadow">
+        <a href="<%= Routes.linking_path(@conn, :online) %>" class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white dark:text-gray-100 bg-indigo-600 dark:bg-indigo-700 hover:bg-indigo-700 dark:hover:bg-indigo-600">
+          Online linking
+        </a>
+      </div>
+      <div class="ml-3 inline-flex rounded-md shadow">
+        <a href="<%= Routes.linking_path(@conn, :server) %>" class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white dark:text-gray-100 bg-indigo-600 dark:bg-indigo-700 hover:bg-indigo-700 dark:hover:bg-indigo-600">
+          Server linking
+        </a>
+      </div>
+    </div>
+  </div>
+</div>

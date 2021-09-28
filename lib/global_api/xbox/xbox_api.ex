@@ -2,7 +2,7 @@ defmodule GlobalApi.XboxApi do
   @moduledoc false
   use GenServer
 
-  alias GlobalApi.XboxUtils
+  alias GlobalApi.XboxAccounts
   alias GlobalApi.Utils
 
   @sustain_limit 30
@@ -16,11 +16,11 @@ defmodule GlobalApi.XboxApi do
     state = Utils.random_string(40)
     Cachex.put(:general, :state, state)
 
-    cached_token_data = XboxUtils.load_token_data()
+    cached_token_data = XboxAccounts.load_token_data()
 
     if is_nil(cached_token_data) do
       # make the token cache file if it doesn't exist
-      XboxUtils.save_token_data(%{updater: %{}, data: []})
+      XboxAccounts.save_token_data(%{updater: %{}, data: []})
     end
 
     updater = if !is_nil(cached_token_data) && map_size(cached_token_data.updater) != 0 do
@@ -53,7 +53,7 @@ defmodule GlobalApi.XboxApi do
       IO.puts("Use state = #{state} if you want to login with another account")
       # the endpoints we use have a limit of 30 requests per 5 minutes and 10 requests per 15 seconds,
       # so we have a round count, a round reset time, next action and time between actions for that
-      case XboxUtils.check_and_save_token_data(cached_token_data) do
+      case XboxAccounts.check_and_save_token_data(cached_token_data) do
         {:ok, token_data} ->
           data_acc_count = length(token_data.data)
           {
@@ -75,11 +75,71 @@ defmodule GlobalApi.XboxApi do
 
   def got_token(code, is_updater) do
     code = String.replace_suffix(code, "!updater", "")
-    case XboxUtils.start_initial_xbox_setup(code) do
+    case XboxAccounts.start_initial_xbox_setup(code) do
       {:ok, data} ->
         :ok = GenServer.call(__MODULE__, {:got_token, data, is_updater})
       {:error, reason} ->
         {:error, reason}
+    end
+  end
+
+  def get_batched_v2(entries, is_updater) when is_list(entries) do
+    case get_xbox_token_and_uhs(is_updater) do
+      :not_setup -> :not_setup
+      {:rate_limit, rate_reset} -> {:rate_limit, rate_reset}
+      {xbox_token, uhs} ->
+        headers = [
+          {"x-xbl-contract-version", "1"},
+          {"Authorization", "XBL3.0 x=#{uhs};#{xbox_token}"},
+          {"Content-Type", "application/json"},
+          {"User-Agent", "XboxServicesAPI/2020.11.202102041.1 c"},
+          {"Accept-Language", "en-US"},
+          {"Accept", "application/json"}
+        ]
+
+        # 600 is stable, more than that becomes unstable
+        body = Jason.encode!(%{xuids: entries})
+
+        request = HTTPoison.post(
+          "https://peoplehub.xboxlive.com/users/me/people/batch/decoration/broadcast,multiplayersummary,preferredcolor,socialManager",
+          body,
+          headers,
+          [
+            hackney: [
+              pool: false
+            ],
+            recv_timeout: 7500
+          ]
+        )
+
+        case request do
+          {:ok, response} ->
+            if response.status_code != 200 do
+              IO.puts("#{inspect(response)}")
+              if response.status_code != 429 do
+                Sentry.capture_message("Xbox Api (batched v2) returned #{response.status_code}\n\n#{inspect(response)}")
+                {:error, "invalid response code"}
+              else
+                {:error, "rate-limited"}
+              end
+            else
+              json = Jason.decode!(response.body)
+              {
+                :ok,
+                Utils.merge_array_to_map(
+                  %{},
+                  json["people"],
+                  fn person ->
+                    # invalid xuids should be excluded, but just to be sure
+                    if person["gamertag"] != nil do
+                      {Utils.get_int_if_string(person["xuid"]), person["gamertag"]}
+                    end
+                  end
+                )
+              }
+            end
+          {:error, error} -> {:error, error.reason}
+        end
     end
   end
 
@@ -89,7 +149,7 @@ defmodule GlobalApi.XboxApi do
       {:rate_limit, rate_reset} -> {:rate_limit, rate_reset}
       {xbox_token, uhs} ->
         headers = [
-          {"x-xbl-contract-version", "3"},
+          {"x-xbl-contract-version", "2"},
           {"Authorization", "XBL3.0 x=#{uhs};#{xbox_token}"},
           {"content-type", "application/json"}
         ]
@@ -110,8 +170,11 @@ defmodule GlobalApi.XboxApi do
         case request do
           {:ok, response} ->
             if response.status_code != 200 do
+              Sentry.capture_message("Xbox Api (batched) returned #{response.status_code}\n\n#{inspect(response)}")
               if response.status_code != 429 do
-                IO.inspect(response)
+                {:error, "invalid response code"}
+              else
+                {:error, "rate-limited"}
               end
               case List.keyfind(headers, "WWW-Authenticate", 0) do
                 {_, value} -> {:error, Enum.at(String.split(value, "error="), 1)}
@@ -256,7 +319,7 @@ defmodule GlobalApi.XboxApi do
       {:reply, :not_setup, state}
     else
       if state.next_action > :os.system_time(:millisecond) do
-        {:rate_limit, state.next_action}
+        {:reply, {:rate_limit, ceil(state.next_action / 1000)}}
       else
         state = reset_time_check(state)
         if state.round > @sustain_limit do
@@ -287,15 +350,13 @@ defmodule GlobalApi.XboxApi do
   end
 
   defp save_new_token_data(state, data, is_updater) do
-    if is_updater do
-      ret = %{updater: data, data: state.static}
-      XboxUtils.save_token_data(ret)
-      ret
+    ret = if is_updater do
+      %{updater: data, data: state.static}
     else
-      ret = %{updater: state.updater, data: [data | state.static]}
-      XboxUtils.save_token_data(ret)
-      ret
+      %{updater: state.updater, data: [data | state.static]}
     end
+    XboxAccounts.save_token_data(ret)
+    ret
   end
 
   defp reset_time_check(state) do
@@ -317,7 +378,7 @@ defmodule GlobalApi.XboxApi do
 
   defp get_token_check(state) do
     if state.next_check < :os.system_time(:second) do
-      case XboxUtils.check_and_save_token_data(state) do
+      case XboxAccounts.check_and_save_token_data(state) do
         {:ok, token_data} ->
           %{state | updater: token_data.updater, data: token_data.data, static: token_data.data, next_check: :os.system_time(:second) + 60 * 60}
         {:error, reason} ->

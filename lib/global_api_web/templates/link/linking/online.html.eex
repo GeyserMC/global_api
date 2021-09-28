@@ -1,23 +1,11 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Online linking - Global Linking</title>
-  <script type="module" src="js/online.js"></script>
-  <link href="../css/main.css" rel="stylesheet">
-  <link href="https://rsms.me/inter/inter.css" rel="stylesheet">
-</head>
-<!--<body class="bg-white dark:bg-gray-800">-->
-<body class="bg-white">
 <div class="py-12">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 lg:text-center">
-    <h2 class="text-base text-indigo-600 font-semibold tracking-wide uppercase">Global Linking</h2>
-    <p class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-gray-900 sm:text-4xl">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 lg:text-center text-gray-500 dark:text-gray-400">
+    <h2 class="text-base text-indigo-600 dark:text-indigo-400 font-semibold tracking-wide uppercase">Global Linking</h2>
+    <p class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-gray-900 dark:text-gray-100 sm:text-4xl">
       Online linking
     </p>
 
-    <p class="mt-4 max-w-2xl text-xl text-gray-500 lg:mx-auto">
+    <p class="mt-4 max-w-2xl text-xl lg:mx-auto">
       One way to link your Bedrock account to your Java account is logging in with your Bedrock account and your Java
       account to verify that you have access to them. The only info we store is your xuid (Xbox Id), your gamertag,
       your Java Edition UUID (Unique Id) and your Java Edition username.<br>
@@ -41,14 +29,14 @@
 
     <div id="step-action-header"></div>
 
-    <div class="mt-8 max-w-2xl lg:mx-auto col-span-2 bg-white shadow overflow-hidden sm:rounded-lg hidden" id="link-details">
+    <div class="mt-8 max-w-2xl lg:mx-auto col-span-2 bg-white dark:bg-gray-900 shadow overflow-hidden sm:rounded-lg hidden" id="link-details">
       <div class="px-4 py-5 sm:px-6">
-        <h3 class="text-lg leading-6 font-medium text-gray-900">
+        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-200">
           Link details
         </h3>
-        <p class="mt-1 max-w-2xl text-sm text-gray-500" id="link-details-desc"></p>
+        <p class="mt-1 max-w-2xl text-sm text-gray-900 dark:text-gray-200" id="link-details-desc"></p>
       </div>
-      <div class="border-t border-gray-200">
+      <div class="border-t border-gray-200 dark:border-gray-700">
         <dl id="link-details-inner"></dl>
       </div>
     </div>
@@ -57,7 +45,7 @@
 
     <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:py-16 lg:px-8">
       <div class="inline-flex rounded-md shadow">
-        <a href="../" id="home-screen-btn"
+        <a href="<%= Routes.linking_path(@conn, :index) %>" id="home-screen-btn"
            class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md">
           Home screen
         </a>
@@ -65,5 +53,4 @@
     </div>
   </div>
 </div>
-</body>
-</html>
+<script defer src="<%= Routes.static_path(@conn, "/js/online.js") %>"></script>

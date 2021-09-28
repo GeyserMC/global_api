@@ -4,6 +4,13 @@ defmodule GlobalApi.IdentityUpdater do
   alias GlobalApi.XboxApi
   alias GlobalApi.XboxRepo
 
+  # the rate limit is 30 requests per 300 seconds,
+  # so that's one request every 10 seconds + 1 second to be sure
+  # divide by 2 because we use 2 endpoints to update xuid. They both have the same rate limit,
+  # but they fall under a different category and thus we can divide the check time by 2
+  @check_time ceil(11 / 2)
+#  @check_time 11
+
   @identity_update_threshold 60 * 60 * 24 * 1000 # one day
 
   def start_link(init_arg) do
@@ -13,22 +20,20 @@ defmodule GlobalApi.IdentityUpdater do
   @impl true
   def init(_init_arg) do
     schedule()
-    {:ok, :ok}
+    {:ok, %{v2: true}}
   end
 
   @impl true
-  def handle_info(:update, state) do
-    # the batch limit is 75
-    identities = XboxRepo.get_least_recent_updated(75)
+  def handle_info(:update, %{v2: is_v2}) do
+    # it's getting unstable when you go much over the 600
+    identities = XboxRepo.get_least_recent_updated(if is_v2 do 600 else 75 end)
     if length(identities) > 0 do
       least_recent = List.first(identities)
       # if the least recent entry hasn't been updated and passes the threshold
       if :os.system_time(:millisecond) - least_recent.inserted_at > @identity_update_threshold do
         # update it :)
-        update0(identities)
+        update0(identities, is_v2)
 
-        # we'll take the lowest check time since we don't know if the following least-recent
-        # entry also passed the threshold
         schedule()
       else
         # we can wait until the least recent entry passed the 24 hours
@@ -37,38 +42,36 @@ defmodule GlobalApi.IdentityUpdater do
     else
       schedule(60 * 60)
     end
-    {:noreply, state}
+    {:noreply, %{v2: !is_v2}}
+#    {:noreply, %{v2: true}}
   end
 
-  defp update0(identities) do
+  defp update0(identities, true) do
     list = Enum.map(identities, fn identity -> identity.xuid end)
-    response = XboxApi.get_batched(list, true)
-    case response do
+    case XboxApi.get_batched_v2(list, true) do
       {:ok, data} ->
         time = :os.system_time(:millisecond)
-        data = Enum.map(data, fn {xuid, gamertag} -> [xuid: xuid, gamertag: gamertag, inserted_at: time] end)
-        XboxRepo.insert_bulk(data)
-      {:invalid, xuid} ->
-        XboxRepo.remove_by_xuid(xuid)
-        # the easiest thing to do is just retry it in the next cycle.
-        # unfortunately you need one request for one invalid xuid,
-        # so if there are multiple invalid xuids you need multiple requests
-      {:error, _} -> :ignore # we'll try it again later
-      :not_setup -> :ignore # guess we'll have to wait until it is setup
+        mapped = Enum.map(data, fn {xuid, gamertag} -> [xuid: xuid, gamertag: gamertag, inserted_at: time] end)
+        XboxRepo.insert_bulk(mapped)
+      _ -> :ignore # everything else can be ignored
     end
   end
 
-  defp schedule(check_time \\ 11) do
-    # The rate limit is 30 requests per 300 seconds,
-    # that's one request every 10 seconds + 1 second just to be sure
-    Process.send_after(self(), :update, max(11, check_time) * 1000)
+  defp update0(identities, false) do
+    list = Enum.map(identities, fn identity -> identity.xuid end)
+    case XboxApi.get_batched(list, true) do
+      {:ok, data} ->
+        time = :os.system_time(:millisecond)
+        mapped = Enum.map(data, fn {xuid, gamertag} -> [xuid: xuid, gamertag: gamertag, inserted_at: time] end)
+        XboxRepo.insert_bulk(mapped)
+      _ -> :ignore # everything else can be ignored
+    end
   end
 
-  defp schedule(check_time, is_ms) do
-    if is_ms do
-      schedule(ceil(check_time / 1000))
-    else
-      schedule(check_time)
-    end
+  defp schedule(check_time \\ @check_time) do
+    Process.send_after(self(), :update, check_time * 1000)
+  end
+  defp schedule(check_time, is_millis) when is_millis == true do
+    schedule(ceil(check_time / 1000))
   end
 end

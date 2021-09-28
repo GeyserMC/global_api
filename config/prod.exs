@@ -26,7 +26,8 @@ config :global_api, GlobalApiWeb.Endpoint,
     cipher_suite: :strong
   ],
   force_ssl: [hsts: true, host: nil, log: false],
-  debug_errors: false
+  debug_errors: false,
+  cache_static_manifest: "priv/static/cache_manifest.json"
 
 # Do not print debug messages in production
 config :logger,

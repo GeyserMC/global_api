@@ -2,12 +2,15 @@ const defaultTheme = require('tailwindcss/defaultTheme')
 
 module.exports = {
   purge: {
+    enabled: process.env.NODE_ENV === 'production',
     content: [
       './html/**/*.html',
-      './js/**/*.js'
+      './js/**/*.js',
+      '../lib/**/*.html.eex',
+      '../lib/**/*_view.ex'
     ]
   },
-  darkMode: false, // or 'media' or 'class' or 'false'
+  darkMode: 'class',
   theme: {
     extend: {
       fontFamily: {
@@ -16,7 +19,10 @@ module.exports = {
     },
   },
   variants: {
-    extend: {},
+    extend: {
+      borderWidth: ['dark'],
+      boxShadow: ['dark']
+    },
   },
   plugins: [],
 }

@@ -43,7 +43,9 @@ defmodule GlobalApi.Utils do
     length >= min && length <= max
   end
 
-  def is_int_and_rounded(xuid) do
+  def is_int_rounded_and_positive(xuid) when is_integer(xuid), do: true
+
+  def is_int_rounded_and_positive(xuid) do
     case String.contains?(xuid, ".") || String.starts_with?(xuid, "-") do
       true -> false
       false ->
@@ -110,5 +112,31 @@ defmodule GlobalApi.Utils do
   # no link found
   def update_username_if_needed(result) do
     result
+  end
+
+  def merge_array_to_map(map, [], _convert_function \\ nil), do: map
+  def merge_array_to_map(map, [{key, value} | tail], nil) do
+    merge_array_to_map(Map.put(map, key, value), tail)
+  end
+  def merge_array_to_map(map, [head | tail], convert_function) when not is_nil(convert_function) do
+    # just skip the value if it returns nil
+    case convert_function.(head) do
+      nil ->
+        merge_array_to_map(map, tail, convert_function)
+      {key, value} ->
+        merge_array_to_map(Map.put(map, key, value), tail, convert_function)
+    end
+  end
+
+  def map_array_to_array(map_array, convert_function) do
+    map_array_to_array([], map_array, convert_function)
+  end
+
+  defp map_array_to_array(array, [], _) do
+    array
+  end
+
+  defp map_array_to_array(array, [head | tail], convert_function) do
+    map_array_to_array([convert_function.(head) | array], tail, convert_function)
   end
 end

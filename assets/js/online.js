@@ -84,13 +84,6 @@ window.addEventListener('load', function () {
             const data = content.data;
             window.history.replaceState(null, '', cleanUrl + '?bedrock=' + data.id + "&b_info=" + data.xuid + ":" + data.gamertag);
 
-            // the following is already done in updatePage, adding it here as well would cause duplicated items
-            // window.document.getElementById('link-details-desc').innerText = "The information about the account you want to link that we have so far.";
-            // addFormElement('Xbox Id (xuid)', data.xuid)
-            // addFormElement('Gamertag', data.gamertag)
-            // // show link details
-            // window.document.getElementById('link-details').classList.remove('hidden');
-
             updatePage();
           }
       )
@@ -233,7 +226,7 @@ function makeLinkRequest(body, onResponse, onError = null) {
   })
 }
 
-function setStepActionHeader(content, additionalClasses = 'text-gray-500') {
+function setStepActionHeader(content, additionalClasses = 'text-gray-500 dark:text-gray-400') {
   const header = window.document.getElementById('step-action-header');
   for (let classToAdd of additionalClasses.split(' ')) {
     header.classList.add(classToAdd);
@@ -291,7 +284,7 @@ function setButton(link, content) {
         '<div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8" id="step-action-button">' +
         '  <div class="inline-flex rounded-md shadow">' +
         '    <a href="' + link + '"' +
-        '       class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">' +
+        '       class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white dark:text-gray-100 bg-indigo-600 dark:bg-indigo-700 hover:bg-indigo-700 dark:hover:bg-indigo-600">' +
         content +
         '    </a>' +
         '  </div>' +
@@ -305,7 +298,7 @@ function setLoginButton(loginTo, link, addLogoutButton = false) {
       '<div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">' +
       '  <div class="inline-flex rounded-md shadow">' +
       '    <a href="' + link + '"' +
-      '       class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">' +
+      '       class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white dark:text-gray-100 bg-indigo-600 dark:bg-indigo-700 hover:bg-indigo-700 dark:hover:bg-indigo-600">' +
       '      Login to ' + loginTo +
       '    </a>' +
       '  </div>' +
@@ -313,14 +306,14 @@ function setLoginButton(loginTo, link, addLogoutButton = false) {
 
   if (addLogoutButton) {
     stepAction.innerHTML +=
-        '<p class="mt-4 max-w-2xl text-xl text-gray-500 lg:mx-auto" id="step-2">' +
+        '<p class="mt-4 max-w-2xl text-xl text-gray-500 dark:text-gray-400 lg:mx-auto" id="step-2">' +
         '  Click the logout button below to logout from your current Microsoft account.' +
         '  Microsoft remembers if you gave approval before, so if you have ever used this linking tool before or if you are currently in step 2 Microsoft will automatically approve the request without giving you an option to logout or switch accounts.' +
         '  The logout page will open in a new tab and you\'ll be redirected to the msn page once you\'re logged out successfully. After that you can come back to this page and click the login button.' +
         '</p>' +
         '<div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">' +
         '  <div class="inline-flex rounded-md shadow">' +
-        '    <a href="https://login.live.com/logout.srf" target="_blank" class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">' +
+        '    <a href="https://login.live.com/logout.srf" target="_blank" class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white dark:text-gray-100 bg-indigo-600 dark:bg-indigo-700 hover:bg-indigo-700 dark:hover:bg-indigo-600">' +
         '      Logout' +
         '    </a>' +
         '  </div>' +
@@ -341,7 +334,7 @@ function updateStep(currentStep, stepNum, element) {
     if (currentStep > stepNum) {
       element.classList.add('text-green-500')
     } else {
-      element.classList.add('text-gray-500')
+      element.classList.add('text-gray-500','dark:text-gray-200')
     }
   }
 }
@@ -353,10 +346,10 @@ function clearFormElements() {
 function addFormElement(key, value) {
   window.document.getElementById('link-details-inner').innerHTML +=
       '<div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">' +
-      '  <dt class="text-sm font-medium text-gray-500">' +
+      '  <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">' +
       key +
       '  </dt>' +
-      '  <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">' +
+      '  <dd class="mt-1 text-sm text-gray-900 dark:text-gray-300 sm:mt-0 sm:col-span-2">' +
       value +
       '  </dd>' +
       '</div>';
@@ -366,11 +359,11 @@ function setHomeScreenColor(isPrimary) {
   let toAdd;
   let toRemove;
   if (isPrimary) {
-    toAdd = "text-white bg-indigo-600 hover:bg-indigo-700";
-    toRemove = "text-indigo-600 bg-white hover:bg-indigo-50";
+    toAdd = "text-white dark:text-gray-200 bg-indigo-600 dark:bg-indigo-700 hover:bg-indigo-700 dark:bg-indigo-600";
+    toRemove = "text-indigo-600 dark:text-indigo-700 bg-white dark:bg-gray-400 hover:bg-indigo-50 dark:hover:bg-gray-500";
   } else {
-    toAdd = "text-indigo-600 bg-white hover:bg-indigo-50";
-    toRemove = "text-white bg-indigo-600 hover:bg-indigo-700";
+    toAdd = "text-indigo-600 dark:text-indigo-700 bg-white dark:bg-gray-400 hover:bg-indigo-50 dark:hover:bg-gray-500";
+    toRemove = "text-white dark:text-gray-200 bg-indigo-600 dark:bg-indigo-700 hover:bg-indigo-700 dark:bg-indigo-600";
   }
   const classList = window.document.getElementById('home-screen-btn').classList;
   for (let classToAdd of toAdd.split(' ')) {

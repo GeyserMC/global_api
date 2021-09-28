@@ -1,4 +1,5 @@
 defmodule GlobalApiWeb.Endpoint do
+  use Sentry.PlugCapture
   use Phoenix.Endpoint, otp_app: :global_api
 
   # Live Dashboard and live code reload is only enabled during development
@@ -51,6 +52,7 @@ defmodule GlobalApiWeb.Endpoint do
        parsers: [:multipart, :json],
        pass: ["*/*"],
        json_decoder: Phoenix.json_library()
+  plug Sentry.PlugContext
 
   plug CORSPlug
 

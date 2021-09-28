@@ -1,11 +1,11 @@
-defmodule GlobalApiWeb.UtilsController do
+defmodule GlobalApiWeb.Api.UtilsController do
   use GlobalApiWeb, :controller
 
   alias GlobalApi.Utils
   alias GlobalApi.UUID
+  alias GlobalApi.XboxAccounts
   alias GlobalApi.XboxApi
   alias GlobalApi.XboxRepo
-  alias GlobalApi.XboxUtils
 
   def get_bedrock_or_java_uuid(conn, %{"prefix" => prefix, "username" => username}) do
     if Utils.is_in_range(prefix, 1, 16) do
@@ -37,7 +37,7 @@ defmodule GlobalApiWeb.UtilsController do
             :not_setup ->
               conn
               |> put_status(:internal_server_error)
-              |> json(XboxUtils.not_setup_message())
+              |> json(XboxAccounts.not_setup_message())
             {:rate_limit, _} ->
               put_status(conn, :too_many_requests)
             nil ->

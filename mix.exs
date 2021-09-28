@@ -7,7 +7,7 @@ defmodule GlobalApi.MixProject do
       version: "0.1.0",
       elixir: "~> 1.11",
       elixirc_paths: elixirc_paths(Mix.env()),
-      compilers: [:phoenix] ++ Mix.compilers(),
+      compilers: Mix.compilers(),
       build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
@@ -56,7 +56,8 @@ defmodule GlobalApi.MixProject do
       {:telemetry, "~> 0.4.3"},
       {:telemetry_metrics, "~> 0.6.1"},
       {:telemetry_metrics_statsd, "~> 0.6.0"},
-      {:telemetry_poller, "~> 0.5.1"}
+      {:telemetry_poller, "~> 0.5.1"},
+      {:sentry, "~> 8.0"}
     ]
   end
 

@@ -6,11 +6,30 @@ defmodule GlobalApi.SkinsRepo do
 
   def get_player_skin(id) do
     Repo.one(
-      from s in PlayerSkin, join: u in assoc(s, :skin),
-                            where: s.bedrock_id == ^id,
-                            preload: [
-                              skin: u
-                            ]
+      from s in PlayerSkin,
+      join: u in assoc(s, :skin),
+      where: s.bedrock_id == ^id,
+      preload: [skin: u]
+    )
+  end
+
+  def get_most_recent(limit) do
+    Repo.all(
+      from s in PlayerSkin,
+      order_by: [desc: :inserted_at],
+      limit: ^limit,
+      join: u in assoc(s, :skin),
+      preload: [skin: u],
+      select: {u.id, s.bedrock_id, u.texture_id}
+    )
+  end
+
+  def get_most_recent_unique(limit) do
+    Repo.all(
+      from u in UniqueSkin,
+      select: {u.id, u.texture_id},
+      order_by: [desc: :inserted_at],
+      limit: ^limit
     )
   end
 

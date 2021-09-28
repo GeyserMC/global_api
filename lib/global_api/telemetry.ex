@@ -14,6 +14,17 @@ defmodule GlobalApi.Telemetry do
     port = Utils.get_env(:telemetry, :port)
     server_id = Utils.get_env(:telemetry, :server_id)
 
+    ip = String.split(host, ".", parts: 4)
+
+    host = if length(ip) == 4,
+              do: {
+                String.to_integer(Enum.at(ip, 0)),
+                String.to_integer(Enum.at(ip, 1)),
+                String.to_integer(Enum.at(ip, 2)),
+                String.to_integer(Enum.at(ip, 3))
+              },
+              else: host
+
     children = [
       {
         TelemetryMetricsStatsd,

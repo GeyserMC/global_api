@@ -7,6 +7,14 @@ defmodule GlobalApi.XboxRepo do
     Repo.one(from i in XboxIdentity, where: i.xuid == ^xuid)
   end
 
+  def get_by_xuid_bulk(xuids) do
+    Repo.all(
+      from i in XboxIdentity,
+      where: i.xuid in ^xuids,
+      select: map(i, [:xuid, :gamertag])
+    )
+  end
+
   def get_by_gamertag(gamertag) do
     Repo.one(
       from i in XboxIdentity,
@@ -34,7 +42,7 @@ defmodule GlobalApi.XboxRepo do
   end
 
   def insert_bulk(identities) do
-    Repo.insert_all(XboxIdentity, identities, on_conflict: :replace_all)
+    Repo.insert_all(XboxIdentity, identities, on_conflict: :replace_all, source: :xbox_identity)
   end
 
   def remove_by_xuid(xuid) do

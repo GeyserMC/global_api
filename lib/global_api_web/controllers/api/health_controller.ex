@@ -1,4 +1,4 @@
-defmodule GlobalApiWeb.HealthController do
+defmodule GlobalApiWeb.Api.HealthController do
   @moduledoc false
   use GlobalApiWeb, :controller
 

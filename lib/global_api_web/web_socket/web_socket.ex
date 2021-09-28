@@ -85,7 +85,7 @@ defmodule GlobalApiWeb.WebSocket do
 
   def websocket_handle(:ping, state) do
     current_time = :os.system_time(:millisecond)
-    if current_time - state.last_ping < 10000 do
+    if current_time - state.last_ping < 10_000 do
       {[{:close, @ping_too_fast}], state}
     else
       {:ok, %{state | last_ping: current_time}}
@@ -174,7 +174,7 @@ defmodule GlobalApiWeb.WebSocket do
       end
     rescue
       error ->
-        IO.inspect("Error: #{inspect(error)}!\n#{inspect(chain_data, limit: :infinity, printable_limit: :infinity)}\n#{inspect(client_data, limit: :infinity, printable_limit: :infinity)}", limit: :infinity, printable_limit: :infinity)
+        Sentry.capture_exception(error, extra: %{chain_data: chain_data})
         {:ok, state}
     end
   end

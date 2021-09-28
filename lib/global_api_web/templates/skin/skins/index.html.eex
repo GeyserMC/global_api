@@ -1,0 +1,99 @@
+<header class="bg-white text-gray-900 dark:bg-gray-700 dark:text-gray-200 shadow">
+  <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+    <h1 class="text-3xl font-bold text-center">
+      Most recently uploaded skins
+    </h1>
+  </div>
+</header>
+
+<div class="flex justify-center mt-10">
+  <!-- every page has 120 skins by default -->
+  <div class="grid 2xl:grid-cols-7 xl:grid-cols-6 lg:grid-cols-5 md:grid-cols-4 sm:grid-cols-4 grid-cols-2 gap-4 justify-between" id="skin-grid">
+    <!-- the template used once JavaScript has loaded the skins -->
+    <div class="flex flex-col items-center justify-center w-32 h-48 md:w-40 md:h-60 mx-auto hidden" id="template">
+      <div class="w-32 h-48 md:w-40 md:h-60 bg-gray-200 dark:bg-gray-700 rounded-lg shadow-md flex justify-center items-center">
+        <img class="w-auto h-4/5 pointer-events-none skin-image" src="" loading="lazy" alt="skin of a player"/>
+      </div>
+      <div class="w-28 md:w-36 -mt-12 overflow-hidden bg-white rounded-lg shadow-lg dark:bg-gray-800">
+        <h3 class="py-2 font-semibold tracking-wide text-center text-gray-800 text-xs md:text-sm dark:text-gray-200" data-detail-page="">loading...</h3>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  const BASE_URL = (window.location.origin.startsWith("http") ? "https://api.geysermc.org" : window.location.origin);
+  const RECENTLY_UPLOADED_SKINS = BASE_URL + "/v2/skin/recent_uploads/";
+  const RECENTLY_UPDATED_PLAYERS = BASE_URL + "/v2/skin/recent_uploads/";
+
+  function requestAndSetAccounts() {
+    fetch(RECENTLY_UPLOADED_SKINS).then(async function (response) {
+      const json = await response.json();
+
+      if (json.message) {
+        console.log("got a message while requesting gamertags: " + json.message)
+      }
+
+      if (!json.data || json.data.length === 0) {
+        return;
+      }
+
+      const template = document.getElementById('template');
+      const skinGrid = document.getElementById('skin-grid');
+
+      json.data.forEach(entry => {
+        const clone = template.cloneNode(true);
+        clone.removeAttribute('id');
+        clone.classList.remove('hidden');
+
+        clone.getElementsByClassName('skin-image')[0].setAttribute('src', 'https://mc-heads.net/player/' + entry.texture_id);
+        const nameAndDetail = clone.querySelectorAll('[data-detail-page]')[0];
+        nameAndDetail.dataset.detailPage = entry.texture_id;
+        nameAndDetail.innerText = "#" + entry.id;
+
+        skinGrid.appendChild(clone);
+      });
+
+      skinGrid.removeChild(template);
+    }).catch(function (reason) {
+      console.log("failed to get a gamertag: " + reason)
+    })
+    // fetch(RECENTLY_UPDATED_PLAYERS).then(async function (response) {
+    //   const json = await response.json();
+    //
+    //   if (json.message) {
+    //     console.log("got a message while requesting gamertags: " + json.message)
+    //   }
+    //
+    //   if (!json.data || json.data.length === 0) {
+    //     return;
+    //   }
+    //
+    //   const template = document.getElementById('template');
+    //   const skinGrid = document.getElementById('skin-grid');
+    //
+    //   json.data.forEach(entry => {
+    //     const clone = template.cloneNode(true);
+    //     clone.removeAttribute('id');
+    //     clone.classList.remove('hidden');
+    //
+    //     clone.getElementsByClassName('skin-image')[0].setAttribute('src', 'https://mc-heads.net/player/' + entry.skin_hash);
+    //     const playerInfo = clone.querySelectorAll('[data-bedrock-id]')[0];
+    //     playerInfo.dataset.bedrockId = entry.xuid;
+    //     if (entry.gamertag) {
+    //       playerInfo.innerText = entry.gamertag;
+    //     } else {
+    //       playerInfo.classList.add('font-bold');
+    //       playerInfo.innerText = "unknown";
+    //     }
+    //
+    //     skinGrid.appendChild(clone);
+    //   });
+    //
+    //   // skinGrid.removeChild(template);
+    // }).catch(function (reason) {
+    //   console.log("failed to get a gamertag: " + reason)
+    // })
+  }
+
+  requestAndSetAccounts();
+</script>

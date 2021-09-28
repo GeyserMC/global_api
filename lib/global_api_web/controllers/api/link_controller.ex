@@ -1,4 +1,4 @@
-defmodule GlobalApiWeb.LinkController do
+defmodule GlobalApiWeb.Api.LinkController do
   use GlobalApiWeb, :controller
 
   alias GlobalApi.Link
@@ -7,7 +7,7 @@ defmodule GlobalApiWeb.LinkController do
   alias GlobalApi.UUID
   alias GlobalApi.Utils
   alias GlobalApi.XboxApi
-  alias GlobalApi.XboxUtils
+  alias GlobalApi.XboxAccounts
 
   def get_java_link(conn, %{"uuid" => uuid}) do
     case UUID.cast(uuid) do
@@ -49,7 +49,7 @@ defmodule GlobalApiWeb.LinkController do
   end
 
   def get_bedrock_link(conn, %{"xuid" => xuid}) do
-    case Utils.is_int_and_rounded(xuid) do
+    case Utils.is_int_rounded_and_positive(xuid) do
       false ->
         conn
         |> put_status(:bad_request)
@@ -175,7 +175,7 @@ defmodule GlobalApiWeb.LinkController do
     else
       case parse_query_info(query_info) do
         {:ok, query_info} ->
-          case XboxUtils.start_initial_xbox_setup(token, false, true, query_info, !is_bedrock) do
+          case XboxAccounts.start_initial_xbox_setup(token, false, true, query_info, !is_bedrock) do
             {:ok, data} ->
               if is_bedrock do
                 {xuid, gamertag} = XboxApi.get_own_profile_info(data.uhs, data.xbox_token)

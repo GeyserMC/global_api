@@ -5,23 +5,48 @@ defmodule GlobalApiWeb.Router do
     plug :accepts, ["json"]
   end
 
+  pipeline :browser do
+    plug :accepts, ["html"]
+  end
+
+  # only allow the skin subdomain when running in prod
+  skin_opts = if Mix.env() == :dev do [] else [host: "skin."] end
+  scope "/", GlobalApiWeb.Skin, skin_opts do
+    pipe_through :browser
+
+    get "/", SkinsController, :index
+    get "/preview", SkinsController, :preview
+  end
+
   # only allow the link subdomain when running in prod
   link_opts = if Mix.env() == :dev do [] else [host: "link."] end
-  scope "/", link_opts do
-    get "/", GlobalApiWeb.RootController, :get_index
+  scope "/", GlobalApiWeb.Link, link_opts do
+    pipe_through :browser
+
+    get "/", LinkingController, :index
+    get "/start", LinkingController, :start
+
+    scope "/link" do
+      get "/online", LinkingController, :online
+      get "/server", LinkingController, :server
+    end
   end
 
   # only allow the api subdomain when running in prod
   api_opts = if Mix.env() == :dev do [] else [host: "api."] end
 
   scope "/", api_opts do
-    scope "/v1", GlobalApiWeb, log: Mix.env() == :dev do
+    scope "/v1", GlobalApiWeb.Api, log: Mix.env() == :dev do
       pipe_through :api
 
       scope "/link" do
         get "/bedrock/:xuid", LinkController, :get_bedrock_link
         get "/java/:uuid", LinkController, :get_java_link
         post "/online", LinkController, :verify_online_link
+      end
+
+      scope "/news" do
+        get "/", NewsController, :get_news
       end
 
       scope "/skin" do
@@ -42,13 +67,27 @@ defmodule GlobalApiWeb.Router do
       end
     end
 
-    scope "/xbox", GlobalApiWeb, log: Mix.env() == :dev do
+    scope "/v2", GlobalApiWeb.Api, log: Mix.env() == :dev do
       pipe_through :api
 
-      get "/token", XboxController, :got_token
+      scope "/admin" do
+        scope "/xbox" do
+          get "/token", XboxController, :got_token
+        end
+      end
+
+      scope "/skin" do
+        get "/recent_uploads", SkinController, :get_recent_uploads
+      end
+
+      scope "/xbox" do
+        scope "/batch" do
+          post "/gamertag", XboxController, :get_gamertag_batch
+        end
+      end
     end
 
-    get "/health", GlobalApiWeb.HealthController, :health
+    get "/health", GlobalApiWeb.Api.HealthController, :health
   end
 
   # Enables LiveDashboard only for development
