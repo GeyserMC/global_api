@@ -5,8 +5,8 @@ defmodule GlobalApiWeb.Api.SkinController do
   alias GlobalApi.Utils
   alias GlobalApi.XboxUtils
 
-  @amount_per_page 140
-  @page_limit 5
+  @amount_per_page 60
+  @page_limit 10
 
   def get_recent_uploads(conn, %{"page" => page}) do
     case Utils.is_int_rounded_and_positive(page) do

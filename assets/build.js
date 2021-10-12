@@ -1,5 +1,5 @@
 // which top level variables/function names should be kept?
-const reservedTopLevels = ['programName','switchMode','openNotification','closeNotification'];
+const reservedTopLevels = ['programName','switchMode','createNotification','closeNotification'];
 const finalRootPath = '../priv/static/';
 
 const buildTemplates = false;
@@ -14,16 +14,12 @@ console.log("building in " + process.env.NODE_ENV + " mode")
 const glob = require('glob');
 const fs = require('fs');
 const { execSync } = require('child_process');
+const UglifyJS = require('uglify-js');
 
 // start javascript
 console.log("building javascript files...")
-try {
-  fs.unlinkSync('./tmp/file-cache.json')
-} catch (e) {}
 
-try {
-  fs.mkdirSync('./tmp')
-} catch (e) {}
+let nameCache = {};
 
 glob.sync("!(node_modules)/**/*.js").forEach(filePath => {
   const finalDir = finalRootPath + filePath.substring(0, filePath.lastIndexOf('/'));
@@ -34,10 +30,12 @@ glob.sync("!(node_modules)/**/*.js").forEach(filePath => {
   console.log("building " + filePath);
   const finalPath = finalRootPath + filePath;
   //todo use a minifier instead of an uglifier
-  execSync('uglifyjs ' + filePath + ' -c -m toplevel,reserved=[' + reservedTopLevels + '] --mangle-props --name-cache ./tmp/file-cache.json -o ' + finalPath)
+
+  let code = fs.readFileSync(filePath, "utf-8");
+  code = UglifyJS.minify(code, {mangle: { toplevel: true, reserved: reservedTopLevels }, nameCache: nameCache}).code;
+  fs.writeFileSync(finalPath, code)
 });
 
-fs.rmSync('./tmp', { recursive: true })
 console.log("done!")
 // end javascript
 
@@ -68,3 +66,6 @@ if (!buildTemplates) {
   console.log("done!");
 }
 // end html
+
+// create cache manifest
+execSync('mix phx.digest', {cwd: '../'})

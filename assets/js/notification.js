@@ -7,12 +7,33 @@ function notification() {
   return document.getElementById("notification");
 }
 
-function setNotificationContent(title, description, leftButtonName, leftButtonLink, duration) {
+function setNotificationContent(title, description, success, leftButtonName, leftButtonLink, duration) {
   document.getElementById("notification-title").innerText = title;
   document.getElementById("notification-description").innerText = description;
+
   const LeftButton = document.getElementById("notification-left-button");
-  LeftButton.innerText = leftButtonName;
-  LeftButton.onclick = () => document.location.href = leftButtonLink;
+  const LBClassess = LeftButton.classList;
+
+  if (success) {
+    document.getElementById("notification-icon-success").classList.remove("hidden");
+    document.getElementById("notification-icon-failed").classList.add("hidden");
+    LBClassess.remove("text-gray-600");
+    LBClassess.add("text-green-700");
+  } else {
+    document.getElementById("notification-icon-success").classList.add("hidden");
+    document.getElementById("notification-icon-failed").classList.remove("hidden");
+    LBClassess.add("text-gray-600");
+    LBClassess.remove("text-green-700");
+  }
+
+  if (leftButtonName == null) {
+    LeftButton.innerText = "hidden";
+    LBClassess.add("hidden");
+  } else {
+    LBClassess.remove("hidden");
+    LeftButton.innerText = leftButtonName;
+    LeftButton.onclick = () => document.location.href = leftButtonLink;
+  }
   showNotification();
 
   LatestNotificationId++;
@@ -27,11 +48,11 @@ function setNotificationContent(title, description, leftButtonName, leftButtonLi
   }
 }
 
-function createNotification(title, description, leftButtonName, leftButtonLink, duration) {
+function createNotification(title, description, success, leftButtonName, leftButtonLink, duration) {
   if (NotificationQueue.length === 0 && notification().classList.contains("hidden")) {
-    setNotificationContent(title, description, leftButtonName, leftButtonLink, duration);
+    setNotificationContent(title, description, success, leftButtonName, leftButtonLink, duration);
   } else {
-    NotificationQueue.push([title, description, leftButtonName, leftButtonLink, duration]);
+    NotificationQueue.push([title, description, success, leftButtonName, leftButtonLink, duration]);
   }
 }
 

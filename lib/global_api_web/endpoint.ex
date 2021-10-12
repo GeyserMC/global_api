@@ -42,7 +42,7 @@ defmodule GlobalApiWeb.Endpoint do
   # only serve the assets at the link subdomain when running prod
   plug :static_assets, Mix.env() == :prod
 
-  # let's encrypt stuff
+  # stuff from let's encrypt
   plug Plug.Static,
        at: "/",
        from: :global_api,
@@ -58,7 +58,7 @@ defmodule GlobalApiWeb.Endpoint do
 
   plug GlobalApiWeb.Router
 
-  @static_opts Plug.Static.init(at: "/", from: :global_api, gzip: false)
+  @static_opts Plug.Static.init(at: "/", from: Application.get_env(:global_api, :static_assets), gzip: false)
 
   def static_assets(conn, is_prod) do
     if (is_prod && String.starts_with?(conn.host, "link.")) || !is_prod do

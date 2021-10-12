@@ -23,6 +23,7 @@
     "remove-files-webpack-plugin": "^1.4.5",
     "snowpack": "^3.5.2",
     "tailwindcss": "^2.1.2",
+    "uglify-js": "^3.14.2",
     "webpack-manifest-plugin": "^2.2.0"
   }
 }

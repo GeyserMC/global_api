@@ -1,4 +1,4 @@
-const NEWS_CHECK_URL = (window.location.origin.startsWith("http") ? "https://api.geysermc.org" : window.location.origin) + "/assets/news.json"; //todo
+const NEWS_CHECK_URL = (window.location.origin.startsWith("https") ? "https://api.geysermc.org" : window.location.origin) + "/assets/news.json"; //todo
 let programName = "global_api";
 const NEWS_CHECK_INTERVAL = 30 * 60 * 1000; // every 30 mins
 

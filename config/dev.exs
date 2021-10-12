@@ -1,5 +1,7 @@
 use Mix.Config
 
+config :global_api, static_assets: "assets"
+
 config :global_api, :app_info,
   client_id: "client id",
   redirect_url: "https://api.geysermc.org/xbox/token",
@@ -12,7 +14,7 @@ config :global_api, :app_info,
 # watchers to your application. For example, we use it
 # with webpack to recompile .js and .css sources.
 config :global_api, GlobalApiWeb.Endpoint,
-  debug_errors: false,
+  debug_errors: true,
   code_reloader: true,
   check_origin: false,
   watchers: []
