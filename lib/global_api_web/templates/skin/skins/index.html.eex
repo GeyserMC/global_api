@@ -8,64 +8,47 @@
 
 <div class="flex justify-center mt-10">
   <!-- every line counts as a child, you have to keep this div on one line -->
-  <div
-      class="grid 2xl:grid-cols-7 xl:grid-cols-6 lg:grid-cols-5 md:grid-cols-4 sm:grid-cols-4 grid-cols-2 gap-4 justify-between"
-      id="skin-grid"></div>
+  <div class="grid 2xl:grid-cols-7 xl:grid-cols-6 lg:grid-cols-5 md:grid-cols-4 sm:grid-cols-4 grid-cols-2 gap-4 justify-between" id="skin-grid"></div>
 </div>
 
 <div class="flex w-full justify-center items-center text-gray-800">
   <div class="flex h-10 mt-8 justify-center items-center w-2/4 gap-1.5">
-    <div class="px-4 py-1.5 shadow-md cursor-pointer rounded-md bg-gray-200"
-         id="action-previous-page">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
-           stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+    <div class="px-4 py-1.5 shadow-md cursor-pointer rounded-md bg-gray-200 dark:bg-gray-700 dark:text-gray-300" id="action-previous-page">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
       </svg>
     </div>
-    <div class="px-4 py-2 shadow-md cursor-default rounded-md bg-white">1</div>
-    <div class="px-4 py-2 shadow-md cursor-pointer rounded-md bg-gray-200">2</div>
-    <div class="px-4 py-2 shadow-md cursor-pointer rounded-md bg-gray-200">3</div>
-    <div class="px-4 py-1.5 shadow-md cursor-pointer rounded-md bg-gray-200" id="action-next-page">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
-           stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+    <div class="px-4 py-2 shadow-md cursor-default rounded-md dark:text-gray-300" id="skin-page-min">1</div>
+    <div class="px-4 py-2 shadow-md cursor-pointer rounded-md dark:text-gray-300" id="skin-page-half"></div>
+    <div class="px-4 py-2 shadow-md cursor-pointer rounded-md dark:text-gray-300" id="skin-page-max"></div>
+    <div class="px-4 py-1.5 shadow-md cursor-pointer rounded-md bg-gray-200 dark:bg-gray-700 dark:text-gray-300" id="action-next-page">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
       </svg>
     </div>
   </div>
 </div>
 
 <!-- the template for the 'to be shown' skins -->
-<div
-    class="flex flex-col items-center justify-center w-32 h-48 md:w-40 md:h-60 mx-auto animate-pulse hidden"
-    id="skin-base-template">
-  <div
-      class="w-32 h-48 md:w-40 md:h-60 bg-gray-200 dark:bg-gray-700 rounded-lg shadow-sm flex justify-center items-center">
+<div class="flex flex-col items-center justify-center w-32 h-48 md:w-40 md:h-60 mx-auto animate-pulse hidden" id="skin-base-template">
+  <div class="w-32 h-48 md:w-40 md:h-60 bg-gray-200 dark:bg-gray-700 rounded-lg shadow-sm flex justify-center items-center">
     <div class="w-auto h-4/5 pointer-events-none skin-image"></div>
   </div>
   <div class="w-28 md:w-36 -mt-12 overflow-hidden bg-white rounded-lg dark:bg-gray-800">
-    <div
-        class="py-2 font-semibold tracking-wide text-center text-xs md:text-sm flex items-center justify-center"
-        data-detail-page="">
-      <span
-          class="bg-gray-300 dark:bg-gray-700 w-3/4 rounded-sm h-2.5 my-1.5 text-transparent">.</span>
+    <div class="py-2 font-semibold tracking-wide text-center text-xs md:text-sm flex items-center justify-center" data-detail-page="">
+      <span class="bg-gray-300 dark:bg-gray-700 w-3/4 rounded-sm h-2.5 my-1.5 text-transparent">.</span>
     </div>
   </div>
 </div>
 
 
 <!-- the template used once JavaScript has loaded the skins -->
-<div class="flex flex-col items-center justify-center w-32 h-48 md:w-40 md:h-60 mx-auto hidden"
-     id="skin-template">
-  <div
-      class="w-32 h-48 md:w-40 md:h-60 bg-gray-200 dark:bg-gray-700 rounded-lg shadow-md flex justify-center items-center">
-    <img class="w-auto h-4/5 pointer-events-none skin-image" src="" loading="lazy"
-         alt="skin of a player"/>
+<div class="flex flex-col items-center justify-center w-32 h-48 md:w-40 md:h-60 mx-auto hidden" id="skin-template">
+  <div class="w-32 h-48 md:w-40 md:h-60 bg-gray-200 dark:bg-gray-700 rounded-lg shadow-md flex justify-center items-center">
+    <img class="w-auto h-4/5 pointer-events-none render-pixelated skin-image" src="" loading="lazy" alt="skin of a player"/>
   </div>
   <div class="w-28 md:w-36 -mt-12 overflow-hidden bg-white rounded-lg shadow-lg dark:bg-gray-800">
-    <h3 class="py-2 font-semibold tracking-wide text-center text-gray-800 text-xs md:text-sm dark:text-gray-200"
-        data-detail-page="">loading...</h3>
+    <h3 class="py-2 font-semibold tracking-wide text-center text-gray-800 text-xs md:text-sm dark:text-gray-200" data-detail-page="">loading...</h3>
   </div>
 </div>
 
@@ -116,6 +99,25 @@
     function setPageButtons(page, pageCount) {
         setActionButton('#action-previous-page', page > 1 ? page - 1 : -1);
         setActionButton('#action-next-page', page < pageCount ? page + 1 : -1);
+
+        setPageButton('#skin-page-min', 1, page === 1);
+        setPageButton('#skin-page-half', pageCount / 2, page === (pageCount / 2));
+        setPageButton('#skin-page-max', pageCount, page === pageCount);
+    }
+
+    function setPageButton(queryName, value, active) {
+        let button = document.querySelector(queryName);
+        button.innerText = value;
+        let classList = button.classList;
+        const activeClasses = ['bg-white', 'dark:bg-gray-600'];
+        const inactiveClasses = ['bg-gray-200', 'dark:bg-gray-700'];
+        if (active) {
+            classList.add(...activeClasses);
+            classList.remove(...inactiveClasses);
+        } else {
+            classList.add(...inactiveClasses);
+            classList.remove(...activeClasses);
+        }
     }
 
     function setActionButton(queryName, nextPage) {
@@ -155,8 +157,6 @@
         fetch(RECENTLY_UPLOADED_SKINS + "?page=" + page)
             .then(response => response.json())
             .then(json => {
-                console.log(json);
-
                 if (json.message) {
                     console.log("got a message while requesting gamertags: " + json.message)
                 }

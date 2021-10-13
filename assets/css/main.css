@@ -1,0 +1,10 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+    .render-pixelated {
+        image-rendering: pixelated;
+        image-rendering: -moz-crisp-edges;
+    }
+}

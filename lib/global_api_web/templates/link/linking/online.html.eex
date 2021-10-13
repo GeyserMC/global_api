@@ -12,11 +12,6 @@
       <i>The Java part only works on a Microsoft account that owns Java edition.</i>
     </p>
 
-    <noscript class="mt-8 max-w-2xl text-xl text-gray-500 lg:mx-auto">
-      This page requires JavaScript to be enabled. We don't have trackers on our website, it's just to complete the
-      linking steps.
-    </noscript>
-
     <p class="mt-8 max-w-2xl text-xl lg:mx-auto hidden" id="step-1">
       <b>Step 1:</b> Login with your Bedrock account
     </p>

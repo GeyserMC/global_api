@@ -287,6 +287,19 @@
   </div>
   <script defer src="<%= Routes.static_path(@conn, "/js/news.js") %>"></script>
   <% end %>
+
+  <!-- people without JavaScript can't use the light theme -->
+  <noscript class="fixed bottom-0 w-screen shadow-inner p-5 rounded-t-md bg-gray-700 text-gray-200 text-center" id="hide-no-js">
+    <style>
+        #hide-no-js:target {
+            display: none;
+        }
+    </style>
+    Hi!<br>
+    Various parts of this website require JavaScript to be enabled, but it looks like JavaScript is disabled!<br>
+    We don't have trackers, ads or whatever. So please enable JavaScript if you want this website to function normally.<br>
+    <a class="text-red-400" href="#hide-no-js">Hide</a>
+  </noscript>
 </body>
 
 </html>
