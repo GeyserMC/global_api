@@ -14,7 +14,7 @@ defmodule GlobalApiWeb.Api.LinkController do
       :error ->
         conn
         |> put_status(:bad_request)
-        |> json(%{success: false, message: "uuid has to be a valid uuid (36 chars long)"})
+        |> json(%{message: "uuid has to be a valid uuid (36 chars long)"})
 
       uuid ->
         {_, link} = Cachex.fetch(
@@ -32,12 +32,7 @@ defmodule GlobalApiWeb.Api.LinkController do
 
         conn
         |> put_resp_header("cache-control", "max-age=30, public")
-        |> json(
-             %{
-               success: true,
-               data: link
-             }
-           )
+        |> json(link)
     end
   end
 
@@ -45,7 +40,7 @@ defmodule GlobalApiWeb.Api.LinkController do
     conn
     |> put_status(:bad_request)
     |> put_resp_header("cache-control", "immutable")
-    |> json(%{success: false, message: "Please provide an uuid to lookup"})
+    |> json(%{message: "please provide an uuid to lookup"})
   end
 
   def get_bedrock_link(conn, %{"xuid" => xuid}) do
@@ -53,7 +48,7 @@ defmodule GlobalApiWeb.Api.LinkController do
       false ->
         conn
         |> put_status(:bad_request)
-        |> json(%{success: false, message: "xuid should be an int"})
+        |> json(%{message: "xuid should be an int"})
 
       true ->
         {xuid, _} = Integer.parse(xuid)
@@ -69,12 +64,7 @@ defmodule GlobalApiWeb.Api.LinkController do
 
         conn
         |> put_resp_header("cache-control", "max-age=30, public")
-        |> json(
-             %{
-               success: true,
-               data: Link.to_public(link)
-             }
-           )
+        |> json(Link.to_public(link))
     end
   end
 
@@ -82,7 +72,7 @@ defmodule GlobalApiWeb.Api.LinkController do
     conn
     |> put_status(:bad_request)
     |> put_resp_header("cache-control", "immutable")
-    |> json(%{success: false, message: "Please provide a xuid to lookup"})
+    |> json(%{message: "please provide a xuid to lookup"})
   end
 
   def verify_online_link(conn, %{"bedrock" => bedrock, "java" => java}) do
@@ -90,7 +80,7 @@ defmodule GlobalApiWeb.Api.LinkController do
       conn
       |> put_status(:bad_request)
       |> put_resp_header("cache-control", "immutable")
-      |> json(%{success: false, message: "received invalid tokens"})
+      |> json(%{message: "received invalid tokens"})
     else
       # making sure that you can only link a bedrock id with a java id
       bedrock = "bedrock:" <> bedrock
@@ -100,25 +90,24 @@ defmodule GlobalApiWeb.Api.LinkController do
       {:ok, java_info} = Cachex.get(:link_token_cache, java)
 
       if bedrock_info == nil || java_info == nil do
-        json(conn, %{success: false, message: "the Java or Bedrock token has expired!"})
+        conn
+        |> put_status(:bad_request)
+        |> json(%{message: "the Java or Bedrock token has expired!"})
       else
         Cachex.expire(:link_token_cache, bedrock, -1)
         Cachex.expire(:link_token_cache, java, -1)
         {xuid, gamertag} = bedrock_info
         {uuid, username} = java_info
         LinksRepo.create_link(xuid, uuid, username)
-        conn
-        |> json(
-             %{
-               success: true,
-               data: %{
-                 xuid: xuid,
-                 gamertag: gamertag,
-                 uuid: uuid,
-                 username: username
-               }
-             }
-           )
+        json(
+          conn,
+          %{
+            xuid: xuid,
+            gamertag: gamertag,
+            uuid: uuid,
+            username: username
+          }
+        )
       end
     end
   end
@@ -129,16 +118,15 @@ defmodule GlobalApiWeb.Api.LinkController do
         json(
           conn,
           %{
-            success: true,
-            data: %{
-              id: id,
-              gamertag: gamertag,
-              xuid: xuid
-            }
+            id: id,
+            gamertag: gamertag,
+            xuid: xuid
           }
         )
       {:error, reason} ->
-        json(conn, %{success: false, message: reason})
+        conn
+        |> put_status(:bad_request)
+        |> json(%{message: reason})
     end
   end
 
@@ -157,7 +145,9 @@ defmodule GlobalApiWeb.Api.LinkController do
           }
         )
       {:error, reason} ->
-        json(conn, %{success: false, message: reason})
+        conn
+        |> put_status(:bad_request)
+        |> json(%{message: reason})
     end
   end
 
@@ -165,7 +155,7 @@ defmodule GlobalApiWeb.Api.LinkController do
     conn
     |> put_status(:bad_request)
     |> put_resp_header("cache-control", "immutable")
-    |> json(%{success: false, message: "illegal online link data"})
+    |> json(%{message: "illegal online link data"})
   end
 
   defp verify_online_link0(token, query_info, is_bedrock) do

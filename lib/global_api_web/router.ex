@@ -41,16 +41,6 @@ defmodule GlobalApiWeb.Router do
     scope "/v1", GlobalApiWeb.Api, log: Mix.env() == :dev do
       pipe_through :api
 
-      scope "/link" do
-        get "/bedrock/:xuid", LinkController, :get_bedrock_link
-        get "/java/:uuid", LinkController, :get_java_link
-        post "/online", LinkController, :verify_online_link
-      end
-
-      scope "/news" do
-        get "/", NewsController, :get_news
-      end
-
       scope "/skin" do
         get "/:xuid", SkinController, :get_skin
       end
@@ -76,6 +66,16 @@ defmodule GlobalApiWeb.Router do
         scope "/xbox" do
           get "/token", XboxController, :got_token
         end
+      end
+
+      scope "/link" do
+        get "/bedrock/:xuid", LinkController, :get_bedrock_link
+        get "/java/:uuid", LinkController, :get_java_link
+        post "/online", LinkController, :verify_online_link
+      end
+
+      scope "/news" do
+        get "/", NewsController, :get_news
       end
 
       scope "/skin" do
