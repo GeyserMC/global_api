@@ -56,10 +56,13 @@ defmodule GlobalApiWeb.Api.UtilsController do
     else
       conn
       |> put_status(:bad_request)
-      |> json(%{success: false, message: "prefix is empty or longer than 16 characters"})
+      |> json(%{message: "prefix is empty or longer than 16 characters"})
     end
   end
 
-  def get_bedrock_or_java_uuid(conn, _),
-      do: json(conn, %{success: false, message: "you have to provide a prefix"})
+  def get_bedrock_or_java_uuid(conn, _) do
+    conn
+    |> put_status(:bad_request)
+    |> json(%{message: "you have to provide a prefix"})
+  end
 end

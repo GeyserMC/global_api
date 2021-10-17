@@ -44,7 +44,6 @@ defmodule GlobalApi.XboxAccounts do
 
   def not_setup_message() do
     %{
-      success: false,
       message: "The Xbox Api isn't setup correctly. Please contact a GeyserMC developer"
     }
   end

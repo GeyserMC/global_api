@@ -1,4 +1,4 @@
-const NEWS_CHECK_URL = (window.location.origin.startsWith("https") ? "https://api.geysermc.org" : window.location.origin) + "/assets/news.json"; //todo
+const NEWS_CHECK_URL = (window.location.origin.startsWith("https") ? "https://api.geysermc.org" : window.location.origin) + "/v2/news/global_api";
 let programName = "global_api";
 const NEWS_CHECK_INTERVAL = 30 * 60 * 1000; // every 30 mins
 
@@ -34,7 +34,7 @@ function ignoreNews(newsId) {
 
 function showNews(newsId, smallTitle, largeTitle, learnMoreUrl) {
   if (!news().classList.contains("hidden")) {
-    hideNews(() => showNews(smallTitle, largeTitle, learnMoreUrl));
+    hideNews(() => showNews(newsId, smallTitle, largeTitle, learnMoreUrl));
     return;
   }
   news().dataset.newsId = newsId;
@@ -52,22 +52,34 @@ function checkNews() {
     const json = await response.json();
 
     const ignoredNews = getIgnoredNews();
-    let mostRecentTime = -1;
+    let mostRecentId = -1;
     let mostRecentTimeItem = null;
-    for (i = 0; i < json.length; i++) {
+    for (let i = 0; i < json.length; i++) {
       let current = json[i];
-      if (current.active && current.uploaded_at > mostRecentTime && !ignoredNews.includes(current.id.toString())) {
-        mostRecentTime = current.uploaded_at;
+      if (current.active && current.id > mostRecentId && !ignoredNews.includes(current.id.toString())) {
+        mostRecentId = current.id;
         mostRecentTimeItem = current;
       }
     }
 
-    if (mostRecentTime !== -1) {
-      showNews(mostRecentTimeItem.id, mostRecentTimeItem.small_title, mostRecentTimeItem.large_title, mostRecentTimeItem.learn_more_url);
+    if (mostRecentId !== -1) {
+      let [smallTitle, largeTitle] = newsMapping(mostRecentTimeItem.message);
+      showNews(mostRecentTimeItem.id, smallTitle, largeTitle, mostRecentTimeItem.url);
     }
   }).catch(function (reason) {
     console.log("failed to check news: " + reason)
   })
+}
+
+function newsMapping(message) {
+  let part;
+  switch (message.id) {
+    case 4: part = "soon"; break;
+    case 5: part = "starting " + message.args[1]; break;
+    case 6: part = "from " + message.args[1] + " till " + message.args[2]; break;
+    default: return null;
+  }
+  return ["Website maintenance " + part, "The website is temporarily going down for maintenance " + part];
 }
 
 function closeNews() {

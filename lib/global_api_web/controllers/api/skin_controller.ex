@@ -3,7 +3,6 @@ defmodule GlobalApiWeb.Api.SkinController do
 
   alias GlobalApi.SkinsRepo
   alias GlobalApi.Utils
-  alias GlobalApi.XboxUtils
 
   @amount_per_page 60
   @page_limit 10
@@ -52,7 +51,7 @@ defmodule GlobalApiWeb.Api.SkinController do
         conn
         |> put_status(:bad_request)
         |> put_resp_header("cache-control", "max-age=604800, immutable, public")
-        |> json(%{success: false, message: "xuid should be an int"})
+        |> json(%{message: "xuid should be an int"})
 
       true ->
         {_, result} = Cachex.fetch(
@@ -81,16 +80,11 @@ defmodule GlobalApiWeb.Api.SkinController do
         if result == nil do
           conn
           |> put_resp_header("cache-control", "max-age=120, public")
-          |> json(%{success: true, data: %{}})
+          |> json(%{})
         else
           conn
           |> put_resp_header("cache-control", "max-age=60, public")
-          |> json(
-               %{
-                 success: true,
-                 data: %{result | hash: Utils.hash_string(result.hash)}
-               }
-             )
+          |> json(%{result | hash: Utils.hash_string(result.hash)})
         end
     end
   end

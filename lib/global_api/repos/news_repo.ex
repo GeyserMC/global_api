@@ -1,12 +1,12 @@
 defmodule GlobalApi.NewsRepo do
-  alias GlobalApi.NewsRepo
   alias GlobalApi.NewsItem
+  alias GlobalApi.Repo
   import Ecto.Query
 
   def get_news(project) do
     Repo.all(
       from n in NewsItem,
-      where: n.active && n.project == ^project
+      where: n.active and n.project == ^project
     )
   end
 

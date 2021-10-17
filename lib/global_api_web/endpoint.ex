@@ -58,10 +58,10 @@ defmodule GlobalApiWeb.Endpoint do
 
   plug GlobalApiWeb.Router
 
-  @static_opts Plug.Static.init(at: "/", from: Application.get_env(:global_api, :static_assets), gzip: false)
+  @static_opts Plug.Static.init(at: "/", from: Application.get_env(:global_api, :static_assets), gzip: true)
 
   def static_assets(conn, is_prod) do
-    if (is_prod && String.starts_with?(conn.host, "link.")) || !is_prod do
+    if String.starts_with?(conn.host, "cdn.") do
         Plug.Static.call(conn, @static_opts)
     else
       conn

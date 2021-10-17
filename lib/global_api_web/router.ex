@@ -28,7 +28,7 @@ defmodule GlobalApiWeb.Router do
     get "/", LinkingController, :index
     get "/start", LinkingController, :start
 
-    scope "/link" do
+    scope "/method" do
       get "/online", LinkingController, :online
       get "/server", LinkingController, :server
     end
@@ -41,21 +41,8 @@ defmodule GlobalApiWeb.Router do
     scope "/v1", GlobalApiWeb.Api, log: Mix.env() == :dev do
       pipe_through :api
 
-      scope "/skin" do
-        get "/:xuid", SkinController, :get_skin
-      end
-
       scope "/stats" do
         get "/", StatsController, :get_all_stats
-      end
-
-      scope "/utils" do
-        get "/uuid/bedrock_or_java/:username", UtilsController, :get_bedrock_or_java_uuid
-      end
-
-      scope "/xbox" do
-        get "/gamertag/:xuid", XboxController, :get_gamertag
-        get "/xuid/:gamertag", XboxController, :get_xuid
       end
     end
 
@@ -75,17 +62,28 @@ defmodule GlobalApiWeb.Router do
       end
 
       scope "/news" do
-        get "/", NewsController, :get_news
+        get "/:project", NewsController, :get_news
       end
 
       scope "/skin" do
         get "/recent_uploads", SkinController, :get_recent_uploads
+        get "/:xuid", SkinController, :get_skin
+      end
+
+      scope "/stats" do
+        get "/", StatsController, :get_all_stats
+      end
+
+      scope "/utils" do
+        get "/uuid/bedrock_or_java/:username", UtilsController, :get_bedrock_or_java_uuid
       end
 
       scope "/xbox" do
         scope "/batch" do
           post "/gamertag", XboxController, :get_gamertag_batch
         end
+        get "/gamertag/:xuid", XboxController, :get_gamertag
+        get "/xuid/:gamertag", XboxController, :get_xuid
       end
     end
 

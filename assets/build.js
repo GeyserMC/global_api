@@ -1,5 +1,5 @@
 // which top level variables/function names should be kept?
-const reservedTopLevels = ['programName','switchMode','createNotification','closeNotification'];
+const reservedTopLevels = ['programName','switchMode','createNotification','closeNotification','closeNews'];
 const finalRootPath = '../priv/static/';
 
 const buildTemplates = false;
