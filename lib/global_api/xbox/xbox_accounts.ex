@@ -27,9 +27,9 @@ defmodule GlobalApi.XboxAccounts do
 
   def get_info() do
     {
-      Utils.get_env(:app_info, :client_id),
-      Utils.get_env(:app_info, :redirect_url),
-      Utils.get_env(:app_info, :client_secret)
+      Utils.get_env(:xbox_accounts_app_info, :client_id),
+      Utils.get_env(:xbox_accounts_app_info, :redirect_url),
+      Utils.get_env(:xbox_accounts_app_info, :client_secret)
     }
   end
 

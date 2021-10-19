@@ -1,13 +1,30 @@
 # In this file, we load production configuration and secrets
-# from environment variables. You can also hardcode secrets,
-# although such is generally not recommended and you have to
-# remember to add this file to your .gitignore.
+# from environment variables.
 use Mix.Config
 
-config :global_api, :app_info,
+# Configure your database
+config :global_api, GlobalApi.Repo,
+  hostname: "ip",
+  port: 3306,
+  username: "username",
+  password: "password",
+  database: "database",
+  pool_size: 50
+
+config :global_api, :xbox_accounts_app_info,
   client_id: "client id",
   redirect_url: "https://api.geysermc.org/xbox/token",
   client_secret: "client secret"
+
+config :global_api, :link_app_info,
+  client_id: "client id",
+  redirect_url: "https://link.geysermc.org/method/online",
+  client_secret: "client secret"
+
+config :global_api, :telemetry,
+  host: "ip",
+  port: 8125,
+  server_id: 1
 
 # ## Using releases (Elixir v1.9+)
 #

@@ -10,6 +10,9 @@
 # Where 3rd-party dependencies like ExDoc output generated docs.
 /doc/
 
+# Ignore configs so we can change them locally
+/config/
+
 # Ignore .fetch files in case you like to edit your project deps locally.
 /.fetch
 
@@ -30,8 +33,6 @@ global_api-*.tar
 
 /.idea/
 *.iml
-# Ignore configs so we can change them locally
-/config/
 .elixir_ls
 
 **/node_modules/**

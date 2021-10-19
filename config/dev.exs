@@ -1,18 +1,35 @@
 use Mix.Config
 
-config :global_api, static_assets: "assets"
+# Configure your database
+config :global_api, GlobalApi.Repo,
+  hostname: "ip",
+  port: 3306,
+  username: "username",
+  password: "password",
+  database: "database",
+  pool_size: 2
 
-config :global_api, :app_info,
+# Even in development mode we're using the real subdomains and most stuff also uses https,
+# e.g. make sure that build.js tries to use http instead of https
+
+config :global_api, :xbox_accounts_app_info,
   client_id: "client id",
   redirect_url: "https://api.geysermc.org/xbox/token",
   client_secret: "client secret"
 
+config :global_api, :link_app_info,
+  client_id: "client id",
+  redirect_url: "https://link.geysermc.org/method/online",
+  client_secret: "client secret"
+
+config :global_api, :telemetry,
+  host: "ip",
+  port: 8125,
+  server_id: 1
+
 # For development, we disable any cache and enable
 # debugging and code reloading.
-#
-# The watchers configuration can be used to run external
-# watchers to your application. For example, we use it
-# with webpack to recompile .js and .css sources.
+# The watcher is used to automatically copy changes from the assets dir to /priv/static
 config :global_api, GlobalApiWeb.Endpoint,
   debug_errors: true,
   code_reloader: true,
@@ -59,10 +76,10 @@ config :global_api, GlobalApiWeb.Endpoint,
       ]}
     ],
     ip: {0, 0, 0, 0},
-    port: String.to_integer(System.get_env("PORT") || "4000"),
+    port: String.to_integer(System.get_env("PORT") || "80"),
     transport_options: [socket_opts: [:inet]]
   ],
-  static_url: [host: "api.geysermc.org"],
+  static_url: [host: "cdn.geysermc.org"],
   pubsub_server: GlobalApi.PubSub,
   live_reload: [
     patterns: [
