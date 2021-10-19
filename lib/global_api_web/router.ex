@@ -1,5 +1,6 @@
 defmodule GlobalApiWeb.Router do
   use GlobalApiWeb, :router
+  use Plug.ErrorHandler
 
   pipeline :api do
     plug :accepts, ["json"]
@@ -9,9 +10,7 @@ defmodule GlobalApiWeb.Router do
     plug :accepts, ["html"]
   end
 
-  # only allow the skin subdomain when running in prod
-  skin_opts = if Mix.env() == :dev do [] else [host: "skin."] end
-  scope "/", skin_opts do
+  scope "/", host: "skin." do
     pipe_through :browser
 
     get "/", GlobalApiWeb.Skin.SkinsController, :index
@@ -20,9 +19,7 @@ defmodule GlobalApiWeb.Router do
     get "/preview", GlobalApiWeb.Cdn.PreviewController, :preview
   end
 
-  # only allow the link subdomain when running in prod
-  link_opts = if Mix.env() == :dev do [] else [host: "link."] end
-  scope "/", GlobalApiWeb.Link, link_opts do
+  scope "/", GlobalApiWeb.Link, host: "link." do
     pipe_through :browser
 
     get "/", LinkingController, :index
@@ -34,10 +31,7 @@ defmodule GlobalApiWeb.Router do
     end
   end
 
-  # only allow the api subdomain when running in prod
-  api_opts = if Mix.env() == :dev do [] else [host: "api."] end
-
-  scope "/", api_opts do
+  scope "/", host: "api." do
     scope "/v1", GlobalApiWeb.Api, log: Mix.env() == :dev do
       pipe_through :api
 
@@ -106,5 +100,26 @@ defmodule GlobalApiWeb.Router do
       pipe_through :dashboard
       live_dashboard "/"
     end
+  end
+
+  defp handle_errors(conn, %{reason: %Phoenix.Router.NoRouteError{message: message} = uwu}) do
+    if String.starts_with?(conn.host, "api.") do
+      handle_errors(conn, nil) # pass it through to the function below
+    else
+      conn
+      |> put_view(GlobalApiWeb.ErrorView)
+      |> put_layout({GlobalApiWeb.LayoutView, "app.html"})
+      |> render(
+        "error.html",
+        page_title: conn.status,
+        page_description: Plug.Conn.Status.reason_phrase(conn.status)
+      )
+    end
+  end
+
+  defp handle_errors(conn, _) do
+    conn
+    |> json(%{message: "#{conn.status} #{Plug.Conn.Status.reason_phrase(conn.status)}"})
+    |> halt()
   end
 end

@@ -1,5 +1,5 @@
 const loginBaseUrl = 'https://login.live.com/oauth20_authorize.srf?client_id=dad9257f-6b54-4509-8463-81286ee5860d&response_type=code&display=popup&scope=Xboxlive.signin&redirect_uri=';
-const linkUrl = (window.location.origin.startsWith("https") ? "https://api.geysermc.org" : window.location.origin) + '/v1/link/online'
+const linkUrl = '%API_BASE_URL%/v2/link/online';
 
 window.addEventListener('load', function () {
   const queryParams = new URLSearchParams(window.location.search);

@@ -1,9 +1,7 @@
 defmodule GlobalApiWeb.ErrorView do
-  def render("404.json", _conn) do
-    %{success: false, message: "Requested page cannot be found"}
-  end
+  use GlobalApiWeb, :view
 
-  def render(_, _assigns) do
-    %{success: false, message: "Unknown error happened while executing your request"}
+  def template_not_found(_, %{conn: conn}) do
+    "#{conn.status} #{Plug.Conn.Status.reason_phrase(conn.status)}"
   end
 end

@@ -1,9 +1,7 @@
 const SKINS_PER_PAGE = 60;
 let currentPage = -1;
 
-const BASE_URL = (window.location.origin.startsWith("https") ? "https://api.geysermc.org" : window.location.origin);
-const RECENTLY_UPLOADED_SKINS = BASE_URL + "/v2/skin/recent_uploads/";
-const RECENTLY_UPDATED_PLAYERS = BASE_URL + "/v2/skin/recent_uploads/";
+const RECENTLY_UPLOADED_SKINS = '%API_BASE_URL%/v2/skin/recent_uploads/';
 
 // allows us to maintain the user's scroll position
 window.addEventListener('DOMContentLoaded', preInit);

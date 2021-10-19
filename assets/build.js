@@ -1,27 +1,26 @@
+// this file has to be run in the assets dir (like: cd assets && node build.js)
+
 // which top level variables/function names should be kept?
 const reservedTopLevels = ['programName','switchMode','createNotification','closeNotification','closeNews'];
+const apiBaseUrl = 'https://api.geysermc.org';
 const finalRootPath = '../priv/static/';
 
 const buildTemplates = false;
 const templateDir = '../lib/global_api_web/templates';
 const finalTemplateDir = templateDir;
 
-console.log("building in " + process.env.NODE_ENV + " mode")
-
-// cd assets && node build.js
+console.log("building in " + process.env.NODE_ENV + " mode");
 
 // start program
 const glob = require('glob');
 const fs = require('fs');
-const { execSync } = require('child_process');
+const { exec, execSync } = require('child_process');
 const UglifyJS = require('uglify-js');
 
-// start javascript
-console.log("building javascript files...")
-
+//region build JavaScript function
 let nameCache = {};
 
-glob.sync("!(node_modules)/**/*.js").forEach(filePath => {
+function buildJavaScript(filePath) {
   const finalDir = finalRootPath + filePath.substring(0, filePath.lastIndexOf('/'));
   if (!fs.existsSync(finalDir)) {
     fs.mkdirSync(finalDir, { recursive: true });
@@ -31,16 +30,60 @@ glob.sync("!(node_modules)/**/*.js").forEach(filePath => {
   const finalPath = finalRootPath + filePath;
   //todo use a minifier instead of an uglifier
 
-  let code = fs.readFileSync(filePath, "utf-8");
+  let code = fs.readFileSync(filePath, "utf-8").replace(/%API_BASE_URL%/gm, apiBaseUrl);
   code = UglifyJS.minify(code, {mangle: { toplevel: true, reserved: reservedTopLevels }, nameCache: nameCache}).code;
-  fs.writeFileSync(finalPath, code)
-});
+  fs.writeFileSync(finalPath, code);
+  console.log("finished writing js file " + filePath);
+}
+//endregion
 
-console.log("done!")
-// end javascript
+//region watch and build changes argument
+if (process.argv.includes('--watch')) {
+  console.log("watch mode has been detected!");
 
+  // ignore dotfiles, ignore css, ignore node_modules and ignore:
+  // package.json,package-lock.json,build.js,postcss.config.js,tailwind.config.js
+  const ignoredChanges = /(^|[\/\\])\..|^.+\.css$|^node_modules|package\.json|package-lock\.json|build\.js|postcss\.config\.js|tailwind\.config\.js/;
 
-// start css
+  require('chokidar')
+      .watch('.', {ignored: ignoredChanges})
+      .on('all', (event, path) => {
+        if (["add", "change"].includes(event)) {
+          if (path.endsWith('.js')) {
+            buildJavaScript(path);
+          } else {
+            fs.copyFile(path, finalRootPath + path, err => {
+              if (err != null) console.log("was unable to copy " + path + " to " + finalRootPath + ": " + err);
+            });
+          }
+        } else if ("unlink" === event) {
+          fs.unlink(finalRootPath + path, err => {
+            if (err != null) console.log("was unable to delete " + path + ": " + err);
+          });
+        } else if ("addDir" === event) {
+          fs.mkdir(finalRootPath + path, err => {
+            if (err != null) console.log("was unable to create dir " + path);
+          })
+        } else if ("unlinkDir" === event) {
+          fs.rmdir(finalRootPath + path, err => {
+            if (err != null) console.log("was unable to remove dir " + path);
+          })
+        }
+      });
+
+  // our css also has to update (we're using JIT)
+  exec("npx tailwindcss --input=css/main.css --output=../priv/static/css/main.css --postcss --watch");
+  return;
+}
+//endregion
+
+//region build all JavaScript files
+console.log("building javascript files...");
+glob.sync("!(node_modules)/**/*.js").forEach(filePath => buildJavaScript(filePath));
+console.log("done!");
+//endregion
+
+//region build all CSS files
 console.log("building css files...")
 
 glob.sync("!(node_modules)/**/*.css").forEach(filePath => {
@@ -55,9 +98,9 @@ glob.sync("!(node_modules)/**/*.css").forEach(filePath => {
 })
 
 console.log("done!");
-// end css
+//endregion
 
-// start html
+//region build all HTML files
 if (!buildTemplates) {
   console.log("building html (templates) have been disabled");
 } else {
@@ -65,7 +108,7 @@ if (!buildTemplates) {
   execSync('html-minifier --input-dir ' + templateDir + ' --output-dir ' + finalTemplateDir + ' --file-ext eex --collapse-whitespace --remove-comments --remove-script-type-attributes --remove-tag-whitespace --use-short-doctype --minify-css true --minify-js true')
   console.log("done!");
 }
-// end html
+//endregion
 
 // create cache manifest
 execSync('mix phx.digest', {cwd: '../'})

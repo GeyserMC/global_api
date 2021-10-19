@@ -7,8 +7,7 @@ defmodule GlobalApiWeb.Skin.SkinsController do
       conn,
       "index.html",
       page_title: "test",
-      page_description: "uwu",
-      page_host: "https://skin.geysermc.org"
+      page_description: "uwu"
     )
   end
 end

@@ -1,7 +1,5 @@
 use Mix.Config
 
-config :global_api, static_assets: :global_api
-
 # For production, don't forget to configure the url host
 # to something meaningful, Phoenix uses this information
 # when generating URLs.

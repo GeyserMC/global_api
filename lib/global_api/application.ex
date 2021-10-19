@@ -33,6 +33,12 @@ defmodule GlobalApi.Application do
       GlobalApiWeb.Endpoint
     ]
 
+    # enable PubSub when code reloading is enabled
+    children =
+      if Application.get_env(:global_api, GlobalApiWeb.Endpoint)[:code_reloader],
+         do: children ++ [{Phoenix.PubSub, name: GlobalApi.PubSub}],
+         else: children
+
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: GlobalApi.Supervisor]

@@ -19,7 +19,6 @@ defmodule GlobalApiWeb.Link.LinkingController do
       "index.html",
       page_title: "Global Linking",
       page_description: "Link once, join on every server with Global Linking enabled",
-      page_host: "https://link.geysermc.org",
       page_preview_image: true,
       render_navbar: false
     )
@@ -31,7 +30,6 @@ defmodule GlobalApiWeb.Link.LinkingController do
       "start.html",
       page_title: "Start - Global Linking",
       page_description: "Let's start linking. Link once, join on every server with Global Linking enabled",
-      page_host: "https://link.geysermc.org",
       page_preview_image: true,
       render_navbar: false
     )
@@ -43,7 +41,6 @@ defmodule GlobalApiWeb.Link.LinkingController do
       "online.html",
       page_title: "Online linking - Global Linking",
       page_description: "Link your Bedrock and Java accounts online",
-      page_host: "https://link.geysermc.org",
       page_preview_image: true,
       render_navbar: false
     )
@@ -55,7 +52,6 @@ defmodule GlobalApiWeb.Link.LinkingController do
       "server.html",
       page_title: "Server linking - Global Linking",
       page_description: "Link your Bedrock and Java accounts online",
-      page_host: "https://link.geysermc.org",
       page_preview_image: true,
       render_navbar: false
     )
