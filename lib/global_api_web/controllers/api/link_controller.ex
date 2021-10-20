@@ -23,12 +23,10 @@ defmodule GlobalApiWeb.Api.LinkController do
           fn _ ->
             link = LinksRepo.get_java_link(uuid)
                    |> Utils.update_username_if_needed_array
+                   |> Enum.map(&Link.to_public/1)
             {:commit, link}
           end
         )
-
-        #todo prob. store the raw to_public data instead of caching a Skins obj
-        link = Enum.map(link, &Link.to_public/1)
 
         conn
         |> put_resp_header("cache-control", "max-age=30, public")
@@ -58,13 +56,14 @@ defmodule GlobalApiWeb.Api.LinkController do
           fn _ ->
             link = LinksRepo.get_bedrock_link(xuid)
                    |> Utils.update_username_if_needed
+                   |> Link.to_public
             {:commit, link}
           end
         )
 
         conn
         |> put_resp_header("cache-control", "max-age=30, public")
-        |> json(Link.to_public(link))
+        |> json(link)
     end
   end
 
