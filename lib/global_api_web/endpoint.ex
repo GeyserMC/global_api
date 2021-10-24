@@ -15,7 +15,7 @@ defmodule GlobalApiWeb.Endpoint do
       signing_salt: "jvggC7w3"
     ]
 
-#    socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
+    socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
 
     plug Phoenix.LiveDashboard.RequestLogger,
          param_key: "request_logger",

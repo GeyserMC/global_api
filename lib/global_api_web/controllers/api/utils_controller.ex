@@ -23,7 +23,7 @@ defmodule GlobalApiWeb.Api.UtilsController do
               if identity != nil do
                 {:commit, identity.xuid}
               else
-                xuid = XboxApi.get_xuid(gamertag)
+                xuid = XboxApi.request_xuid(gamertag)
                 # save if succeeded
                 if is_binary(xuid) do
                   XboxRepo.insert_new(xuid, gamertag)
@@ -37,7 +37,7 @@ defmodule GlobalApiWeb.Api.UtilsController do
             :not_setup ->
               conn
               |> put_status(:internal_server_error)
-              |> json(XboxAccounts.not_setup_message())
+              |> json(XboxAccounts.not_setup_response())
             {:rate_limit, _} ->
               put_status(conn, :too_many_requests)
             nil ->

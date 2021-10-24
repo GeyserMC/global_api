@@ -1,90 +1,84 @@
 defmodule GlobalApi.XboxApi do
-  @moduledoc false
-  use GenServer
-
-  alias GlobalApi.XboxAccounts
   alias GlobalApi.Utils
+  alias GlobalApi.XboxAccounts
+  alias GlobalApi.XboxRepo
+  alias GlobalApi.XboxUtils
 
-  @sustain_limit 30
+  @doc """
+  Calling this method will first check which xuids are cached, then it'll fetch from the database and
+  after that it'll fetch from the official xbox api.
+  """
+  def get_gamertag_batch([]), do: {:ok, []}
+  def get_gamertag_batch(xuids), do: get_gamertag_batch([], [], xuids, :cache)
 
-  def start_link(opts) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  defp get_gamertag_batch(handled, [], [], :cache), do: {:ok, handled}
+  defp get_gamertag_batch(handled, not_found, [], :cache),
+       do: get_gamertag_batch(handled, not_found, :database)
+
+  defp get_gamertag_batch(handled, not_found, [head | tail], :cache) do
+    case Utils.is_int_rounded_and_positive(head) do
+      false ->
+        {:error, "entries contained an invalid xuid"}
+      true ->
+        xuid = Utils.get_int_if_string(head)
+
+        {:ok, gamertag} = Cachex.get(:get_gamertag, xuid)
+        if is_nil(gamertag) do
+          get_gamertag_batch(handled, [xuid | not_found], tail, :cache)
+        else
+          get_gamertag_batch([%{xuid: xuid, gamertag: gamertag} | handled], not_found, tail, :cache)
+        end
+    end
   end
 
-  @impl true
-  def init(_) do
-    state = Utils.random_string(40)
-    Cachex.put(:general, :state, state)
+  defp get_gamertag_batch(handled, to_handle, :database) do
+    players_found = XboxRepo.get_by_xuid_bulk(to_handle)
 
-    cached_token_data = XboxAccounts.load_token_data()
+    Cachex.put_many(:get_gamertag, Enum.map(players_found, fn player -> {player.xuid, player.gamertag} end))
+    Cachex.put_many(:get_xuid, Enum.map(players_found, fn player -> {player.gamertag, player.xuid} end))
 
-    if is_nil(cached_token_data) do
-      # make the token cache file if it doesn't exist
-      XboxAccounts.save_token_data(%{updater: %{}, data: []})
-    end
+    handled = handled ++ players_found
 
-    updater = if !is_nil(cached_token_data) && map_size(cached_token_data.updater) != 0 do
-      cached_token_data.updater
+    to_reject = Utils.map_array_to_array(players_found, fn player -> player.xuid end)
+    to_handle = Enum.reject(to_handle, fn xuid -> xuid in to_reject end)
+
+    if length(to_handle) > 0 do
+      get_gamertag_batch(handled, to_handle, :request)
     else
-      nil
+      {:ok, handled}
     end
+  end
 
-    if is_nil(updater) do
-      IO.puts("Hey! Don't forgot to add a xbox account for the identity updater! >:(")
-    end
-
-    if is_nil(cached_token_data) do
-      IO.puts("No cached token data found! Please sign in with state = " <> state)
-      {
-        :ok,
-        %{
-          data: [],
-          static: [],
-          updater: updater || %{},
-          time_between_actions: 90,
-          next_action: 0,
-          round: 31,
-          round_reset: 0,
-          next_check: :os.system_time(:second) * 2
+  defp get_gamertag_batch(handled, to_handle, :request) do
+    case request_big_batch(to_handle, false, false) do
+      :not_setup ->
+        {
+          :part,
+          XboxAccounts.not_setup_message(),
+          handled,
+          to_handle
         }
-      }
-    else
-      IO.puts("Found cached token data for #{length(cached_token_data.data)} account(s)! We'll try to use it now.")
-      IO.puts("Use state = #{state} if you want to login with another account")
-      # the endpoints we use have a limit of 30 requests per 5 minutes and 10 requests per 15 seconds,
-      # so we have a round count, a round reset time, next action and time between actions for that
-      case XboxAccounts.check_and_save_token_data(cached_token_data) do
-        {:ok, token_data} ->
-          data_acc_count = length(token_data.data)
-          {
-            :ok,
-            %{
-              data: token_data.data,
-              static: token_data.data,
-              updater: token_data.updater,
-              time_between_actions: if data_acc_count == 0 do 0 else 11 / data_acc_count end,
-              next_action: 0,
-              round: 31,
-              round_reset: 0,
-              next_check: :os.system_time(:second) + 60 * 60
-            }
-          }
-      end
-    end
-  end
-
-  def got_token(code, is_updater) do
-    code = String.replace_suffix(code, "!updater", "")
-    case XboxAccounts.start_initial_xbox_setup(code) do
+      {:rate_limit, _} -> {:part, "rate limited", handled, to_handle}
       {:ok, data} ->
-        :ok = GenServer.call(__MODULE__, {:got_token, data, is_updater})
-      {:error, reason} ->
-        {:error, reason}
+#        Cachex.put_many(:get_gamertag, data)
+#        Cachex.put_many(:get_xuid, Enum.map(data, fn {xuid, gamertag} -> {gamertag, xuid} end))
+
+#        time = :os.system_time(:millisecond)
+#        database_data = Enum.map(data, fn {xuid, gamertag} -> [xuid: xuid, gamertag: gamertag, inserted_at: time] end)
+#        XboxRepo.insert_bulk(database_data)
+
+        data = Enum.map(data, fn {xuid, gamertag} -> %{xuid: xuid, gamertag: gamertag} end)
+        {:ok, handled ++ data}
+      {:error, _} ->
+        {:part, "an unknown error occurred", handled, to_handle}
     end
   end
 
-  def get_batched_v2(entries, is_updater) when is_list(entries) do
-    case get_xbox_token_and_uhs(is_updater) do
+  @doc """
+  This is a special version of XboxApi.request_batch/1 for big batches (more than 75 xuids)
+  """
+  def request_big_batch(entries, to_map, is_updater) when is_list(entries) do
+    case XboxUtils.get_xbox_token_and_uhs(:social, is_updater) do
       :not_setup -> :not_setup
       {:rate_limit, rate_reset} -> {:rate_limit, rate_reset}
       {xbox_token, uhs} ->
@@ -92,7 +86,6 @@ defmodule GlobalApi.XboxApi do
           {"x-xbl-contract-version", "1"},
           {"Authorization", "XBL3.0 x=#{uhs};#{xbox_token}"},
           {"Content-Type", "application/json"},
-          {"User-Agent", "XboxServicesAPI/2020.11.202102041.1 c"},
           {"Accept-Language", "en-US"},
           {"Accept", "application/json"}
         ]
@@ -101,7 +94,7 @@ defmodule GlobalApi.XboxApi do
         body = Jason.encode!(%{xuids: entries})
 
         request = HTTPoison.post(
-          "https://peoplehub.xboxlive.com/users/me/people/batch/decoration/broadcast,multiplayersummary,preferredcolor,socialManager",
+          "https://peoplehub.xboxlive.com/users/me/people/batch/decoration/multiplayersummary",
           body,
           headers,
           [
@@ -124,27 +117,25 @@ defmodule GlobalApi.XboxApi do
               end
             else
               json = Jason.decode!(response.body)
-              {
-                :ok,
-                Utils.merge_array_to_map(
-                  %{},
-                  json["people"],
-                  fn person ->
-                    # invalid xuids should be excluded, but just to be sure
-                    if person["gamertag"] != nil do
-                      {Utils.get_int_if_string(person["xuid"]), person["gamertag"]}
-                    end
+
+              args = [
+                json["people"],
+                fn person ->
+                  # invalid xuids should be excluded, but just to be sure
+                  if person["gamertag"] != nil do
+                    {Utils.get_int_if_string(person["xuid"]), person["gamertag"]}
                   end
-                )
-              }
+                end
+              ]
+              {:ok, if to_map do apply(&Map.new/2, args) else apply(&Enum.map/2, args) end}
             end
           {:error, error} -> {:error, error.reason}
         end
     end
   end
 
-  def get_batched(entries, is_updater) when is_list(entries) do
-    case get_xbox_token_and_uhs(is_updater) do
+  def request_batch(entries, is_updater) when is_list(entries) do
+    case XboxUtils.get_xbox_token_and_uhs(:profile, is_updater) do
       :not_setup -> :not_setup
       {:rate_limit, rate_reset} -> {:rate_limit, rate_reset}
       {xbox_token, uhs} ->
@@ -207,8 +198,8 @@ defmodule GlobalApi.XboxApi do
     end
   end
 
-  def get_gamertag(xuid) do
-    case get_xbox_token_and_uhs() do
+  def request_gamertag(xuid) do
+    case XboxUtils.get_xbox_token_and_uhs(:profile) do
       :not_setup -> :not_setup
       {:rate_limit, rate_reset} -> {:rate_limit, rate_reset}
       {xbox_token, uhs} ->
@@ -237,8 +228,8 @@ defmodule GlobalApi.XboxApi do
     end
   end
 
-  def get_xuid(gamertag) do
-    case get_xbox_token_and_uhs() do
+  def request_xuid(gamertag) do
+    case XboxUtils.get_xbox_token_and_uhs(:profile) do
       :not_setup -> :not_setup
       {:rate_limit, rate_reset} -> {:rate_limit, rate_reset}
       {xbox_token, uhs} ->
@@ -283,110 +274,5 @@ defmodule GlobalApi.XboxApi do
     user = Enum.at(users, 0)
     # xuid and gamertag
     {user["id"], Enum.at(user["settings"], 0)["value"]}
-  end
-
-  def get_xbox_token_and_uhs(is_updater \\ false) do
-    if is_updater do
-      GenServer.call(__MODULE__, :get_updater_token_and_uhs)
-    else
-      GenServer.call(__MODULE__, :get_token_and_uhs)
-    end
-  end
-
-  @impl true
-  def handle_call({:got_token, data, is_updater}, _from, state) do
-    new_data = save_new_token_data(state, data, is_updater)
-    # reset the timer to make sure that we don't overload the new account in the future.
-    # we can only make 30 requests every 5 minutes, so I implemented a cooldown of 300 / 30 = 10 + 1 seconds.
-    # then we divide that by the amount of accounts available
-    {
-      :reply,
-      :ok,
-      %{
-        state |
-        updater: new_data.updater,
-        static: new_data.data,
-        round_reset: :os.system_time(:second) + 5 * 60,
-        time_between_actions: 11 / length(new_data.data)
-      }
-    }
-  end
-
-  @impl true
-  def handle_call(:get_token_and_uhs, _from, state) do
-    # data, static, next_check
-    if length(state.static) == 0 do
-      {:reply, :not_setup, state}
-    else
-      if state.next_action > :os.system_time(:millisecond) do
-        {:reply, {:rate_limit, ceil(state.next_action / 1000)}}
-      else
-        state = reset_time_check(state)
-        if state.round > @sustain_limit do
-          {:reply, {:rate_limit, state.round_reset - :os.system_time(:second)}, state}
-        else
-          state = get_token_check(state)
-          {next, state} = get_next_and_increase_round(state)
-          {
-            :reply,
-            {next.xbox_token, next.uhs},
-            %{state | next_action: :os.system_time(:millisecond) + state.time_between_actions}
-          }
-        end
-      end
-    end
-  end
-
-  @impl true
-  def handle_call(:get_updater_token_and_uhs, _from, state) do
-    # what makes the updater unique is that the updates are scheduled,
-    # so we only have to check if we have an updater and return it if we do
-    if map_size(state.updater) == 0 do
-      {:reply, :not_setup, state}
-    else
-      state = get_token_check(state)
-      {:reply, {state.updater.xbox_token, state.updater.uhs}, state}
-    end
-  end
-
-  defp save_new_token_data(state, data, is_updater) do
-    ret = if is_updater do
-      %{updater: data, data: state.static}
-    else
-      %{updater: state.updater, data: [data | state.static]}
-    end
-    XboxAccounts.save_token_data(ret)
-    ret
-  end
-
-  defp reset_time_check(state) do
-    if state.round_reset < :os.system_time(:second) do
-      %{state | round_reset: :os.system_time(:second) + 5 * 60, round: 1}
-    else
-      state
-    end
-  end
-
-  defp get_next_and_increase_round(state) do
-    [next | data] = state.data
-    if data == [] do
-      {next, %{state | data: state.static, round: state.round + 1}}
-    else
-      {next, %{state | data: data}}
-    end
-  end
-
-  defp get_token_check(state) do
-    if state.next_check < :os.system_time(:second) do
-      case XboxAccounts.check_and_save_token_data(state) do
-        {:ok, token_data} ->
-          %{state | updater: token_data.updater, data: token_data.data, static: token_data.data, next_check: :os.system_time(:second) + 60 * 60}
-        {:error, reason} ->
-          IO.puts("Error whilst checking! #{reason}. Will reset all accs just to be sure")
-          %{state | updater: [], data: [], static: [], next_check: :os.system_time(:second) * 2}
-      end
-    else
-      state
-    end
   end
 end

@@ -23,7 +23,7 @@ defmodule GlobalApi.Application do
       create_cache(:get_gamertag, 15),
       create_cache(:link_token_cache, 15),
       create_cache(:recent_skin_uploads, 1),
-      GlobalApi.XboxApi,
+      GlobalApi.XboxUtils,
       GlobalApi.IdentityUpdater,
       create_cache(:java_link, 5),
       create_cache(:bedrock_link, 5),

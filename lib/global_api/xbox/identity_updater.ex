@@ -48,7 +48,7 @@ defmodule GlobalApi.IdentityUpdater do
 
   defp update0(identities, true) do
     list = Enum.map(identities, fn identity -> identity.xuid end)
-    case XboxApi.get_batched_v2(list, true) do
+    case XboxApi.request_big_batch(list, true, true) do
       {:ok, data} ->
         time = :os.system_time(:millisecond)
         mapped = Enum.map(data, fn {xuid, gamertag} -> [xuid: xuid, gamertag: gamertag, inserted_at: time] end)
@@ -59,7 +59,7 @@ defmodule GlobalApi.IdentityUpdater do
 
   defp update0(identities, false) do
     list = Enum.map(identities, fn identity -> identity.xuid end)
-    case XboxApi.get_batched(list, true) do
+    case XboxApi.request_batch(list, true) do
       {:ok, data} ->
         time = :os.system_time(:millisecond)
         mapped = Enum.map(data, fn {xuid, gamertag} -> [xuid: xuid, gamertag: gamertag, inserted_at: time] end)

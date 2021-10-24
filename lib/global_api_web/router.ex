@@ -102,7 +102,8 @@ defmodule GlobalApiWeb.Router do
     end
   end
 
-  defp handle_errors(conn, %{reason: %Phoenix.Router.NoRouteError{message: message} = uwu}) do
+  #todo expand this to include other errors as well
+  defp handle_errors(conn, %{reason: %Phoenix.Router.NoRouteError{}}) do
     if String.starts_with?(conn.host, "api.") do
       handle_errors(conn, nil) # pass it through to the function below
     else

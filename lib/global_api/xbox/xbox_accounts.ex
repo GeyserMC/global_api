@@ -12,11 +12,13 @@ defmodule GlobalApi.XboxAccounts do
         result =
           Jason.decode!(body)
           |> keys_to_atoms
-        %{
-          result |
-          data: Enum.map(result.data, fn data -> keys_to_atoms(data) end),
-          updater: keys_to_atoms(result.updater)
-        }
+
+        accounts = Enum.map(result.accounts, fn data -> keys_to_atoms(data) end)
+        updater = keys_to_atoms(result.updater)
+
+        if length(accounts) > 0 || map_size(updater) > 0,
+           do: {accounts, updater},
+           else: nil
       {:error, _} -> nil
     end
   end
@@ -42,14 +44,14 @@ defmodule GlobalApi.XboxAccounts do
     }
   end
 
-  def not_setup_message() do
-    %{
-      message: "The Xbox Api isn't setup correctly. Please contact a GeyserMC developer"
-    }
-  end
+  def not_setup_message(), do: "The Xbox Api isn't setup correctly. Please contact a GeyserMC developer"
 
-  def save_token_data(token_data) do
-    File.write("token_cache.json", Jason.encode!(%{updater: token_data.updater, data: token_data.data}))
+  def not_setup_response(), do: %{message: not_setup_message()}
+
+  def save_token_data(accounts, updater) do
+    # we don't have to store the id
+    accounts = Enum.map(accounts, fn account -> Map.delete(account, :id) end)
+    File.write("token_cache.json", Jason.encode!(%{accounts: accounts, updater: updater}))
   end
 
   def check_token_data(%{} = data) when map_size(data) == 0 do
@@ -78,8 +80,13 @@ defmodule GlobalApi.XboxAccounts do
             {xbox_token, xbox_token_valid_until} = start_xbox_setup(auth_token)
             {:update, %{data | xbox_token: xbox_token, xbox_token_valid_until: xbox_token_valid_until}}
           false ->
+            # store the id if it has one
+            id = data[:id]
             # we have revive the session using the refresh token
             {state, data} = start_initial_xbox_setup(refresh_token, true)
+            # restore the id
+            data = if is_nil(id), do: data, else: Map.put(data, :id, id)
+
             if state == :ok do
               {:update, data}
             else
@@ -89,15 +96,17 @@ defmodule GlobalApi.XboxAccounts do
     end
   end
 
-  def check_and_save_token_data(token_data) do
-    case check_token_data(token_data.updater) do
+  def check_and_save_token_data(accounts, updater) do
+    case check_token_data(updater) do
       {:error, reason} -> {:error, "#{reason} - updater"}
-      {_, updater_data} ->
-        data = check_token_data_array(token_data.data, [])
-        result = %{updater: updater_data, data: data}
-        case save_token_data(result) do
-          :ok -> {:ok, result}
+      {_, updater} ->
+        case check_token_data_array(accounts, []) do
           {:error, reason} -> {:error, reason}
+          accounts ->
+            case save_token_data(accounts, updater) do
+              :ok -> {:ok, accounts, updater}
+              {:error, reason} -> {:error, reason}
+            end
         end
     end
   end
@@ -108,7 +117,7 @@ defmodule GlobalApi.XboxAccounts do
     case check_token_data(entry) do
       {:ok, data} -> check_token_data_array(rest, [data | result])
       {:update, data} -> check_token_data_array(rest, [data | result])
-      {:error, reason} -> {:error, "#{reason} - no #{length(result) + 1}"}
+      {:error, reason} -> {:error, "#{reason}. From account number #{length(result) + 1}"}
     end
   end
 

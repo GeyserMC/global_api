@@ -13,9 +13,9 @@ defmodule GlobalApiWeb.Api.XboxController do
     {:ok, correct_state} = Cachex.get(:general, :state)
     is_updater = String.equivalent?(correct_state <> "!updater", state)
     if String.equivalent?(correct_state, state) || is_updater do
-      case XboxApi.got_token(code, is_updater) do
+      case XboxUtils.got_token(code, is_updater) do
         :ok -> json(conn, :ok)
-        {:error, reason} -> json(conn, %{error: reason})
+        {:error, reason} -> json(conn, %{message: reason})
       end
     else
       conn
@@ -48,7 +48,7 @@ defmodule GlobalApiWeb.Api.XboxController do
             if identity != nil do
               {:commit, identity.gamertag}
             else
-              gamertag = XboxApi.get_gamertag(xuid)
+              gamertag = XboxApi.request_gamertag(xuid)
               # save if succeeded
               if is_binary(gamertag) do
                 XboxRepo.insert_new(xuid, gamertag)
@@ -63,7 +63,7 @@ defmodule GlobalApiWeb.Api.XboxController do
             conn
             |> put_status(:service_unavailable)
             |> put_resp_header("cache-control", "max-age=300, public")
-            |> json(XboxAccounts.not_setup_message())
+            |> json(XboxAccounts.not_setup_response())
           {:rate_limit, rate_reset} ->
             conn
             |> put_status(:service_unavailable)
@@ -81,8 +81,8 @@ defmodule GlobalApiWeb.Api.XboxController do
     end
   end
 
-  def get_gamertag_batch(conn, %{"xuids" => xuids}) when is_list(xuids) and length(xuids) <= 75 do
-    case XboxUtils.get_gamertag_batch(xuids) do
+  def get_gamertag_batch(conn, %{"xuids" => xuids}) when is_list(xuids) and length(xuids) <= 600 do
+    case XboxApi.get_gamertag_batch(xuids) do
       {:ok, data} ->
         json(conn, %{data: data})
       {:part, message, handled, not_handled} ->
@@ -90,7 +90,7 @@ defmodule GlobalApiWeb.Api.XboxController do
       {:error, message} ->
         conn
         |> put_status(:bad_request)
-        |> json(%{reason: message})
+        |> json(%{message: message})
     end
   end
 
@@ -110,7 +110,7 @@ defmodule GlobalApiWeb.Api.XboxController do
           if identity != nil do
             {:commit, identity.xuid}
           else
-            xuid = XboxApi.get_xuid(gamertag)
+            xuid = XboxApi.request_xuid(gamertag)
             # save if succeeded
             if is_binary(xuid) do
               XboxRepo.insert_new(xuid, gamertag)
@@ -125,7 +125,7 @@ defmodule GlobalApiWeb.Api.XboxController do
           conn
           |> put_status(:service_unavailable)
           |> put_resp_header("cache-control", "max-age=300, public")
-          |> json(XboxAccounts.not_setup_message())
+          |> json(XboxAccounts.not_setup_response())
         {:rate_limit, rate_reset} ->
           conn
           |> put_status(:service_unavailable)

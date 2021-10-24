@@ -31,9 +31,8 @@ window.addEventListener('load', function () {
       makeLinkRequest(
           body,
           function (status, content) {
-            const isExpectedStatus = status >= 200 && status < 300;
-            if (!isExpectedStatus || content.success !== true) {
-              const reason = isExpectedStatus ? content.message : content;
+            if (status >= 200 && status < 300) {
+              const reason = content.message;
               if (reason === 2148916233) {
                 setStepActionContent("You selected a Microsoft account that doesn't have a Xbox account. Are you sure that you selected the right account?", 'text-red-500', true);
               } else {
@@ -66,9 +65,8 @@ window.addEventListener('load', function () {
       makeLinkRequest(
           {bedrock: token},
           function (status, content) {
-            const isExpectedStatus = status >= 200 && status < 300;
-            if (!isExpectedStatus || content.success !== true) {
-              const reason = isExpectedStatus ? content.message : content;
+            if (status >= 200 && status < 300) {
+              const reason = content.message;
               console.log(reason);
               if (reason === 2148916233) {
                 setStepActionContent("You selected a Microsoft account that doesn't have a Xbox account. Are you sure that you selected the right account?", 'text-red-500', true);
@@ -120,11 +118,6 @@ function updatePage() {
 
     const responseHandler = function (status, content) {
       if (status < 200 || status >= 300) {
-        errorHandler(status + ', ' + content);
-        return;
-      }
-
-      if (content.success !== true) {
         setStepActionContent('Failed to link your account!<br>Reason: ' + content.message, 'text-red-500', true);
         setButton(cleanUrl, 'Restart linking');
         return;

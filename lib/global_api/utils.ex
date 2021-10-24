@@ -9,9 +9,7 @@ defmodule GlobalApi.Utils do
     |> binary_part(0, length)
   end
 
-  def get_env(key, atom) do
-    Application.get_env(:global_api, key)[atom]
-  end
+  def get_env(key, atom), do: Application.get_env(:global_api, key)[atom]
 
   def hash_string(hash) do
     hash
@@ -57,21 +55,23 @@ defmodule GlobalApi.Utils do
     end
   end
 
-  def get_int_if_string(data) when is_integer(data) do
-    data
+  def get_int_if_string(data) when is_integer(data), do: data
+  def get_int_if_string(data) when is_binary(data), do: String.to_integer(data)
+
+  def first_unused_number([], _), do: 0
+  def first_unused_number(collection, get_id_function) when is_list(collection) and is_function(get_id_function) do
+    first_unused_number(collection, get_id_function, 0)
   end
 
-  def get_int_if_string(data) when is_binary(data) do
-    String.to_integer(data)
+  defp first_unused_number(collection, get_id_function, id) do
+    case Enum.find(collection, fn value -> get_id_function.(value) == id end) do
+      nil -> id
+      _ -> first_unused_number(collection, get_id_function, id + 1)
+    end
   end
 
-  def update_username_if_needed_array(array) do
-    update_username_if_needed_array(array, [])
-  end
-
-  defp update_username_if_needed_array([], []) do
-    []
-  end
+  def update_username_if_needed_array(array), do: update_username_if_needed_array(array, [])
+  defp update_username_if_needed_array([], []), do: []
 
   #todo make some changes here
   #todo this really needs a revisit
@@ -114,9 +114,11 @@ defmodule GlobalApi.Utils do
     result
   end
 
-  def merge_array_to_map(map, [], _convert_function \\ nil), do: map
+  def merge_array_to_map(map, array, convert_function \\ nil)
+
+  def merge_array_to_map(map, [], _convert_function ), do: map
   def merge_array_to_map(map, [{key, value} | tail], nil) do
-    merge_array_to_map(Map.put(map, key, value), tail)
+    merge_array_to_map(Map.put(map, key, value), tail, nil)
   end
   def merge_array_to_map(map, [head | tail], convert_function) when not is_nil(convert_function) do
     # just skip the value if it returns nil
@@ -128,15 +130,10 @@ defmodule GlobalApi.Utils do
     end
   end
 
-  def map_array_to_array(map_array, convert_function) do
-    map_array_to_array([], map_array, convert_function)
-  end
-
-  defp map_array_to_array(array, [], _) do
-    array
-  end
-
-  defp map_array_to_array(array, [head | tail], convert_function) do
-    map_array_to_array([convert_function.(head) | array], tail, convert_function)
-  end
+  def map_array_to_array(map_array, convert_function),
+      do: map_array_to_array([], map_array, convert_function)
+  defp map_array_to_array(array, [], _),
+       do: array
+  defp map_array_to_array(array, [head | tail], convert_function),
+       do: map_array_to_array([convert_function.(head) | array], tail, convert_function)
 end

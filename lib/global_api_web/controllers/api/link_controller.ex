@@ -135,12 +135,9 @@ defmodule GlobalApiWeb.Api.LinkController do
         json(
           conn,
           %{
-            success: true,
-            data: %{
-              id: id,
-              username: username,
-              uuid: uuid
-            }
+            id: id,
+            username: username,
+            uuid: uuid
           }
         )
       {:error, reason} ->
