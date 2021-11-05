@@ -32,6 +32,7 @@ defmodule GlobalApi.XboxUtils do
           XboxAccounts.save_token_data([], %{})
 
           IO.puts("No cached token data found! Please sign in with state = #{state}")
+          result
         {accounts, updater} ->
           if is_nil(updater) do
             IO.puts("Hey! Don't forgot to add a xbox account for the identity updater! >:(")

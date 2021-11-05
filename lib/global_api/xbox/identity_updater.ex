@@ -9,7 +9,6 @@ defmodule GlobalApi.IdentityUpdater do
   # divide by 2 because we use 2 endpoints to update xuid. They both have the same rate limit,
   # but they fall under a different category and thus we can divide the check time by 2
   @check_time ceil(11 / 2)
-#  @check_time 11
 
   @identity_update_threshold 60 * 60 * 24 * 1000 # one day
 

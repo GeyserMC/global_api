@@ -60,12 +60,12 @@ defmodule GlobalApi.XboxApi do
         }
       {:rate_limit, _} -> {:part, "rate limited", handled, to_handle}
       {:ok, data} ->
-#        Cachex.put_many(:get_gamertag, data)
-#        Cachex.put_many(:get_xuid, Enum.map(data, fn {xuid, gamertag} -> {gamertag, xuid} end))
+        Cachex.put_many(:get_gamertag, data)
+        Cachex.put_many(:get_xuid, Enum.map(data, fn {xuid, gamertag} -> {gamertag, xuid} end))
 
-#        time = :os.system_time(:millisecond)
-#        database_data = Enum.map(data, fn {xuid, gamertag} -> [xuid: xuid, gamertag: gamertag, inserted_at: time] end)
-#        XboxRepo.insert_bulk(database_data)
+        time = :os.system_time(:millisecond)
+        database_data = Enum.map(data, fn {xuid, gamertag} -> [xuid: xuid, gamertag: gamertag, inserted_at: time] end)
+        XboxRepo.insert_bulk(database_data)
 
         data = Enum.map(data, fn {xuid, gamertag} -> %{xuid: xuid, gamertag: gamertag} end)
         {:ok, handled ++ data}
@@ -94,7 +94,7 @@ defmodule GlobalApi.XboxApi do
         body = Jason.encode!(%{xuids: entries})
 
         request = HTTPoison.post(
-          "https://peoplehub.xboxlive.com/users/me/people/batch/decoration/multiplayersummary",
+          "https://peoplehub.xboxlive.com/users/me/people/batch/decoration/presenceDetail",
           body,
           headers,
           [
@@ -121,13 +121,19 @@ defmodule GlobalApi.XboxApi do
               args = [
                 json["people"],
                 fn person ->
-                  # invalid xuids should be excluded, but just to be sure
+                  # the data is invalid when gamertag is nil
                   if person["gamertag"] != nil do
                     {Utils.get_int_if_string(person["xuid"]), person["gamertag"]}
                   end
                 end
               ]
-              {:ok, if to_map do apply(&Map.new/2, args) else apply(&Enum.map/2, args) end}
+              try do
+                {:ok, if to_map do apply(&Map.new/2, args) else apply(&Enum.map/2, args) end}
+              rescue
+                e in ArgumentError ->
+                  # sometimes the xbox api sends nonsense. we'll just ignore it
+                  {:error, "the xbox api returned an invalid response"}
+              end
             end
           {:error, error} -> {:error, error.reason}
         end

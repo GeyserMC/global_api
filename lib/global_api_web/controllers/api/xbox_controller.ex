@@ -99,7 +99,21 @@ defmodule GlobalApiWeb.Api.XboxController do
     |> json(%{message: "xuids is not an array or has more than 75 elements"})
   end
 
-  def get_xuid(conn, %{"gamertag" => gamertag}) do
+  def get_xuid_v2(conn, data) do
+    {status, data} = get_xuid(data)
+    conn
+    |> put_status(status)
+    |> json(data)
+  end
+
+  def get_xuid_v1(conn, data) do
+    case get_xuid(data) do
+      {:ok, data} -> json(conn, %{success: true, data: data})
+      {_, response} -> json(conn, Map.put(response, :success, false))
+    end
+  end
+
+  def get_xuid(%{"gamertag" => gamertag}) do
     if Utils.is_in_range(gamertag, 1, 16) do
       {_, xuid} = Cachex.fetch(
         :get_xuid,
@@ -121,29 +135,16 @@ defmodule GlobalApiWeb.Api.XboxController do
 
       case xuid do
         :not_setup ->
-          conn
-          |> put_status(:service_unavailable)
-          |> put_resp_header("cache-control", "max-age=300, public")
-          |> json(XboxAccounts.not_setup_response())
-        {:rate_limit, rate_reset} ->
-          conn
-          |> put_status(:service_unavailable)
-          |> put_resp_header("cache-control", "max-age=#{rate_reset}, public")
-          |> json(%{message: "unable to handle request: too much traffic"})
+          {:service_unavailable, XboxAccounts.not_setup_response()}
+        {:rate_limit, _} ->
+          {:service_unavailable, %{message: "unable to handle request: too much traffic"}}
         nil ->
-          conn
-          |> put_resp_header("cache-control", "max-age=900, public")
-          |> json(%{})
+          {:ok, %{}}
         xuid ->
-          conn
-          |> put_resp_header("cache-control", "max-age=60, public")
-          |> json(%{xuid: xuid})
+          {:ok, %{xuid: xuid}}
       end
     else
-      conn
-      |> put_status(:bad_request)
-      |> put_resp_header("cache-control", "max-age=604800, immutable, public")
-      |> json(%{message: "gamertag is empty or longer than 16 chars"})
+      {:bad_request, %{message: "gamertag is empty or longer than 16 chars"}}
     end
   end
 end

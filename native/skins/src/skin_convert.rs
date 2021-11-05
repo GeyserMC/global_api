@@ -491,7 +491,7 @@ fn fill_and_scale_texture(skin_data: &[u8], new_vec: &mut Vec<u8>, skin_data_wid
                 let y1 = (((y + y_offset) as f32 + 0.5) * y_scale).floor() as usize;
                 for i in 0..4_usize {
                     let pixel = skin_data[(y1 * skin_data_width + x1) * 4 + i];
-                    new_vec[(y * new_width + x) * 4 + i] = pixel
+                    new_vec[((y_tex_offset + y) * new_width + x_tex_offset + x) * 4 + i] = pixel
                 }
             }
         }

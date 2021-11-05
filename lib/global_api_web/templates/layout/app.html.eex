@@ -38,13 +38,14 @@
             </svg>
           </div>
           <div class="hidden md:block">
+            <!-- todo make this customisable for other views/templates -->
             <div class="ml-10 flex items-baseline space-x-4">
               <!-- current: "bg-gray-900 text-white", default: "text-gray-300 hover:bg-gray-700 hover:text-white" -->
-              <a href="#" class="text-gray-900 dark:text-white bg-gray-200 dark:bg-gray-700 px-3 py-2 rounded-md text-sm font-medium">Dashboard</a>
-              <a href="#" class="text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-800 transition-colors duration-200 transform dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium">Team</a>
-              <a href="#" class="text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-800 transition-colors duration-200 transform dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium">Projects</a>
-              <a href="#" class="text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-800 transition-colors duration-200 transform dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium">Calendar</a>
-              <a href="#" class="text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-800 transition-colors duration-200 transform dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium">Reports</a>
+              <a href="#" class="text-gray-900 dark:text-white bg-gray-200 dark:bg-gray-700 px-3 py-2 rounded-md text-sm font-medium">Bedrock most recent</a>
+              <a href="#" class="text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-800 transition-colors duration-200 transform dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium">Bedrock most used</a>
+              <a href="#" class="text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-800 transition-colors duration-200 transform dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium">Java most recent</a>
+              <a href="#" class="text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-800 transition-colors duration-200 transform dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium">Java most used</a>
+              <a href="#" class="text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-800 transition-colors duration-200 transform dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium">Lookup profile</a>
             </div>
           </div>
         </div>
@@ -63,7 +64,7 @@
                 <button type="button" class="max-w-xs bg-gray-800 rounded-full flex items-center text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white" id="user-menu-button" aria-expanded="false" aria-haspopup="true">
                   <span class="sr-only">Open user menu</span>
                   <!-- todo probably replace with an user icon -->
-                  <img class="h-8 w-8 rounded-full" src="https://images.unsplash.com/photo-1517841905240-472988babdf9" alt="">
+                  <img class="h-8 w-8 rounded-full" src="https://geysermc.org/favicon.ico" alt="">
                 </button>
               </div>
               <div class="bg-white dark:bg-gray-800 hidden transition-all opacity-0 ease-in-out duration-150 origin-top-right absolute right-0 mt-2 z-10 w-48 rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5 focus:outline-none" id="user-menu-dropdown" role="menu" aria-orientation="vertical" aria-labelledby="user-menu-button" tabindex="-1">
@@ -142,11 +143,11 @@
           <div class="w-full lg:w-1/2 mb-16 lg:mb-0 flex">
             <div class="w-full lg:w-1/2 px-6">
               <ul>
-                <li><a class="focus:outline-none focus:underline text-xs lg:text-sm leading-none hover:text-brand dark:hover:text-brand text-gray-800 dark:text-gray-50" href="javascript:void(0)">Components</a></li>
-                <li class="mt-6"><a class="focus:outline-none focus:underline text-xs lg:text-sm leading-none hover:text-brand dark:hover:text-brand text-gray-800 dark:text-gray-50" href="javascript:void(0)">Templates</a></li>
-                <li class="mt-6"><a class="focus:outline-none focus:underline text-xs lg:text-sm leading-none hover:text-brand dark:hover:text-brand text-gray-800 dark:text-gray-50" href="javascript:void(0)">Pricing</a></li>
-                <li class="mt-6"><a class="focus:outline-none focus:underline text-xs lg:text-sm leading-none hover:text-brand dark:hover:text-brand text-gray-800 dark:text-gray-50" href="javascript:void(0)">FAQ</a></li>
-                <li class="mt-6"><a class="focus:outline-none focus:underline text-xs lg:text-sm leading-none hover:text-brand dark:hover:text-brand text-gray-800 dark:text-gray-50" href="javascript:void(0)">Documentation</a></li>
+                <li><a class="focus:outline-none focus:underline text-xs lg:text-sm leading-none hover:text-brand dark:hover:text-brand text-gray-800 dark:text-gray-50" href="javascript:void(0)">Placeholder #1</a></li>
+                <li class="mt-6"><a class="focus:outline-none focus:underline text-xs lg:text-sm leading-none hover:text-brand dark:hover:text-brand text-gray-800 dark:text-gray-50" href="javascript:void(0)">Placeholder #2</a></li>
+                <li class="mt-6"><a class="focus:outline-none focus:underline text-xs lg:text-sm leading-none hover:text-brand dark:hover:text-brand text-gray-800 dark:text-gray-50" href="javascript:void(0)">Placeholder #3</a></li>
+                <li class="mt-6"><a class="focus:outline-none focus:underline text-xs lg:text-sm leading-none hover:text-brand dark:hover:text-brand text-gray-800 dark:text-gray-50" href="javascript:void(0)">Placeholder #4</a></li>
+                <li class="mt-6"><a class="focus:outline-none focus:underline text-xs lg:text-sm leading-none hover:text-brand dark:hover:text-brand text-gray-800 dark:text-gray-50" href="javascript:void(0)">Placeholder #5</a></li>
               </ul>
             </div>
             <div class="w-full lg:w-1/2 px-6">
@@ -160,8 +161,8 @@
           <div class="w-full lg:w-1/2 flex">
             <div class="w-full lg:w-1/2 px-6">
               <ul>
-                <li><a class="focus:underline focus:outline-none text-xs lg:text-sm leading-none hover:text-brand dark:hover:text-brand text-gray-800 dark:text-gray-50" href="javascript:void(0)">Privacy policy</a></li>
-                <li class="mt-6"><a class="focus:underline focus:outline-none text-xs lg:text-sm leading-none hover:text-brand dark:hover:text-brand text-gray-800 dark:text-gray-50" href="javascript:void(0)">Terms of service</a></li>
+                <li><a class="focus:underline focus:outline-none text-xs lg:text-sm leading-none hover:text-brand dark:hover:text-brand text-gray-800 dark:text-gray-50" href="javascript:void(0)">Placeholder #9</a></li>
+                <li class="mt-6"><a class="focus:underline focus:outline-none text-xs lg:text-sm leading-none hover:text-brand dark:hover:text-brand text-gray-800 dark:text-gray-50" href="javascript:void(0)">Placeholder #10</a></li>
               </ul>
             </div>
             <div class="w-full lg:w-1/2 px-6 flex flex-col justify-between">

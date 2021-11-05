@@ -6,8 +6,8 @@ defmodule GlobalApiWeb.Skin.SkinsController do
     render(
       conn,
       "index.html",
-      page_title: "test",
-      page_description: "uwu"
+      page_title: "Most recent uploaded skins",
+      page_description: "See the most recent converted Bedrock skins"
     )
   end
 end
