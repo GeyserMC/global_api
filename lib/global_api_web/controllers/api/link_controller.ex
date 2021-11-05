@@ -9,13 +9,24 @@ defmodule GlobalApiWeb.Api.LinkController do
   alias GlobalApi.XboxApi
   alias GlobalApi.XboxAccounts
 
-  def get_java_link(conn, %{"uuid" => uuid}) do
+  def get_java_link_v2(conn, data) do
+    {status, data} = get_java_link(data)
+    conn
+    |> put_status(status)
+    |> json(data)
+  end
+
+  def get_java_link_v1(conn, data) do
+    case get_java_link(data) do
+      {:ok, data} -> json(conn, %{success: true, data: data})
+      {_, response} -> json(conn, Map.put(response, :success, false))
+    end
+  end
+
+  def get_java_link(%{"uuid" => uuid}) do
     case UUID.cast(uuid) do
       :error ->
-        conn
-        |> put_status(:bad_request)
-        |> json(%{message: "uuid has to be a valid uuid (36 chars long)"})
-
+        {:bad_request, %{message: "uuid has to be a valid uuid (36 chars long)"}}
       uuid ->
         {_, link} = Cachex.fetch(
           :java_link,
@@ -27,27 +38,32 @@ defmodule GlobalApiWeb.Api.LinkController do
             {:commit, link}
           end
         )
-
-        conn
-        |> put_resp_header("cache-control", "max-age=30, public")
-        |> json(link)
+        {:ok, link}
     end
   end
 
-  def get_java_link(conn, _) do
-    conn
-    |> put_status(:bad_request)
-    |> put_resp_header("cache-control", "immutable")
-    |> json(%{message: "please provide an uuid to lookup"})
+  def get_java_link(_) do
+    {:bad_request, %{message: "please provide an uuid to lookup"}}
   end
 
-  def get_bedrock_link(conn, %{"xuid" => xuid}) do
+  def get_bedrock_link_v2(conn, data) do
+    {status, data} = get_bedrock_link(data)
+    conn
+    |> put_status(status)
+    |> json(data)
+  end
+
+  def get_bedrock_link_v1(conn, data) do
+    case get_bedrock_link(data) do
+      {:ok, data} -> json(conn, %{success: true, data: data})
+      {_, response} -> json(conn, Map.put(response, :success, false))
+    end
+  end
+
+  def get_bedrock_link(%{"xuid" => xuid}) do
     case Utils.is_int_rounded_and_positive(xuid) do
       false ->
-        conn
-        |> put_status(:bad_request)
-        |> json(%{message: "xuid should be an int"})
-
+        {:bad_request, %{message: "xuid should be an int"}}
       true ->
         {xuid, _} = Integer.parse(xuid)
         {_, link} = Cachex.fetch(
@@ -60,18 +76,12 @@ defmodule GlobalApiWeb.Api.LinkController do
             {:commit, link}
           end
         )
-
-        conn
-        |> put_resp_header("cache-control", "max-age=30, public")
-        |> json(link)
+        {:ok, link}
     end
   end
 
-  def get_bedrock_link(conn, _) do
-    conn
-    |> put_status(:bad_request)
-    |> put_resp_header("cache-control", "immutable")
-    |> json(%{message: "please provide a xuid to lookup"})
+  def get_bedrock_link(_) do
+    {:bad_request, %{message: "please provide a xuid to lookup"}}
   end
 
   def verify_online_link(conn, %{"bedrock" => bedrock, "java" => java}) do

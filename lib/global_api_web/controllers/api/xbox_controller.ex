@@ -30,20 +30,31 @@ defmodule GlobalApiWeb.Api.XboxController do
     |> json(%{message: "permission denied"})
   end
 
-  def get_gamertag(conn, %{"xuid" => xuid}) do
+  def get_gamertag_v2(conn, data) do
+    {status, data} = get_gamertag(data)
+    conn
+    |> put_status(status)
+    |> json(data)
+  end
+
+  def get_gamertag_v1(conn, data) do
+    case get_gamertag(data) do
+      {:ok, data} -> json(conn, %{success: true, data: data})
+      {_, response} -> json(conn, Map.put(response, :success, false))
+    end
+  end
+
+  def get_gamertag(%{"xuid" => xuid}) do
     case Utils.is_int_rounded_and_positive(xuid) do
       false ->
-        conn
-        |> put_status(:bad_request)
-        |> put_resp_header("cache-control", "max-age=604800, immutable, public")
-        |> json(%{message: "xuid should be an int"})
-
+        {:bad_request, %{message: "xuid should be an int"}}
       true ->
+        xuid = Utils.get_int_if_string(xuid)
+
         {_, gamertag} = Cachex.fetch(
           :get_gamertag,
           xuid,
           fn _ ->
-            xuid = Utils.get_int_if_string(xuid)
             identity = XboxRepo.get_by_xuid(xuid)
             if identity != nil do
               {:commit, identity.gamertag}
@@ -60,23 +71,13 @@ defmodule GlobalApiWeb.Api.XboxController do
 
         case gamertag do
           :not_setup ->
-            conn
-            |> put_status(:service_unavailable)
-            |> put_resp_header("cache-control", "max-age=300, public")
-            |> json(XboxAccounts.not_setup_response())
-          {:rate_limit, rate_reset} ->
-            conn
-            |> put_status(:service_unavailable)
-            |> put_resp_header("cache-control", "max-age=#{rate_reset}, public")
-            |> json(%{message: "unable to handle request: too much traffic"})
+            {:service_unavailable, XboxAccounts.not_setup_response()}
+          {:rate_limit, _} ->
+            {:service_unavailable, %{message: "unable to handle request: too much traffic"}}
           nil ->
-            conn
-            |> put_resp_header("cache-control", "max-age=900, public")
-            |> json(%{})
+            {:ok, %{}}
           gamertag ->
-            conn
-            |> put_resp_header("cache-control", "max-age=60, public")
-            |> json(%{gamertag: gamertag})
+            {:ok, %{gamertag: gamertag}}
         end
     end
   end
