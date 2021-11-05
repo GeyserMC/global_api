@@ -7,8 +7,6 @@ defmodule GlobalApiWeb.Api.XboxController do
   alias GlobalApi.XboxRepo
   alias GlobalApi.XboxUtils
 
-  #todo all requests of :get_gamertag and :get_xuid should use an int as key, not a string
-
   def got_token(conn, %{"code" => code, "state" => state}) do
     {:ok, correct_state} = Cachex.get(:general, :state)
     is_updater = String.equivalent?(correct_state <> "!updater", state)

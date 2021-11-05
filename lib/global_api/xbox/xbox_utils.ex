@@ -48,7 +48,6 @@ defmodule GlobalApi.XboxUtils do
       end
 
     IO.puts("Use state = #{state} if you want to login with another account")
-    IO.inspect(result)
     {:ok, result}
   end
 

@@ -10,13 +10,16 @@ defmodule GlobalApiWeb.Router do
     plug :accepts, ["html"]
   end
 
+  scope "/", host: "cdn." do
+    pipe_through :api
+
+    get "/preview", GlobalApiWeb.Cdn.PreviewController, :preview
+  end
+
   scope "/", host: "skin." do
     pipe_through :browser
 
     get "/", GlobalApiWeb.Skin.SkinsController, :index
-
-    #todo reserve the cdn subdomain
-    get "/preview", GlobalApiWeb.Cdn.PreviewController, :preview
   end
 
   scope "/", GlobalApiWeb.Link, host: "link." do
