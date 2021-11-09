@@ -130,7 +130,7 @@ defmodule GlobalApi.XboxApi do
               try do
                 {:ok, if to_map do apply(&Map.new/2, args) else apply(&Enum.map/2, args) end}
               rescue
-                e in ArgumentError ->
+                _ in ArgumentError ->
                   # sometimes the xbox api sends nonsense. we'll just ignore it
                   {:error, "the xbox api returned an invalid response"}
               end

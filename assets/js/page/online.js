@@ -31,7 +31,7 @@ window.addEventListener('load', function () {
       makeLinkRequest(
           body,
           function (status, content) {
-            if (status >= 200 && status < 300) {
+            if (status < 200 && status >= 300) {
               const reason = content.message;
               if (reason === 2148916233) {
                 setStepActionContent("You selected a Microsoft account that doesn't have a Xbox account. Are you sure that you selected the right account?", 'text-red-500', true);
@@ -44,8 +44,7 @@ window.addEventListener('load', function () {
               return;
             }
 
-            const data = content.data;
-            window.history.replaceState(null, '', cleanUrl + '?bedrock=' + queryParams.get('bedrock') + '&java=' + data.id);
+            window.history.replaceState(null, '', cleanUrl + '?bedrock=' + queryParams.get('bedrock') + '&java=' + content.id);
 
             window.document.getElementById('link-details-desc').innerText = "The information about the account you want to link that we have so far.";
             if (hasBInfo) {
@@ -53,8 +52,8 @@ window.addEventListener('load', function () {
               addFormElement('Xbox Id (xuid)', xuid)
               addFormElement('Gamertag', gamertag)
             }
-            addFormElement('UUID', data.uuid);
-            addFormElement('Username', data.username);
+            addFormElement('UUID', content.uuid);
+            addFormElement('Username', content.username);
             // show link details
             window.document.getElementById('link-details').classList.remove('hidden');
 
@@ -65,9 +64,8 @@ window.addEventListener('load', function () {
       makeLinkRequest(
           {bedrock: token},
           function (status, content) {
-            if (status >= 200 && status < 300) {
+            if (status < 200 && status >= 300) {
               const reason = content.message;
-              console.log(reason);
               if (reason === 2148916233) {
                 setStepActionContent("You selected a Microsoft account that doesn't have a Xbox account. Are you sure that you selected the right account?", 'text-red-500', true);
               } else {
@@ -79,8 +77,7 @@ window.addEventListener('load', function () {
               return;
             }
 
-            const data = content.data;
-            window.history.replaceState(null, '', cleanUrl + '?bedrock=' + data.id + "&b_info=" + data.xuid + ":" + data.gamertag);
+            window.history.replaceState(null, '', cleanUrl + '?bedrock=' + content.id + "&b_info=" + content.xuid + ":" + content.gamertag);
 
             updatePage();
           }
@@ -117,14 +114,13 @@ function updatePage() {
     };
 
     const responseHandler = function (status, content) {
-      if (status < 200 || status >= 300) {
+      if (status < 200 && status >= 300) {
         setStepActionContent('Failed to link your account!<br>Reason: ' + content.message, 'text-red-500', true);
         setButton(cleanUrl, 'Restart linking');
         return;
       }
 
       updateSteps(4);
-      const data = content.data;
 
       clearStepActionContent();
       setStepActionHeader('You have successfully linked your account!', 'text-green-500 mt-8');
@@ -133,10 +129,10 @@ function updatePage() {
 
       window.document.getElementById('link-details-desc').innerText = "Information about the account you just linked.";
       clearFormElements();
-      addFormElement('Xbox Id (xuid)', data.xuid)
-      addFormElement('Gamertag', data.gamertag)
-      addFormElement('UUID', data.uuid);
-      addFormElement('Username', data.username);
+      addFormElement('Xbox Id (xuid)', content.xuid)
+      addFormElement('Gamertag', content.gamertag)
+      addFormElement('UUID', content.uuid);
+      addFormElement('Username', content.username);
       // show link details
       window.document.getElementById('link-details').classList.remove('hidden');
     };
@@ -204,10 +200,8 @@ function makeLinkRequest(body, onResponse, onError = null) {
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify(body)
   }).then(async function (response) {
-    if (response.status < 200 || response.status >= 300) {
+    if (response.status < 200 && response.status >= 300) {
       console.log(response.status + ' ' + (await response.clone().text()));
-      onResponse(response.status, (await response.json()).message);
-      return;
     }
     onResponse(response.status, await response.json());
   }).catch(function (reason) {
@@ -338,7 +332,7 @@ function clearFormElements() {
 
 function addFormElement(key, value) {
   window.document.getElementById('link-details-inner').innerHTML +=
-      '<div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">' +
+      '<div class="bg-gray-50 dark:bg-gray-500 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">' +
       '  <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">' +
       key +
       '  </dt>' +

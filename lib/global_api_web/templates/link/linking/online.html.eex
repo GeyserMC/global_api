@@ -31,7 +31,7 @@
         </h3>
         <p class="mt-1 max-w-2xl text-sm text-gray-900 dark:text-gray-200" id="link-details-desc"></p>
       </div>
-      <div class="border-t border-gray-200 dark:border-gray-700">
+      <div class="border-t border-gray-200 dark:border-t-2 dark:border-gray-600">
         <dl id="link-details-inner"></dl>
       </div>
     </div>

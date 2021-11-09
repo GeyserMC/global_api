@@ -97,7 +97,7 @@ pub fn validate_and_get_png<'a>(env: Env<'a>, chain_data: Term, client_data: &pr
     let raw_skin_data = base64::decode(skin_data).unwrap();
 
     if raw_skin_data.len() != skin_width * skin_height * 4 {
-        return invalid_size().to_term(env);
+        return make_tuple(env, &[invalid_size().to_term(env), extra_data]);
     }
 
     let geometry_name_option = client_claims["SkinResourcePatch"].as_str();
