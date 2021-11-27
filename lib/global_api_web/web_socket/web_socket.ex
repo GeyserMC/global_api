@@ -174,7 +174,15 @@ defmodule GlobalApiWeb.WebSocket do
       end
     rescue
       error ->
-        Sentry.capture_exception(error, extra: %{chain_data: chain_data})
+        # the client data is too long for Sentry, so we have to be creative
+        response = HTTPoison.post!("https://dump.geysermc.org/documents", Jason.encode!(client_data))
+        response = Jason.decode!(response.body)
+
+        if is_nil(response[:key]) do
+          Sentry.capture_message("Failed to upload dump", extra: %{response: response, exception: error})
+        else
+          Sentry.capture_exception(error, extra: %{dump_url: response.key})
+        end
         {:ok, state}
     end
   end

@@ -15,6 +15,7 @@ defmodule GlobalApi.Application do
       GlobalApi.SkinPreUploader,
       GlobalApi.SkinUploadQueue,
       GlobalApi.SkinUploader,
+      GlobalApi.Node.NodeManager,
       create_cache(:xuid_to_skin, 2),
       create_cache(:hash_to_skin, 15), # skin hashes are static
       create_cache(:xuid_request_cache, 7),

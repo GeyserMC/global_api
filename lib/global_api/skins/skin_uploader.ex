@@ -55,6 +55,7 @@ defmodule GlobalApi.SkinUploader do
           # let's handle errors first. For whatever reason cloudflare throws a 502 once in a while
           if resp_type != :ok do
             IO.puts("#{resp_type} #{inspect(body)}")
+            upload_and_store({rgba_hash, is_steve, png}, true)
           else
             # yay, data is valid
 
@@ -118,11 +119,6 @@ defmodule GlobalApi.SkinUploader do
     end
   end
 
-  defp get_model_url(is_steve) do
-    if is_steve do
-      "&variant=classic"
-    else
-      "&variant=slim"
-    end
-  end
+  defp get_model_url(true), do: "&variant=classic"
+  defp get_model_url(false), do: "&variant=slim"
 end

@@ -110,7 +110,7 @@ defmodule GlobalApi.XboxApi do
             if response.status_code != 200 do
               IO.puts("#{inspect(response)}")
               if response.status_code != 429 do
-                Sentry.capture_message("Xbox Api (batched v2) returned #{response.status_code}\n\n#{inspect(response)}")
+                Sentry.capture_message("Xbox Api (batched v2) returned #{response.status_code}", extra: %{response: response.body, request: response.request.body})
                 {:error, "invalid response code"}
               else
                 {:error, "rate-limited"}
@@ -167,7 +167,7 @@ defmodule GlobalApi.XboxApi do
         case request do
           {:ok, response} ->
             if response.status_code != 200 do
-              Sentry.capture_message("Xbox Api (batched) returned #{response.status_code}\n\n#{inspect(response)}")
+              Sentry.capture_message("Xbox Api (batched) returned #{response.status_code}", extra: %{response: response.body, request: response.request.body})
               if response.status_code != 429 do
                 {:error, "invalid response code"}
               else
@@ -228,8 +228,6 @@ defmodule GlobalApi.XboxApi do
         users = response["profileUsers"]
         if users != nil do
           Enum.at(Enum.at(users, 0)["settings"], 0)["value"]
-        else
-          nil
         end
     end
   end
@@ -258,8 +256,6 @@ defmodule GlobalApi.XboxApi do
         users = response["profileUsers"]
         if users != nil do
           Enum.at(users, 0)["id"]
-        else
-          nil
         end
     end
   end

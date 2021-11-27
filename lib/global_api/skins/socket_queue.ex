@@ -21,18 +21,17 @@ defmodule GlobalApi.SocketQueue do
   end
 
   @impl true
-  def terminate(_reason, state) do
-    Enum.each(
-      state.id_subscribers,
-      fn subscriber ->
+  def terminate(reason, state) do
+    IO.puts("Socket queue terminates, reason: #{inspect(reason)}")
+    Map.values(state.id_subscribers)
+    |> Enum.each(fn subscriber ->
         Enum.each(
           subscriber.channels,
           fn channel ->
             send(channel, {:disconnect, :internal_error})
           end
         )
-      end
-    )
+    end)
   end
 
   def create_subscriber(socket) do
