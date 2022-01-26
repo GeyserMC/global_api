@@ -44,9 +44,10 @@ defmodule GlobalApi.XboxAccounts do
     }
   end
 
-  def not_setup_message(), do: "The Xbox Api isn't setup correctly. Please contact a GeyserMC developer"
+#  def not_setup_message, do: "The Xbox Api isn't setup correctly. Please contact a GeyserMC developer"
+  def not_setup_message, do: "Unable to find user in our cache. Please try specifying their Floodgate UUID instead"
 
-  def not_setup_response(), do: %{message: not_setup_message()}
+  def not_setup_response, do: %{message: not_setup_message()}
 
   def save_token_data(accounts, updater) do
     # we don't have to store the id

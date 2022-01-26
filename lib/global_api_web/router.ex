@@ -2,6 +2,12 @@ defmodule GlobalApiWeb.Router do
   use GlobalApiWeb, :router
   use Plug.ErrorHandler
 
+  domain_info = Application.get_env(:global_api, :domain_info)
+  # we apparently can't call functions
+  api_host = domain_info[:api][:subdomain] <> "."
+  link_host = domain_info[:link][:subdomain] <> "."
+  skin_host = domain_info[:skin][:subdomain] <> "."
+
   pipeline :api do
     plug :accepts, ["json"]
   end
@@ -12,17 +18,15 @@ defmodule GlobalApiWeb.Router do
 
   scope "/", host: "cdn." do
     pipe_through :api
-
-    get "/preview", GlobalApiWeb.Cdn.PreviewController, :preview
   end
 
-  scope "/", host: "skin." do
+  scope "/", GlobalApiWeb.Skin, host: skin_host do
     pipe_through :browser
 
-    get "/", GlobalApiWeb.Skin.SkinsController, :index
+    get "/", SkinsController, :index
   end
 
-  scope "/", GlobalApiWeb.Link, host: "link." do
+  scope "/", GlobalApiWeb.Link, host: link_host do
     pipe_through :browser
 
     get "/", LinkingController, :index
@@ -34,7 +38,7 @@ defmodule GlobalApiWeb.Router do
     end
   end
 
-  scope "/", host: "api." do
+  scope "/", host: api_host do
     scope "/v1", GlobalApiWeb.Api, log: Mix.env() == :dev do
       pipe_through :api
 

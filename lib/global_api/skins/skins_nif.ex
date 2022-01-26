@@ -5,6 +5,4 @@ defmodule GlobalApi.SkinsNif do
       mode: :release
 
   def validate_and_get_png(_chain_data, _client_data), do: :erlang.nif_error(:nif_not_loaded)
-
-  def render_link_preview(_page), do: :erlang.nif_error(:nif_not_loaded)
 end

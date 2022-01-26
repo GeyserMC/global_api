@@ -2,12 +2,12 @@
 
 // which top level variables/function names should be kept?
 const reservedTopLevels = ['programName','switchMode','createNotification','closeNotification','closeNews'];
-const apiBaseUrl = 'https://api.geysermc.org';
+const apiBaseUrl = 'http://api.geysermc';
 const finalRootPath = '../priv/static/';
 
 const buildTemplates = false;
 const templateDir = '../lib/global_api_web/templates';
-const finalTemplateDir = templateDir;
+const finalTemplateDir = process.env.NODE_ENV === "production" ? templateDir : "../priv/static/html";
 
 console.log("building in " + process.env.NODE_ENV + " mode");
 
@@ -72,7 +72,9 @@ if (process.argv.includes('--watch')) {
       });
 
   // our css also has to update (we're using JIT)
-  exec("npx tailwindcss --input=css/main.css --output=../priv/static/css/main.css --postcss --watch");
+  let css = exec("npx tailwindcss --input=css/main.css --output=../priv/static/css/main.css --postcss --watch");
+  css.stdout.on('data', function (data) { console.log(data.toString()) });
+  css.stderr.on('data', function (data) { console.log(data.toString()) });
   return;
 }
 //endregion

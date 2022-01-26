@@ -9,6 +9,29 @@ config :global_api, GlobalApi.Repo,
   database: "database",
   pool_size: 2
 
+# we require local DNS (api.geysermc e.g.) in order to test
+# the global api fully.
+domain = "geysermc"
+
+config :global_api, :domain_info,
+  protocol: "http",
+  api: %{
+    domain: domain,
+    subdomain: "api"
+  },
+  cdn: %{
+    domain: domain,
+    subdomain: "cdn"
+  },
+  link: %{
+    domain: domain,
+    subdomain: "link"
+  },
+  skin: %{
+    domain: domain,
+    subdomain: "skin"
+  }
+
 # Even in development mode we're using the real subdomains and most stuff also uses https,
 # e.g. make sure that build.js tries to use http instead of https
 
@@ -79,7 +102,7 @@ config :global_api, GlobalApiWeb.Endpoint,
     port: String.to_integer(System.get_env("PORT") || "80"),
     transport_options: [socket_opts: [:inet]]
   ],
-  static_url: [host: "cdn.geysermc.org"],
+  static_url: [host: "cdn.geysermc"],
   pubsub_server: GlobalApi.PubSub,
   live_reload: [
     patterns: [

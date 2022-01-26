@@ -13,9 +13,6 @@
   <link href="<%= Routes.static_url(@conn, "/css/main.css") %>" rel="stylesheet" />
   <link href="https://rsms.me/inter/inter.css" rel="stylesheet">
 
-  <%= if assigns[:page_preview_image] do %>
-  <meta property="og:image" content="<%= cdn_domain() %>/preview?controller=<%= assigns.conn.private[:phoenix_controller] %>&action=<%= assigns.conn.private[:phoenix_action] %>" />
-  <% end %>
   <%= if assigns[:custom_meta] do %>
   <meta property="og:title" content="<%= assigns.custom_meta.title %>" />
   <meta property="og:description" content="<%= assigns.custom_meta.description %>" />

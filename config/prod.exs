@@ -1,5 +1,26 @@
 use Mix.Config
 
+domain = "geysermc.org"
+
+config :global_api, :domain_info,
+  protocol: "http",
+  api: %{
+    domain: domain,
+    subdomain: "api"
+  },
+  cdn: %{
+    domain: domain,
+    subdomain: "cdn"
+  },
+  link: %{
+    domain: domain,
+    subdomain: "link"
+  },
+  skin: %{
+    domain: domain,
+    subdomain: "skin"
+  }
+
 # The `cipher_suite` is set to `:strong` to support only the
 # latest and more secure SSL ciphers
 # `log_level` is set to `:error` to ignore SSL errors received from e.g. old client
@@ -24,7 +45,10 @@ config :global_api, GlobalApiWeb.Endpoint,
   ],
   force_ssl: [hsts: true, host: nil, log: false],
   static_url: [host: "cdn.geysermc.org"],
-  cache_static_manifest: "priv/static/cache_manifest.json"
+  cache_static_manifest: "priv/static/cache_manifest.json",
+  server: true,
+  root: ".",
+  version: Application.spec(:global_api, :vsn)
 
 # Do not print debug messages in production
 config :logger,
