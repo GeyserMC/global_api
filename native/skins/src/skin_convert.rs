@@ -16,13 +16,14 @@ use chain_validator::validate_chain;
 use converter::get_skin_or_convert_geometry;
 use skin_codec::encode_image_and_get_hashes;
 
-use crate::as_binary;
+use crate::rustler_utils::as_binary;
+use crate::skin_convert::converter::SkinModel;
 use crate::skin_convert::skin_codec::ErrorType::{InvalidGeometry, InvalidSize};
 
-mod converter;
+pub mod converter;
 mod pixel_cleaner;
 mod chain_validator;
-mod skin_codec;
+pub mod skin_codec;
 
 atoms! {
     invalid_chain_data,
@@ -62,12 +63,12 @@ pub fn validate_and_get_png<'a>(env: Env<'a>, chain_data: Term<'a>, client_data:
     let skin_info = collect_result.ok().unwrap();
 
     // sometimes its already defined what model a skin is
-    let mut arm_model = -1;
+    let mut arm_model = SkinModel::Unknown;
     let arm_size = client_claims.get("ArmSize");
     if let Some(arm_size) = arm_size {
         let arm_size = arm_size.as_str();
         if let Some(arm_size) = arm_size {
-            arm_model = if arm_size.eq("slim") { 1 } else { 0 };
+            arm_model = if arm_size.eq("slim") { SkinModel::Alex } else { SkinModel::Steve };
         }
     }
 
@@ -77,8 +78,8 @@ pub fn validate_and_get_png<'a>(env: Env<'a>, chain_data: Term<'a>, client_data:
     }
 
     let (mut raw_data, mut is_steve) = convert_result.unwrap();
-    if arm_model != -1 {
-        is_steve = arm_model == 0;
+    if arm_model != SkinModel::Unknown {
+        is_steve = arm_model == SkinModel::Steve;
     }
     let is_steve_atom = if is_steve { true_() } else { false_() };
 

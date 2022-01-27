@@ -12,22 +12,30 @@ use json::JsonValue;
 
 use serde_json::json;
 use serde_json::Value;
+use crate::skin_convert::converter::SkinModel::{Alex, Steve, Unknown};
 use crate::skin_convert::skin_codec::SkinInfo;
 
 const TEXTURE_TYPE_FACE: i64 = 1;
+
+#[derive(Eq, PartialEq)]
+pub enum SkinModel {
+    Unknown = -1,
+    Steve = 1,
+    Alex = 2,
+}
 
 pub fn get_skin_or_convert_geometry(info: SkinInfo, client_claims: Value) -> Result<(Vec<u8>, bool), &'static str> {
     let skin_width = info.skin_width;
 
     if info.needs_convert && (skin_width > 0 && !info.raw_skin_data.is_empty()) {
         match convert_geometry(
-            info.raw_skin_data.as_slice(), &skin_width, client_claims,
+            info.raw_skin_data.as_slice(), skin_width, client_claims,
             info.geometry_data, &info.geometry_patch, info.geometry_name.as_str()
         ) {
             Err(err) => Err(err),
             Ok((raw_data, skin_model)) =>
                 // fallback to Steve if model can't be found
-                Ok((raw_data, skin_model != 3)),
+                Ok((raw_data, skin_model != Alex)),
         }
     } else {
         // we still have to scale even though we technically don't have to convert them
@@ -46,7 +54,7 @@ pub fn get_skin_or_convert_geometry(info: SkinInfo, client_claims: Value) -> Res
     }
 }
 
-fn convert_geometry(skin_data: &[u8], skin_width: &usize, client_claims: Value, geometry_data: Vec<u8>, geometry_patch: &JsonValue, geometry_name: &str) -> Result<(Vec<u8>, i32), &'static str> {
+fn convert_geometry(skin_data: &[u8], skin_width: usize, client_claims: Value, geometry_data: Vec<u8>, geometry_patch: &JsonValue, geometry_name: &str) -> Result<(Vec<u8>, SkinModel), &'static str> {
     let json: Result<Value, _> = serde_json::from_slice(geometry_data.as_slice());
     if json.is_err() {
         return Err("invalid json");
@@ -68,7 +76,7 @@ fn convert_geometry(skin_data: &[u8], skin_width: &usize, client_claims: Value, 
 
     let (geometry_entry, tex_width, tex_height) = geometry_entry.unwrap();
 
-    if &tex_width != skin_width || tex_width * tex_height * 4 != skin_data.len() {
+    if tex_width != skin_width || tex_width * tex_height * 4 != skin_data.len() {
         return Err("the image width and height doesn't match the geometry data width and height");
     }
 
@@ -85,14 +93,14 @@ fn convert_geometry(skin_data: &[u8], skin_width: &usize, client_claims: Value, 
     let mut new_vec: Vec<u8> = Vec::with_capacity(64 * 64 * 4);
     unsafe { new_vec.set_len(new_vec.capacity()) }
 
-    let mut skin_model = -1;
+    let mut skin_model = Unknown;
 
     for bone in bones.unwrap() {
         let model_or_err = translate_bone(skin_data, skin_width, bone, false, &mut new_vec);
         if let Err(err) = model_or_err {
             return Err(err);
         }
-        if skin_model == -1 {
+        if skin_model == Unknown {
             skin_model = model_or_err.unwrap();
         }
     }
@@ -100,7 +108,7 @@ fn convert_geometry(skin_data: &[u8], skin_width: &usize, client_claims: Value, 
     // lets check (and translate it) if the skin also has an animated head
 
     let animated_face = &geometry_patch["animated_face"];
-    if animated_face.is_object() {
+    if animated_face.is_string() {
         let animated_face = animated_face.as_str();
         if animated_face.is_none() {
             return Err("animated face name is not a string");
@@ -198,7 +206,7 @@ fn convert_geometry(skin_data: &[u8], skin_width: &usize, client_claims: Value, 
         }
 
         for bone in bones.unwrap() {
-            let model_or_err = translate_bone(face_data.as_slice(), &face_width, bone, true, &mut new_vec);
+            let model_or_err = translate_bone(face_data.as_slice(), face_width, bone, true, &mut new_vec);
             if let Err(err) = model_or_err {
                 return Err(err);
             }
@@ -241,7 +249,7 @@ fn get_correct_entry<'a>(format_version: &str, geometry_data: &'a Value, geometr
     }
 }
 
-fn translate_cubed_bone(skin_data: &[u8], w: &usize, name: &str, x_tex_offset: usize, y_tex_offset: usize, x_tex_size: usize, y_tex_size: usize, cubes: &[Value], new_vec: &mut Vec<u8>) -> Result<i32, &'static str> {
+fn translate_cubed_bone(skin_data: &[u8], w: usize, name: &str, x_tex_offset: usize, y_tex_offset: usize, x_tex_size: usize, y_tex_size: usize, cubes: &[Value], new_vec: &mut Vec<u8>) -> Result<SkinModel, &'static str> {
     let cube = cubes.get(0).unwrap();
 
     let size = cube.get("size");
@@ -270,10 +278,10 @@ fn translate_cubed_bone(skin_data: &[u8], w: &usize, name: &str, x_tex_offset: u
     }
 
     // temp pos
-    let result = if (skin_model == 0 || skin_model == 1) && (name.eq("leftArm") || name.eq("leftarm") || name.eq("rightArm") || name.eq("rightarm")) {
+    let result = if skin_model != Unknown && (name.eq_ignore_ascii_case("leftArm") || name.eq_ignore_ascii_case("rightArm")) {
         skin_model
     } else {
-        -1
+        Unknown
     };
 
     let uv = uv.unwrap().as_array();
@@ -291,7 +299,7 @@ fn translate_cubed_bone(skin_data: &[u8], w: &usize, name: &str, x_tex_offset: u
         return Err("failed to get bone offset");
     }
 
-    fill_and_scale_texture(skin_data, new_vec, *w, 64, tex_width, tex_height, x_tex_size, y_tex_size, x_offset, y_offset, x_tex_offset, y_tex_offset);
+    fill_and_scale_texture(skin_data, new_vec, w, 64, tex_width, tex_height, x_tex_size, y_tex_size, x_offset, y_offset, x_tex_offset, y_tex_offset);
 
     Ok(result)
 }
@@ -323,7 +331,7 @@ fn fill_and_scale_texture(skin_data: &[u8], new_vec: &mut Vec<u8>, skin_data_wid
     }
 }
 
-fn translate_poly_bone(skin_data: &[u8], w: &usize, name: &str, x_tex_offset: usize, y_tex_offset: usize, x_tex_size: usize, y_tex_size: usize, poly_mesh: &Value, new_vec: &mut Vec<u8>) -> Result<i32, &'static str> {
+fn translate_poly_bone(skin_data: &[u8], w: usize, name: &str, x_tex_offset: usize, y_tex_offset: usize, x_tex_size: usize, y_tex_size: usize, poly_mesh: &Value, new_vec: &mut Vec<u8>) -> Result<SkinModel, &'static str> {
     let is_normalized = poly_mesh.get("normalized_uvs").unwrap_or(&json!(false)).as_bool();
     if is_normalized.is_none() {
         return Err("invalid is_normalized");
@@ -373,7 +381,7 @@ fn translate_poly_bone(skin_data: &[u8], w: &usize, name: &str, x_tex_offset: us
 
     let h = skin_data.len() / 4 / w;
 
-    let w_f = *w as f64;
+    let w_f = w as f64;
     let h_f = h as f64;
 
     let mut lowest_u = w_f;
@@ -423,21 +431,25 @@ fn translate_poly_bone(skin_data: &[u8], w: &usize, name: &str, x_tex_offset: us
     let y_offset = (h_f - highest_v).floor() as usize;
 
     //todo impl mirroring
-    fill_and_scale_texture(skin_data, new_vec, *w, 64, tex_width, tex_height, x_tex_size, y_tex_size, x_offset, y_offset, x_tex_offset, y_tex_offset);
+    fill_and_scale_texture(skin_data, new_vec, w, 64, tex_width, tex_height, x_tex_size, y_tex_size, x_offset, y_offset, x_tex_offset, y_tex_offset);
 
     //todo check
-    let skin_model = if tex_width == 18 { 1 } else if tex_width == 20 { 0 } else { -1 };
+    let skin_model = match tex_width {
+        18 => Alex,
+        20 => Steve,
+        _ => Unknown
+    };
 
-    let result = if skin_model == 0 || skin_model == 1 && name.eq("leftarm") || name.eq("rightarm") {
+    let result = if skin_model != Unknown && name.eq_ignore_ascii_case("leftArm") || name.eq_ignore_ascii_case("rightArm") {
         skin_model
     } else {
-        -1
+        Unknown
     };
 
     Ok(result)
 }
 
-fn translate_bone(skin_data: &[u8], w: &usize, bone: &Value, only_face: bool, new_vec: &mut Vec<u8>) -> Result<i32, &'static str> {
+fn translate_bone(skin_data: &[u8], w: usize, bone: &Value, only_face: bool, new_vec: &mut Vec<u8>) -> Result<SkinModel, &'static str> {
     let name = bone.get("name");
     if name.is_none() {
         return Err("bone doesn't have a name");
@@ -451,14 +463,14 @@ fn translate_bone(skin_data: &[u8], w: &usize, bone: &Value, only_face: bool, ne
     if only_face {
         // only translate the face
         if !"hat".eq(name) && !"head".eq(name) {
-            return Ok(-1);
+            return Ok(Unknown);
         }
     }
 
     let (x_tex_offset, y_tex_offset, x_tex_size, y_tex_size) = get_texture_offset(name);
     // we don't have to map every bone, and bones that we don't have to map have are: 0, 1
     if x_tex_size == 0 && y_tex_size == 0 {
-        return Ok(-1);
+        return Ok(Unknown);
     }
 
     // lets check if it is a cubed bone or a poly bone
@@ -471,7 +483,7 @@ fn translate_bone(skin_data: &[u8], w: &usize, bone: &Value, only_face: bool, ne
         }
         let cubes = cubes.unwrap();
         if cubes.is_empty() {
-            return Ok(-1); // apparently empty cubes is valid :shrug:
+            return Ok(Unknown); // apparently empty cubes is valid :shrug:
         }
         return translate_cubed_bone(skin_data, w, name, x_tex_offset, y_tex_offset, x_tex_size, y_tex_size, cubes, new_vec);
     }
@@ -482,7 +494,7 @@ fn translate_bone(skin_data: &[u8], w: &usize, bone: &Value, only_face: bool, ne
     }
 
     // not every bone has cubes nor a poly mesh
-    Ok(-1)
+    Ok(Unknown)
 }
 
 fn get_bone_offset(uv: &[Value]) -> (bool, usize, usize) {
@@ -507,20 +519,24 @@ fn get_bone_offset(uv: &[Value]) -> (bool, usize, usize) {
     (true, x_offset.unwrap() as usize, y_offset.unwrap() as usize)
 }
 
-fn size_to_tex_size(size: &[Value]) -> (bool, i32, usize, usize) {
+fn size_to_tex_size(size: &[Value]) -> (bool, SkinModel, usize, usize) {
     let width = size.get(0).unwrap().as_f64();
     let height = size.get(1).unwrap().as_f64();
     let depth = size.get(2).unwrap().as_f64();
 
     if width.is_none() || height.is_none() || depth.is_none() {
-        return (false, -1, 0, 0);
+        return (false, Unknown, 0, 0);
     }
 
     let width = width.unwrap();
     let height = height.unwrap();
     let depth = &depth.unwrap();
 
-    let skin_model = if width == 3.0 { 1 } else if width == 4.0 { 0 } else { -1 };
+    let skin_model = match width.ceil() as i32 {
+        3 => Alex,
+        4 => Steve,
+        _ => Unknown
+    };
 
     (true, skin_model, ((depth * 2.0) + (width * 2.0)) as usize, (depth + height).round() as usize)
 }

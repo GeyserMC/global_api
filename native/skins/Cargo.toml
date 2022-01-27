@@ -9,6 +9,10 @@ name = "skins"
 path = "src/lib.rs"
 crate-type = ["cdylib"]
 
+[[bin]]
+name = "skins-bin"
+path = "src/main.rs"
+
 [dependencies]
 rustler = {git = "git://github.com/rusterlium/rustler.git", branch = "master"}
 lodepng = { version = "3.4.6", default-features = false }

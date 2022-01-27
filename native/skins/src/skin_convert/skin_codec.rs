@@ -8,6 +8,7 @@ use crate::skin_convert::pixel_cleaner::clear_unused_pixels;
 
 use crate::skin_convert::skin_codec::ErrorType::{InvalidGeometry, InvalidSize};
 
+#[derive(Debug)]
 pub enum ErrorType {
     InvalidSize,
     InvalidGeometry,
@@ -78,6 +79,23 @@ pub fn collect_skin_info(client_claims: &Value) -> Result<SkinInfo, ErrorType> {
     let geometry_data = geometry_data_res.unwrap();
 
     Ok(SkinInfo { needs_convert, raw_skin_data, skin_width, geometry_data, geometry_patch: geometry_patch.clone(), geometry_name })
+}
+
+// only used when run as binary
+#[allow(dead_code)]
+pub fn encode_image_and_get_hash(raw_data: &mut Vec<u8>, w: usize, h: usize) -> (Box<[u8]>, Box<[u8]>) {
+    // encode images like Minecraft does
+    let mut encoder = lodepng::Encoder::new();
+    encoder.set_auto_convert(false);
+    encoder.info_png_mut().interlace_method = 0; // should be 0 but just to be sure
+
+    let png = encoder.encode(raw_data.as_slice(), w, h).unwrap();
+
+    let mut hasher = Sha256::new();
+    hasher.update(&png);
+    let minecraft_hash = hasher.finalize();
+
+    return (Box::from(png.as_slice()), Box::from(minecraft_hash.as_slice()));
 }
 
 pub fn encode_image_and_get_hashes(raw_data: &mut Vec<u8>, is_steve: bool) -> (Box<[u8]>, Box<[u8]>, Box<[u8]>) {
