@@ -3,10 +3,20 @@ defmodule GlobalApiWeb.WebSocket do
 
   alias GlobalApi.SkinsNif
   alias GlobalApi.SkinsRepo
-  alias GlobalApi.SocketQueue
+  alias GlobalApi.SocketManager
   alias GlobalApi.UniqueSkin
   alias GlobalApi.Utils
   alias GlobalApi.XboxRepo
+
+  @type t :: %__MODULE__{
+    subscriptions: Map.t,
+    creator_of: integer | nil,
+    last_ping: integer
+  }
+
+  defstruct subscriptions: nil, creator_of: nil, last_ping: 0
+
+  @idle_timeout if Mix.env() == :prod, do: 20_000, else: 60 * 60 * 1_000
 
   @debug -1
   @info 0
@@ -25,61 +35,44 @@ defmodule GlobalApiWeb.WebSocket do
   @creator_left Jason.encode!(%{info: "creator left and there are no uploads left"})
   @internal_error Jason.encode!(%{info: "the service experienced an unexpected error"})
 
-  def init(request, _state) do
-    opts = %{:idle_timeout => 20000}
-    query_map = URI.decode_query(request.qs)
-
-    case Map.fetch(query_map, "subscribed_to") do
-      {:ok, subscribed_to} ->
-        subscribed_to = Integer.parse(subscribed_to)
-        if subscribed_to !== :error do
-          {subscribed_to, _} = subscribed_to
-          case Map.fetch(query_map, "verify_code") do
-            {:ok, verify_code} ->
-              {
-                :cowboy_websocket,
-                request,
-                %{
-                  subscribed_to: subscribed_to,
-                  verify_code: verify_code,
-                  is_creator: false,
-                  last_ping: 0,
-                  initialized: false
-                },
-                opts
-              }
-            :error ->
-              {:error, @invalid_code}
-          end
-        else
-          {:error, @invalid_code}
-        end
-      :error ->
-        {
-          :cowboy_websocket,
-          request,
-          %{subscribed_to: -1, verify_code: -1, is_creator: true, last_ping: 0, initialized: false},
-          opts
-        }
-    end
+  def init(request, state) do
+    opts = %{:idle_timeout => @idle_timeout, :max_frame_size => 1_572_864} # 1.5mb
+    {:cowboy_websocket, request, URI.decode_query(request.qs), opts}
   end
 
-  def websocket_init(state) do
-    if state.subscribed_to == -1 do
-      {id, verify_code} = SocketQueue.create_subscriber(self())
-      {
-        [{:text, Jason.encode!(%{event_id: 0, id: id, verify_code: verify_code})}],
-        %{state | subscribed_to: id, verify_code: verify_code, initialized: true}
-      }
-    else
-      case SocketQueue.add_subscriber(state.subscribed_to, state.verify_code, self()) do
-        :error -> {[{:close, @code_not_found}], state}
-        pending_uploads ->
-          {
-            [{:text, Jason.encode!(%{event_id: 0, pending_uploads: pending_uploads})}],
-            %{state | initialized: true}
-          }
+  def websocket_init(query_map) do
+    id = query_map["subscribed_to"]
+    verify_code = query_map["verify_code"]
+
+    if !is_nil(id) do
+      id = Integer.parse(id)
+      if id !== :error && !is_nil(verify_code) do
+        {id, _} = id
+        case SocketManager.add_subscriber(id, verify_code, self()) do
+          :not_valid -> {[{:close, @code_not_found}], query_map}
+          true ->
+            {
+              [
+                {:text, Jason.encode!(%{
+                  event_id: 0,
+                  id: id,
+                  pending_uploads: SocketManager.get_pending_upload_count(id)
+                })}
+              ],
+              %__MODULE__{subscriptions: [id]}
+            }
+        end
+      else
+        {[{:close, @invalid_code}], query_map}
       end
+    else
+      {id, verify_code} = SocketManager.create_subscriber(self())
+      {
+        [
+          {:text, Jason.encode!(%{event_id: 0, id: id, verify_code: verify_code})}
+        ],
+        %__MODULE__{subscriptions: [id], creator_of: id}
+      }
     end
   end
 
@@ -93,18 +86,18 @@ defmodule GlobalApiWeb.WebSocket do
   end
 
   def websocket_handle(:pong, state) do
-    {[{:close, %{error: @invalid_action}}], state}
+    {[{:close, @invalid_action}], state}
   end
 
   def websocket_handle({:ping, _}, state) do
-    {[{:close, %{error: @invalid_action}}], state}
+    {[{:close, @invalid_action}], state}
   end
 
   def websocket_handle({:pong, _}, state) do
-    {[{:close, %{error: @invalid_action}}], state}
+    {[{:close, @invalid_action}], state}
   end
 
-  def websocket_handle({:text, data}, state) when state.is_creator do
+  def websocket_handle({:text, data}, state) when not is_nil(state.creator_of) do
     case Jason.decode(data) do
       {:ok, json} ->
         websocket_handle({:json, json}, state)
@@ -217,8 +210,8 @@ defmodule GlobalApiWeb.WebSocket do
         }
       )
 
-      SocketQueue.broadcast_message(
-        state.subscribed_to,
+      SocketManager.broadcast_message(
+        state.creator_of,
         %{
           event_id: 3,
           xuid: xuid,
@@ -261,8 +254,8 @@ defmodule GlobalApiWeb.WebSocket do
         # set skin and return response
         SkinsRepo.set_skin(xuid, skin_id)
 
-        SocketQueue.broadcast_message(
-          state.subscribed_to,
+        SocketManager.broadcast_message(
+          state.creator_of,
           %{
             event_id: 3,
             xuid: xuid,
@@ -311,8 +304,8 @@ defmodule GlobalApiWeb.WebSocket do
           # set the skin and return
           SkinsRepo.set_skin(xuid, unique_skin)
 
-          SocketQueue.broadcast_message(
-            state.subscribed_to,
+          SocketManager.broadcast_message(
+            state.creator_of,
             %{
               event_id: 3,
               xuid: xuid,
@@ -331,35 +324,52 @@ defmodule GlobalApiWeb.WebSocket do
           end
 
           # if the skin isn't cached and isn't in the database then we have to upload it
-          SocketQueue.add_pending_upload(state.subscribed_to, xuid, is_steve, png, rgba_hash, minecraft_hash)
+          SocketManager.add_pending_upload(state.creator_of, xuid, is_steve, png, rgba_hash, minecraft_hash)
         end
       end
     end
   end
 
-  def send_log_message(state, priority, message) do
-    SocketQueue.broadcast_message(state.subscribed_to, %{event_id: 5, priority: priority, message: message})
-  end
+  def send_log_message(state, priority, message), do:
+    SocketManager.broadcast_message(state.creator_of, %{
+      event_id: 5,
+      priority: priority,
+      message: message
+    })
 
-  defp new_player_notify do
+  defp new_player_notify, do:
     :telemetry.execute([:global_api, :metrics, :skins, :new_player], %{count: 1})
+
+  def websocket_info({:creator_disconnected, id}, state) do
+    subscriptions = List.delete(state.subscriptions, id)
+    state = %{state | subscriptions: subscriptions}
+
+    creator_left_message = {:text, Jason.encode!(%{event_id: 4, id: id})}
+    if length(subscriptions) > 0,
+       do: {creator_left_message, state},
+       else: {[creator_left_message , {:close, 1000, @creator_left}], state}
   end
 
-  def websocket_info({:disconnect, :creator_disconnected}, state) do
-    [[{:close, 1000, @creator_left}], state]
-  end
+  def websocket_info({:disconnect, :internal_error}, state), do:
+    {[{:close, 1011, @internal_error}], state}
 
-  def websocket_info({:disconnect, :internal_error}, state) do
-    [[{:close, 1011, @internal_error}], state]
-  end
-
-  def websocket_info({_, data}, state) do
+  def websocket_info({_, data}, state), do:
     {[{:text, data}], state}
-  end
+
+  def websocket_info(data, state) when is_map(data), do:
+    {[{:text, Jason.encode!(data)}], state}
+
+  def websocket_info(data, state), do:
+    {[{:text, data}], state}
 
   def terminate(_reason, _req, state) do
-    if state.initialized do
-      SocketQueue.remove_subscriber(state.subscribed_to, self(), state.is_creator)
+    IO.puts("terminated!")
+    subscriptions = Map.get(state, :subscriptions)
+    # the creator should always be subscribed to itself
+    if !is_nil(subscriptions) do
+      Enum.each(subscriptions, fn id ->
+        SocketManager.remove_subscriber(id, self(), id == state.creator_of)
+      end)
     end
   end
 end

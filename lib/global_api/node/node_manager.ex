@@ -3,7 +3,7 @@ defmodule GlobalApi.Node.NodeManager do
   use GenServer
 
   alias GlobalApi.SkinUploadQueue
-  alias GlobalApi.SocketQueue
+  alias GlobalApi.SocketManager
   alias GlobalApi.Utils
 
   def start_link(init_arg) do
@@ -33,7 +33,7 @@ defmodule GlobalApi.Node.NodeManager do
 
   @impl true
   def handle_info({:skin_upload_failed, node, skin_hash, error}, node_map) do
-    SocketQueue.skin_upload_failed(skin_hash)
+    SocketManager.skin_upload_failed(skin_hash)
     Sentry.capture_message("Failed to upload skin", extra: %{error: error})
     send_next_skin(node, node_map)
     {:noreply, node_map}
@@ -41,7 +41,7 @@ defmodule GlobalApi.Node.NodeManager do
 
   @impl true
   def handle_info({:skin_uploaded, node, skin_hash, is_steve, first_try, texture_id, skin_value, skin_signature}, node_map) do
-    SocketQueue.skin_uploaded(
+    SocketManager.skin_uploaded(
       skin_hash,
       %{
         hash: Utils.hash_string(skin_hash),

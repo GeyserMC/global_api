@@ -3,7 +3,7 @@ defmodule GlobalApi.SkinPreUploader do
 
   alias GlobalApi.SkinPreQueue
   alias GlobalApi.SkinUploadQueue
-  alias GlobalApi.SocketQueue
+  alias GlobalApi.SocketManager
   alias GlobalApi.Utils
 
   @headers [
@@ -89,7 +89,7 @@ defmodule GlobalApi.SkinPreUploader do
                     :timer.sleep(timeout)
                     upload_and_store({rgba_hash, is_steve, png}, false)
                   else
-                    SocketQueue.skin_upload_failed(rgba_hash)
+                    SocketManager.skin_upload_failed(rgba_hash)
                     :timer.sleep(timeout)
                   end
                 end
@@ -111,7 +111,7 @@ defmodule GlobalApi.SkinPreUploader do
               skin_value = texture_data["value"]
               skin_signature = texture_data["signature"]
 
-              SocketQueue.skin_uploaded(
+              SocketManager.skin_uploaded(
                 rgba_hash,
                 %{
                   hash: hash_string,
@@ -135,10 +135,9 @@ defmodule GlobalApi.SkinPreUploader do
     rescue
       e ->
         IO.puts("error! - pre - #{inspect(e)}")
-        if first_try do
-          upload_and_store({rgba_hash, is_steve, png}, false)
-        else
-          SocketQueue.skin_upload_failed(rgba_hash)
+        if first_try,
+          do: upload_and_store({rgba_hash, is_steve, png}, false),
+          else: SocketManager.skin_upload_failed(rgba_hash)
         end
     end
   end

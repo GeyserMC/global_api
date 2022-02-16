@@ -2,7 +2,7 @@ defmodule GlobalApi.SkinUploader do
   use GenServer
 
   alias GlobalApi.SkinUploadQueue
-  alias GlobalApi.SocketQueue
+  alias GlobalApi.SocketManager
   alias GlobalApi.Utils
 
   @headers [
@@ -71,7 +71,7 @@ defmodule GlobalApi.SkinUploader do
                 :timer.sleep(timeout)
                 upload_and_store({rgba_hash, is_steve, png}, false)
               else
-                SocketQueue.skin_upload_failed(rgba_hash)
+                SocketManager.skin_upload_failed(rgba_hash)
                 :timer.sleep(timeout)
               end
             else
@@ -86,7 +86,7 @@ defmodule GlobalApi.SkinUploader do
               skin_value = texture_data["value"]
               skin_signature = texture_data["signature"]
 
-              SocketQueue.skin_uploaded(
+              SocketManager.skin_uploaded(
                 rgba_hash,
                 %{
                   hash: hash_string,
@@ -114,7 +114,7 @@ defmodule GlobalApi.SkinUploader do
         if first_try do
           upload_and_store({rgba_hash, is_steve, png}, false)
         else
-          SocketQueue.skin_upload_failed(rgba_hash)
+          SocketManager.skin_upload_failed(rgba_hash)
         end
     end
   end
