@@ -1,11 +1,44 @@
 defmodule GlobalApiWeb.Api.XboxController do
   use GlobalApiWeb, :controller
+  use OpenApiSpex.ControllerSpecs
 
   alias GlobalApi.Utils
   alias GlobalApi.XboxAccounts
   alias GlobalApi.XboxApi
   alias GlobalApi.XboxRepo
   alias GlobalApi.XboxUtils
+  alias OpenApiSpex.Example
+  alias GlobalApiWeb.Schemas
+
+  tags ["xbox"]
+
+  operation :get_gamertag_v2,
+    summary: "Get the gamertag from a xuid",
+    parameters: [
+      xuid: [in: :path, description: "The xuid of the Bedrock player"]
+    ],
+    responses: [
+      ok: {"The gamertag associated with the xuid or an empty object if there is account with the given xuid", "application/json", Schemas.XboxGamertagResult},
+      bad_request: {"The xuid is invalid (not an int)", "application/json", Schemas.Error},
+      service_unavailable: {"The requested account was not cached and we were not able to call the Xbox Live API (rate limited / not setup)", "application/json", Schemas.Error}
+    ]
+
+  operation :get_xuid_v2,
+    summary: "Get the xuid from a gamertag",
+    parameters: [
+      gamertag: [in: :path, description: "The gamertag of the Bedrock player"]
+    ],
+    responses: [
+      ok: {"The xuid associated with the gamertag or an empty object if there is account with the given gamertag", "application/json", Schemas.XboxXuidResult},
+      bad_request: {"The gamertag is invalid (empty or longer than 16 chars)", "application/json", Schemas.Error},
+      service_unavailable: {"The requested account was not cached and we were not able to call the Xbox Live API (rate limited / not setup)", "application/json", Schemas.Error}
+    ]
+
+  operation :get_gamertag_v1, deprecated: true
+  operation :get_xuid_v1, deprecated: true
+  operation :got_token, false
+
+  operation :get_gamertag_batch, false #todo decide if we want to keep the batch endpoint
 
   def got_token(conn, %{"code" => code, "state" => state}) do
     {:ok, correct_state} = Cachex.get(:general, :state)

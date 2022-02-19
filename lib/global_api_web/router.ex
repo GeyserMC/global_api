@@ -12,6 +12,10 @@ defmodule GlobalApiWeb.Router do
     plug :accepts, ["json"]
   end
 
+  pipeline :swagger do
+    plug OpenApiSpex.Plug.PutApiSpec, module: GlobalApiWeb.ApiSpec
+  end
+
   pipeline :browser do
     plug :accepts, ["html"]
   end
@@ -103,6 +107,18 @@ defmodule GlobalApiWeb.Router do
     end
 
     get "/health", GlobalApiWeb.Api.HealthController, :health
+
+    # swagger (open api) related stuff
+    scope "/" do
+      scope "/openapi" do
+        pipe_through [:api, :swagger]
+        get "/", OpenApiSpex.Plug.RenderSpec, []
+      end
+      scope "/swaggerui" do
+        pipe_through :browser
+        get "/", OpenApiSpex.Plug.SwaggerUI, path: "/openapi"
+      end
+    end
   end
 
   # Enables LiveDashboard only for development

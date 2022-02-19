@@ -1,11 +1,36 @@
 defmodule GlobalApiWeb.Api.SkinController do
   use GlobalApiWeb, :controller
+  use OpenApiSpex.ControllerSpecs
 
   alias GlobalApi.SkinsRepo
   alias GlobalApi.Utils
+  alias OpenApiSpex.Example
+  alias GlobalApiWeb.Schemas
 
   @amount_per_page 60
   @page_limit 10
+
+  tags ["skin"]
+
+  operation :get_recent_uploads,
+    summary: "Get a list of the most recently uploaded skins",
+    parameters: [
+      page: [in: :path, description: "Number between 1 - page limit. Defaults to 1", required: false, example: 1]
+    ],
+    responses: [
+      ok: {"The most recently uploaded skins. First element has been uploaded most recently etc.", "application/json", Schemas.RecentConvertedSkinList},
+      bad_request: {"Invalid page number (e.g. negative, decimal, too large)", "application/json", Schemas.Error}
+    ]
+
+  operation :get_skin,
+    summary: "Get the most recently converted skin of a Bedrock player",
+    parameters: [
+      xuid: [in: :path, description: "Bedrock xuid", example: "2535432196048835"]
+    ],
+    responses: [
+      ok: {"Converted skin or an empty object if there is no skin stored for that player", "application/json", Schemas.ConvertedSkin},
+      bad_request: {"Invalid xuid (not an int)", "application/json", Schemas.Error}
+    ]
 
   def get_recent_uploads(conn, %{"page" => page}) do
     case Utils.is_int_rounded_and_positive(page) do

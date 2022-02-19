@@ -1,11 +1,21 @@
 defmodule GlobalApiWeb.Api.StatsController do
   use GlobalApiWeb, :controller
+  use OpenApiSpex.ControllerSpecs
 
   alias GlobalApi.SkinPreQueue
   alias GlobalApi.SkinsRepo
   alias GlobalApi.SkinUploadQueue
+  alias GlobalApiWeb.Schemas
 
   @sample_length 300 # skins uploaded in the last x seconds
+
+  tags ["stats"]
+
+  operation :get_all_stats,
+    summary: "Get all publicly available Global Api statistics",
+    responses: [
+      ok: {"Statistics", "application/json", Schemas.Statistics}
+    ]
 
   def get_all_stats(conn, _) do
     {_, {pre_upload_queue_length, upload_queue_length, upload_queue_est_duration}} =

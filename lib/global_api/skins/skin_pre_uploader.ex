@@ -138,7 +138,6 @@ defmodule GlobalApi.SkinPreUploader do
         if first_try,
           do: upload_and_store({rgba_hash, is_steve, png}, false),
           else: SocketManager.skin_upload_failed(rgba_hash)
-        end
     end
   end
 

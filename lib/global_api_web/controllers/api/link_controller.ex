@@ -1,5 +1,6 @@
 defmodule GlobalApiWeb.Api.LinkController do
   use GlobalApiWeb, :controller
+  use OpenApiSpex.ControllerSpecs
 
   alias GlobalApi.Link
   alias GlobalApi.LinksRepo
@@ -8,6 +9,33 @@ defmodule GlobalApiWeb.Api.LinkController do
   alias GlobalApi.Utils
   alias GlobalApi.XboxApi
   alias GlobalApi.XboxAccounts
+  alias GlobalApiWeb.Schemas
+
+  tags ["link"]
+
+  operation :get_java_link_v2,
+    summary: "Get linked Bedrock account from Java UUID",
+    parameters: [
+      uuid: [in: :path, description: "Java UUID", example: "d34eb447-6e90-4c78-9281-600df88aef1d"]
+    ],
+    responses: [
+      ok: {"Linked account or an empty object if there is no account linked", "application/json", Schemas.Link},
+      bad_request: {"No UUID provided or invalid", "application/json", Schemas.Error}
+    ]
+
+  operation :get_bedrock_link_v2,
+    summary: "Get linked Java account from Bedrock xuid",
+    parameters: [
+      xuid: [in: :path, description: "Bedrock xuid", example: "2535432196048835"]
+    ],
+    responses: [
+      ok: {"Linked accounts or an empty object if there is no account linked", "application/json", Schemas.LinkList},
+      bad_request: {"No xuid provided or invalid", "application/json", Schemas.Error}
+    ]
+
+  operation :get_java_link_v1, deprecated: true
+  operation :get_bedrock_link_v1, deprecated: true
+  operation :verify_online_link, false
 
   def get_java_link_v2(conn, data) do
     {status, data} = get_java_link(data)

@@ -58,7 +58,8 @@ defmodule GlobalApi.MixProject do
       {:telemetry_metrics_statsd, "~> 0.6.0"},
       {:telemetry_poller, "~> 0.5.1"},
       {:sentry, "~> 8.0"},
-      {:distillery, "~> 2.0", only: :prod}
+      {:distillery, "~> 2.0", only: :prod},
+      {:open_api_spex, "~> 3.11"}
     ]
   end
 

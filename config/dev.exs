@@ -122,3 +122,7 @@ config :phoenix, :stacktrace_depth, 20
 # Initialize plugs at runtime for faster development compilation
 config :phoenix, :plug_init_mode, :runtime
 config :unplug, :init_mode, :runtime
+
+# allow the open api spex to regenerate after recompiling without
+# having to restart the application
+config :open_api_spex, :cache_adapter, OpenApiSpex.Plug.NoneCache

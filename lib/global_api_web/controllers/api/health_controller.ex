@@ -1,9 +1,15 @@
 defmodule GlobalApiWeb.Api.HealthController do
-  @moduledoc false
   use GlobalApiWeb, :controller
+  use OpenApiSpex.ControllerSpecs
 
-  def health(conn, _) do
-    conn
-    |> send_resp(:ok, "OK")
-  end
+  tags ["health"]
+
+  operation :health,
+    summary: "Simple server online check",
+    responses: [
+      no_content: "The server is online"
+    ]
+
+  def health(conn, _), do:
+    send_resp(conn, :no_content, "")
 end

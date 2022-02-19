@@ -13,7 +13,7 @@ config :global_api, GlobalApi.Repo,
 
 config :global_api, :xbox_accounts_app_info,
   client_id: "client id",
-  redirect_url: "https://api.geysermc.org/xbox/token",
+  redirect_url: "https://api.geysermc.org/v2/admin/xbox/token",
   client_secret: "client secret"
 
 config :global_api, :link_app_info,
