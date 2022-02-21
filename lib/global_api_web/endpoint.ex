@@ -32,10 +32,6 @@ defmodule GlobalApiWeb.Endpoint do
     plug Phoenix.LiveReloader
   end
 
-  plug Unplug,
-       if: {GlobalApi.UnplugPredicates.SecureMetricsEndpoint, []},
-       do: {PromEx.Plug, prom_ex_module: GlobalApi.PromEx}
-
   if Mix.env() == :prod do
     plug Plug.SSL
   end

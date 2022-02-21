@@ -19,7 +19,7 @@ defmodule GlobalApiWeb.Api.LinkController do
       uuid: [in: :path, description: "Java UUID", example: "d34eb447-6e90-4c78-9281-600df88aef1d"]
     ],
     responses: [
-      ok: {"Linked account or an empty object if there is no account linked", "application/json", Schemas.Link},
+      ok: {"Linked account or an empty object if there is no account linked", "application/json", Schemas.LinkList},
       bad_request: {"No UUID provided or invalid", "application/json", Schemas.Error}
     ]
 
@@ -29,7 +29,7 @@ defmodule GlobalApiWeb.Api.LinkController do
       xuid: [in: :path, description: "Bedrock xuid", example: "2535432196048835"]
     ],
     responses: [
-      ok: {"Linked accounts or an empty object if there is no account linked", "application/json", Schemas.LinkList},
+      ok: {"Linked accounts or an empty object if there is no account linked", "application/json", Schemas.Link},
       bad_request: {"No xuid provided or invalid", "application/json", Schemas.Error}
     ]
 

@@ -44,6 +44,7 @@ config :global_api, GlobalApiWeb.Endpoint,
     log_level: :error
   ],
   force_ssl: [hsts: true, host: nil, log: false],
+  url: [host: "api.geysermc.org"],
   static_url: [host: "cdn.geysermc.org"],
   cache_static_manifest: "priv/static/cache_manifest.json",
   server: true,

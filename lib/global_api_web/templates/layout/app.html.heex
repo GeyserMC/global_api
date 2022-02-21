@@ -1,24 +1,24 @@
 <!DOCTYPE html>
-<html lang="<%= lang_code(@conn) %>" class="dark"><!-- start with dark directly so that the dark users won't be blinded -->
+<html lang={lang_code(@conn)} class="dark"><!-- start with dark directly so that the dark users won't be blinded -->
 
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <title><%= assigns.page_title %></title>
-  <meta name="description" content="<%= assigns.page_description %>">
+  <meta name="description" content={assigns.page_description}>
   <meta name="msapplication-TileColor" content="#1f2937">
   <meta name="theme-color" content="#1f2937">
 
-  <link href="<%= Routes.static_url(@conn, "/css/main.css") %>" rel="stylesheet" />
+  <link href={Routes.static_url(@conn, "/css/main.css")} rel="stylesheet" />
   <link href="https://rsms.me/inter/inter.css" rel="stylesheet">
 
   <%= if assigns[:custom_meta] do %>
-  <meta property="og:title" content="<%= assigns.custom_meta.title %>" />
-  <meta property="og:description" content="<%= assigns.custom_meta.description %>" />
+  <meta property="og:title" content={assigns.custom_meta.title} />
+  <meta property="og:description" content={assigns.custom_meta.description} />
   <% else %>
-  <meta property="og:title" content="<%= assigns.page_title %>" />
-  <meta property="og:description" content="<%= assigns.page_description %>" />
+  <meta property="og:title" content={assigns.page_title} />
+  <meta property="og:description" content={assigns.page_description} />
   <% end %>
 </head>
 <body class="bg-gray-50 dark:bg-gray-800 transition-all">
@@ -126,7 +126,7 @@
       </div>
     </div>
   </nav>
-  <script defer src="<%= Routes.static_url(@conn, "/js/navbar.js") %>"></script>
+  <script defer src={Routes.static_url(@conn, "/js/navbar.js")}></script>
   <% end %>
 
   <%= @inner_content %>
@@ -149,8 +149,8 @@
             </div>
             <div class="w-full lg:w-1/2 px-6">
               <ul>
-                <li><a class="focus:outline-none focus:underline text-xs lg:text-sm leading-none hover:text-brand dark:hover:text-brand text-gray-800 dark:text-gray-50" href="<%= skin_domain() %>">Skins</a></li>
-                <li class="mt-6"><a class="focus:outline-none focus:underline text-xs lg:text-sm leading-none hover:text-brand dark:hover:text-brand text-gray-800 dark:text-gray-50" href="<%= link_domain() %>">Global linking</a></li>
+                <li><a class="focus:outline-none focus:underline text-xs lg:text-sm leading-none hover:text-brand dark:hover:text-brand text-gray-800 dark:text-gray-50" href={skin_domain()}>Skins</a></li>
+                <li class="mt-6"><a class="focus:outline-none focus:underline text-xs lg:text-sm leading-none hover:text-brand dark:hover:text-brand text-gray-800 dark:text-gray-50" href={link_domain()}>Global linking</a></li>
                 <li class="mt-6"><a class="focus:outline-none focus:underline text-xs lg:text-sm leading-none hover:text-brand dark:hover:text-brand text-gray-800 dark:text-gray-50" href="https://geysermc.org/">GeyserMC home page</a></li>
               </ul>
             </div>
@@ -225,7 +225,7 @@
       <p tabindex="0" class="focus:outline-none mt-6 text-xs lg:text-sm leading-none text-gray-900 dark:text-gray-50">2021 GeyserMC. All Rights Reserved.</p>
     </div>
   </footer>
-  <script defer src="<%= Routes.static_url(@conn, "/js/footer.js") %>"></script>
+  <script defer src={Routes.static_url(@conn, "/js/footer.js")}></script>
   <% end %>
 
   <%= if Map.get(assigns, :render_notification, true) do %>
@@ -247,7 +247,7 @@
       </div>
     </div>
   </div>
-  <script defer src="<%= Routes.static_url(@conn, "/js/notification.js") %>"></script>
+  <script defer src={Routes.static_url(@conn, "/js/notification.js")}></script>
   <% end %>
 
   <%= if Map.get(assigns, :render_news, true) do %>
@@ -283,7 +283,7 @@
       </div>
     </div>
   </div>
-  <script defer src="<%= Routes.static_url(@conn, "/js/news.js") %>"></script>
+  <script defer src={Routes.static_url(@conn, "/js/news.js")}></script>
   <% end %>
 
   <!-- people without JavaScript can't use the light theme -->

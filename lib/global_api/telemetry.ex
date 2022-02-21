@@ -26,16 +26,16 @@ defmodule GlobalApi.Telemetry do
               else: host
 
     children = [
-      {
-        TelemetryMetricsStatsd,
-        metrics: metrics(),
-        formatter: :datadog,
-        host: host,
-        port: port,
-        global_tags: [
-          server_id: server_id
-        ]
-      }
+#      {
+#        TelemetryMetricsStatsd,
+#        metrics: metrics(),
+#        formatter: :datadog,
+#        host: host,
+#        port: port,
+#        global_tags: [
+#          server_id: server_id
+#        ]
+#      }
     ]
 
     result = Supervisor.init(children, strategy: :one_for_one)

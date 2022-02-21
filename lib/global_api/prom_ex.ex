@@ -7,6 +7,7 @@ defmodule GlobalApi.PromEx do
      more details regarding configuring PromEx:
      ```
      config :global_api, GlobalApi.PromEx,
+       disabled: false,
        manual_metrics_start_delay: :no_delay,
        drop_metrics_groups: [],
        grafana: :disabled,
@@ -15,7 +16,7 @@ defmodule GlobalApi.PromEx do
 
   2. Add this module to your application supervision tree. It should be one of the first
      things that is started so that no Telemetry events are missed. For example, if PromEx
-     is started after your Repo module, you will miss Ecto's init events and the dashbaords
+     is started after your Repo module, you will miss Ecto's init events and the dashboards
      will be missing some data points:
      ```
      def start(_type, _args) do
@@ -61,11 +62,12 @@ defmodule GlobalApi.PromEx do
       # PromEx built in plugins
       Plugins.Application,
       Plugins.Beam,
-      {Plugins.Phoenix, router: GlobalApiWeb.Router},
+      {Plugins.Phoenix, router: GlobalApiWeb.Router, endpoint: GlobalApiWeb.Endpoint},
       Plugins.Ecto,
-      # Plugins.Oban
-
-      # todo look into Oban
+      # Plugins.Oban,
+      Plugins.PhoenixLiveView,
+      # Plugins.Absinthe,
+      # Plugins.Broadway,
 
       # Add your own PromEx metrics plugins
       # GlobalApi.Users.PromExPlugin
@@ -75,7 +77,8 @@ defmodule GlobalApi.PromEx do
   @impl true
   def dashboard_assigns do
     [
-      datasource_id: "Prometheus"
+      datasource_id: "Prometheus",
+      default_selected_interval: "30s"
     ]
   end
 
@@ -87,7 +90,10 @@ defmodule GlobalApi.PromEx do
       {:prom_ex, "beam.json"},
       {:prom_ex, "phoenix.json"},
       {:prom_ex, "ecto.json"},
-      # {:prom_ex, "oban.json"}
+      # {:prom_ex, "oban.json"},
+      {:prom_ex, "phoenix_live_view.json"},
+      # {:prom_ex, "absinthe.json"},
+      # {:prom_ex, "broadway.json"},
 
       # Add your dashboard definitions here with the format: {:otp_app, "path_in_priv"}
       # {:global_api, "/grafana_dashboards/user_metrics.json"}

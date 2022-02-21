@@ -41,13 +41,18 @@ config :logger, :console,
 config :phoenix, :json_library, Jason
 
 config :global_api, GlobalApi.PromEx,
+  disabled: false,
   manual_metrics_start_delay: :no_delay,
   drop_metrics_groups: [],
   grafana: [
    host: "your grafana ip",
    auth_token: "your grafana auth token"
   ],
-  metrics_server: :disabled
+  # for people using this themselves,
+  # make sure that port 4001 isn't open on your firewall or add auth
+  metrics_server: [
+    port: 4001
+  ]
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
