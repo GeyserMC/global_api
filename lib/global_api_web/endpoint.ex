@@ -57,7 +57,7 @@ defmodule GlobalApiWeb.Endpoint do
 
   plug GlobalApiWeb.Router
 
-  @static_opts Plug.Static.init(at: "/", from: :global_api, gzip: true)
+  @static_opts Plug.Static.init(at: "/", from: :global_api, gzip: true, headers: %{"access-control-allow-origin" => "*"})
 
   def static_assets(conn, _) do
     if @static_url == conn.host, do: Plug.Static.call(conn, @static_opts), else: conn

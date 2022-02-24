@@ -1,4 +1,4 @@
-const NEWS_CHECK_URL = '%API_BASE_URL%/v2/news/global_api';
+const NEWS_CHECK_URL = API_BASE_URL + '/v2/news/global_api';
 let programName = "global_api";
 const NEWS_CHECK_INTERVAL = 30 * 60 * 1000; // every 30 mins
 

@@ -61,6 +61,7 @@ config :global_api, GlobalApiWeb.Endpoint,
     node: [
       "build.js",
       "--watch",
+      "--api-base-url=" <> "http://api.geysermc",
       cd: Path.expand("../assets", __DIR__)
     ]
   ]

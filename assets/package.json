@@ -1,23 +1,19 @@
 {
-  "repository": {},
-  "description": " ",
-  "license": "MIT",
   "scripts": {
-    "test": "postcss css/main.css -o ../priv/static/css/main.css"
+    "release": "node build.js --deploy --api-base-url=https://api.geysermc.org"
+  },
+  "devDependencies": {
+    "esbuild": "^0.14.11",
+    "esbuild-svelte": "^0.6.2",
+    "glob": "^7.2.0",
+    "postcss": "^8.4.6",
+    "postcss-import": "^14.0.2",
+    "svelte": "^3.46.1",
+    "tailwindcss": "^3.0.23"
   },
   "dependencies": {
     "phoenix": "file:../deps/phoenix",
-    "phoenix_html": "file:../deps/phoenix_html"
-  },
-  "devDependencies": {
-    "autoprefixer": "^10.2.6",
-    "chokidar": "^3.5.2",
-    "cssnano": "^5.0.8",
-    "glob": "^7.1.7",
-    "postcss": "^8.3.0",
-    "postcss-cli": "^8.3.1",
-    "tailwindcss": "^2.1.2",
-    "uglify-js": "^3.14.2",
-    "watch": "^0.13.0"
+    "phoenix_html": "file:../deps/phoenix_html",
+    "phoenix_live_view": "file:../deps/phoenix_live_view"
   }
 }

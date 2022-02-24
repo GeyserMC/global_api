@@ -7,7 +7,8 @@ module.exports = {
     content: [
       './html/**/*.html',
       './js/**/*.js',
-      '../lib/**/*.html.eex',
+      './js/svelte/*.svelte',
+      '../lib/**/*.html.heex',
       '../lib/**/*_view.ex'
     ]
   },

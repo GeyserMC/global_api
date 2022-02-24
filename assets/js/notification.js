@@ -48,7 +48,7 @@ function setNotificationContent(title, description, success, leftButtonName, lef
   }
 }
 
-function createNotification(title, description, success, leftButtonName, leftButtonLink, duration) {
+export function createNotification(title, description, success, leftButtonName, leftButtonLink, duration) {
   if (NotificationQueue.length === 0 && notification().classList.contains("hidden")) {
     setNotificationContent(title, description, success, leftButtonName, leftButtonLink, duration);
   } else {
@@ -56,7 +56,7 @@ function createNotification(title, description, success, leftButtonName, leftBut
   }
 }
 
-function closeNotification() {
+export function closeNotification() {
   hideNotification(() => {
     // play next notification if it has any
     const NextNotification = NotificationQueue.shift();

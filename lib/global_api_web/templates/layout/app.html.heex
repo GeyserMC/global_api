@@ -104,7 +104,7 @@
       <div class="pt-4 pb-3 border-t border-gray-200 dark:border-gray-700">
         <div class="flex items-center px-5">
           <div class="flex-shrink-0">
-            <img class="h-10 w-10 rounded-full" src="https://images.unsplash.com/photo-1517841905240-472988babdf9" alt="">
+            <img class="h-10 w-10 rounded-full" src="https://geysermc.org/favicon.ico" alt="">
           </div>
           <div class="ml-3">
             <div class="text-base font-medium leading-none text-gray-900 dark:text-white">Tom Cook</div>
@@ -247,7 +247,6 @@
       </div>
     </div>
   </div>
-  <script defer src={Routes.static_url(@conn, "/js/notification.js")}></script>
   <% end %>
 
   <%= if Map.get(assigns, :render_news, true) do %>
@@ -283,7 +282,7 @@
       </div>
     </div>
   </div>
-  <script defer src={Routes.static_url(@conn, "/js/news.js")}></script>
+  <script src={Routes.static_url(@conn, "/js/news.js")}></script>
   <% end %>
 
   <!-- people without JavaScript can't use the light theme -->
