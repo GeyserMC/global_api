@@ -1,5 +1,5 @@
-const loginBaseUrl = 'https://login.live.com/oauth20_authorize.srf?client_id=' + CLIENT_ID + '&response_type=code&display=popup&scope=Xboxlive.signin&redirect_uri=';
-const linkUrl = API_BASE_URL + '/v2/link/online';
+const LOGIN_BASE_URL = 'https://login.live.com/oauth20_authorize.srf?client_id=' + CLIENT_ID + '&response_type=code&display=popup&scope=Xboxlive.signin&redirect_uri=';
+const LINK_URL = API_BASE_URL + '/v2/link/online';
 
 window.addEventListener('load', function () {
   const queryParams = new URLSearchParams(window.location.search);
@@ -141,7 +141,7 @@ function updatePage() {
   } else if (queryParams.has('bedrock')) {
     clearStepActionContent();
     updateSteps(2);
-    const loginUrl = loginBaseUrl + getCleanUrl(cleanUrl, queryParams, 'b_info bedrock');
+    const loginUrl = LOGIN_BASE_URL + getCleanUrl(cleanUrl, queryParams, 'b_info bedrock');
     setLoginButton('Java', loginUrl, true);
 
     if (queryParams.has('b_info')) {
@@ -157,7 +157,7 @@ function updatePage() {
   } else {
     clearStepActionContent();
     updateSteps(1);
-    setLoginButton('Bedrock', loginBaseUrl + cleanUrl, true);
+    setLoginButton('Bedrock', LOGIN_BASE_URL + cleanUrl, true);
   }
 }
 
@@ -195,7 +195,7 @@ function makeLinkRequest(body, onResponse, onError = null) {
     return;
   }
 
-  fetch(linkUrl, {
+  fetch(LINK_URL, {
     method: 'post',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify(body)

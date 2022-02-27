@@ -1,24 +1,26 @@
 <script>
-  import { RECENTLY_UPLOADED_SKINS } from '../../../constants.js';
-
   import SkinEntry from './SkinEntry.svelte';
   import PageButton from './PageButton.svelte';
-  import { pageFE, current_page } from './page.js';
+  import { pageFE, currentPage } from './page.js';
   import { createNotification } from '../../../notification.js';
 
-  export let skins_per_page;
+  export let skinsPerPage;
+  export let spinner;
 
-  let last_switch = 0;
-  let total_pages = 0;
+  const RECENTLY_UPLOADED_SKINS = API_BASE_URL + '/v2/skin/recent_uploads/';
+
+  let lastSwitch = 0;
+  let totalPages = 0;
 
   function usePlaceholders() {
-    $pageFE = Array(skins_per_page).fill({loading: true})
+    $pageFE = Array(skinsPerPage).fill({loading: true})
   }
 
-  export function switchPage(newPage, switch_start = undefined) {
-    $current_page = newPage;
-    if (switch_start == undefined) {
-      last_switch = switch_start = Date.now();
+  export function switchPage(newPage, switchStart = undefined) {
+    spinner.show()
+    $currentPage = newPage;
+    if (switchStart == undefined) {
+      lastSwitch = switchStart = Date.now();
     }
 
     usePlaceholders()
@@ -40,9 +42,10 @@
         }
 
         // make sure that we won't override when there has been a more recent page switch
-        if (last_switch == switch_start) {
+        if (lastSwitch == switchStart) {
           $pageFE = data;
-          total_pages = json.total_pages;
+          totalPages = json.total_pages;
+          spinner.hide()
         }
       })
       .catch(err => {
@@ -54,18 +57,18 @@
   function scheduleRetry() {
     createNotification("Failed to get skins", "We'll try it again in 30 seconds!", false, null, null, 10_000)
     let start = Date.now();
-    let page = $current_page;
+    let page = $currentPage;
     setTimeout(async () => {
       switchPage(page, start)
     }, 30_000)
   }
 
-  function clickButton(next_page, element) {
-    if ((next_page && $current_page + 1 > total_pages) || (!next_page && $current_page - 1 < 1)) {
+  function clickButton(nextPage, element) {
+    if ((nextPage && $currentPage + 1 > totalPages) || (!nextPage && $currentPage - 1 < 1)) {
       return;
     }
     console.log(element);
-    switchPage($current_page + (next_page ? 1 : -1))
+    switchPage($currentPage + (nextPage ? 1 : -1))
   }
 
   usePlaceholders()
@@ -87,9 +90,9 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
       </svg>
     </button>
-    <svelte:component this={PageButton} page_number={1} page_ref={$current_page} on_click={switchPage} />
-    <svelte:component this={PageButton} page_number={total_pages / 2} page_ref={$current_page} on_click={switchPage} />
-    <svelte:component this={PageButton} page_number={total_pages} page_ref={$current_page} on_click={switchPage} />
+    <svelte:component this={PageButton} page_number={1} page_ref={$currentPage} on_click={switchPage} />
+    <svelte:component this={PageButton} page_number={totalPages / 2} page_ref={$currentPage} on_click={switchPage} />
+    <svelte:component this={PageButton} page_number={totalPages} page_ref={$currentPage} on_click={switchPage} />
     <button on:click={(element) => clickButton(true, element)} class="px-4 py-1.5 shadow-md cursor-pointer rounded-md bg-gray-200 dark:bg-gray-700 dark:text-gray-300">
       <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>

@@ -3,8 +3,14 @@
 @tailwind utilities;
 
 @layer utilities {
-    .render-pixelated {
-        image-rendering: pixelated;
-        image-rendering: -moz-crisp-edges;
-    }
+  .render-pixelated {
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+  }
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-weight: 100 900;
+  src: url('../font/Inter.var.woff2') format('woff2-variations');
 }
