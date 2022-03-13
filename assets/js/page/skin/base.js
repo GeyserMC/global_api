@@ -1,7 +1,11 @@
 import OverviewPage from '../../svelte/skin/overview/OverviewPage.svelte';
 import Spinner from '../../svelte/Spinner.svelte';
+import Navbar from '../../svelte/Navbar.svelte';
+import { getPageByPath } from './page';
 
-const SKINS_PER_PAGE = 60;
+function getPage() {
+  return getPageByPath(window.location.pathname)
+}
 
 function getPageNumber() {
   const params = new URLSearchParams(window.location.search);
@@ -17,10 +21,14 @@ let spinner = new Spinner({
 })
 spinner.show()
 
+new Navbar({
+  target: document.getElementById("navbar")
+})
+
 new OverviewPage({
   target: document.getElementById("overview"),
   props: {
-    skinsPerPage: SKINS_PER_PAGE,
-    spinner
+    spinner,
+    ...getPage()
   }
 }).switchPage(getPageNumber());

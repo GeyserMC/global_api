@@ -5,6 +5,7 @@ defmodule GlobalApiWeb.Router do
   domain_info = Application.get_env(:global_api, :domain_info)
   # we apparently can't call functions
   api_host = domain_info[:api][:subdomain] <> "."
+  cdn_host = domain_info[:cdn][:subdomain] <> "."
   link_host = domain_info[:link][:subdomain] <> "."
   skin_host = domain_info[:skin][:subdomain] <> "."
 
@@ -20,7 +21,7 @@ defmodule GlobalApiWeb.Router do
     plug :accepts, ["html"]
   end
 
-  scope "/", host: "cdn." do
+  scope "/", host: cdn_host do
     pipe_through :api
   end
 
@@ -28,6 +29,10 @@ defmodule GlobalApiWeb.Router do
     pipe_through :browser
 
     get "/", SkinsController, :index
+
+    scope "/recent" do
+      get "/bedrock", SkinsController, :recent_bedrock
+    end
   end
 
   scope "/", GlobalApiWeb.Link, host: link_host do

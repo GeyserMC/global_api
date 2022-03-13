@@ -1,16 +1,16 @@
 <script>
   import SkinEntry from './SkinEntry.svelte';
+  import ActionButton from './ActionButton.svelte';
   import PageButton from './PageButton.svelte';
-  import { pageFE, currentPage } from './page.js';
+  import { pageFE, currentPage, totalPages } from './page.js';
   import { createNotification } from '../../../notification.js';
 
   export let skinsPerPage;
+  export let fetchUrl;
+  export let description;
   export let spinner;
 
-  const RECENTLY_UPLOADED_SKINS = API_BASE_URL + '/v2/skin/recent_uploads/';
-
   let lastSwitch = 0;
-  let totalPages = 0;
 
   function usePlaceholders() {
     $pageFE = Array(skinsPerPage).fill({loading: true})
@@ -29,7 +29,7 @@
     url.searchParams.set("page", newPage);
     window.history.pushState({}, "", url);
 
-    fetch(RECENTLY_UPLOADED_SKINS + "?page=" + newPage)
+    fetch(fetchUrl + "?page=" + newPage)
       .then(res => res.json())
       .then(json => {
         if (json.message) {
@@ -44,7 +44,7 @@
         // make sure that we won't override when there has been a more recent page switch
         if (lastSwitch == switchStart) {
           $pageFE = data;
-          totalPages = json.total_pages;
+          $totalPages = json.total_pages;
           spinner.hide()
         }
       })
@@ -63,17 +63,16 @@
     }, 30_000)
   }
 
-  function clickButton(nextPage, element) {
-    if ((nextPage && $currentPage + 1 > totalPages) || (!nextPage && $currentPage - 1 < 1)) {
-      return;
-    }
-    console.log(element);
-    switchPage($currentPage + (nextPage ? 1 : -1))
-  }
-
   usePlaceholders()
 </script>
 
+<header class="bg-white text-gray-900 dark:bg-gray-700 dark:text-gray-200 shadow">
+  <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+    <h1 class="text-3xl font-bold text-center">
+      {description}
+    </h1>
+  </div>
+</header>
 
 <div class="flex justify-center mt-10">
   <div class="grid 2xl:grid-cols-7 xl:grid-cols-6 lg:grid-cols-5 md:grid-cols-4 sm:grid-cols-4 grid-cols-2 gap-4 justify-between">
@@ -85,18 +84,10 @@
 
 <div class="flex w-full justify-center items-center text-gray-800">
   <div class="flex h-10 mt-8 justify-center items-center w-2/4 gap-1.5">
-    <button on:click={(element) => clickButton(false, element)} class="px-4 py-1.5 shadow-md cursor-pointer rounded-md bg-gray-200 dark:bg-gray-700 dark:text-gray-300">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-      </svg>
-    </button>
-    <svelte:component this={PageButton} page_number={1} page_ref={$currentPage} on_click={switchPage} />
-    <svelte:component this={PageButton} page_number={totalPages / 2} page_ref={$currentPage} on_click={switchPage} />
-    <svelte:component this={PageButton} page_number={totalPages} page_ref={$currentPage} on_click={switchPage} />
-    <button on:click={(element) => clickButton(true, element)} class="px-4 py-1.5 shadow-md cursor-pointer rounded-md bg-gray-200 dark:bg-gray-700 dark:text-gray-300">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
-      </svg>
-    </button>
+    <svelte:component this={ActionButton} clickAction={-1} svgPathData="M10 19l-7-7m0 0l7-7m-7 7h18" {switchPage} />
+    <svelte:component this={PageButton} pageNumber={1} onClick={switchPage} />
+    <svelte:component this={PageButton} pageNumber={$totalPages / 2} onClick={switchPage} />
+    <svelte:component this={PageButton} pageNumber={$totalPages} onClick={switchPage} />
+    <svelte:component this={ActionButton} clickAction={1} svgPathData="M14 5l7 7m0 0l-7 7m7-7H3" {switchPage} />
   </div>
 </div>
