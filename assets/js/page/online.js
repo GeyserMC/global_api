@@ -1,5 +1,5 @@
 const LOGIN_BASE_URL = 'https://login.live.com/oauth20_authorize.srf?client_id=' + CLIENT_ID + '&response_type=code&display=popup&scope=Xboxlive.signin&redirect_uri=';
-const LINK_URL = API_BASE_URL + '/v2/link/online';
+const LINK_URL = API_BASE_URL + '/link/online';
 
 window.addEventListener('load', function () {
   const queryParams = new URLSearchParams(window.location.search);

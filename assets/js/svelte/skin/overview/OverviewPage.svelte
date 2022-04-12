@@ -1,14 +1,26 @@
+<script context="module">
+  let page = writable(undefined)
+
+  export function switchOverview(newPage) {
+    page.set([newPage])
+  }
+</script>
+
 <script>
   import SkinEntry from './SkinEntry.svelte';
   import ActionButton from './ActionButton.svelte';
   import PageButton from './PageButton.svelte';
   import { pageFE, currentPage, totalPages } from './page.js';
-  import { createNotification } from '../../../notification.js';
+  import { getPageByPath } from '../../../page/skin/page.js';
+  import { urlChange, pushState, replaceState } from '../../../base.js';
+  import { createNotification } from '../../Notification.svelte';
+  import { writable } from 'svelte/store';
 
   export let skinsPerPage;
   export let fetchUrl;
   export let description;
   export let spinner;
+  export let url;
 
   let lastSwitch = 0;
 
@@ -16,7 +28,42 @@
     $pageFE = Array(skinsPerPage).fill({loading: true})
   }
 
+  page.subscribe(value => { if (value) switchOverview.apply(null, value) })
+
+  urlChange.subscribe(state => {
+    if (state == undefined) return;
+
+    if (location.pathname != url) {
+      page.set([getPageByPath(location.pathname), state.startsWith("pop:")])
+    } else {
+      let url = new URL(window.location);
+      let page = url.searchParams.get("page")
+      if (page != $currentPage) {
+        console.log(state)
+        switchPage(page)
+      }
+    }
+  })
+
+  function switchOverview(page, pop) {
+    lastSwitch = Date.now()
+    url = page.url
+
+    if (pop) replaceState(page.url)
+    else pushState(page.url)
+
+    usePlaceholders()
+    fetchUrl = page.fetchUrl
+    description = page.description
+    skinsPerPage = page.skinsPerPage
+    switchPage(1)
+  }
+
   export function switchPage(newPage, switchStart = undefined) {
+    if (newPage == null || newPage < 0) {
+      return;
+    }
+
     spinner.show()
     $currentPage = newPage;
     if (switchStart == undefined) {
@@ -26,8 +73,16 @@
     usePlaceholders()
 
     const url = new URL(window.location);
+    const hasPage = url.searchParams.has("page")
+
     url.searchParams.set("page", newPage);
-    window.history.pushState({}, "", url);
+
+    if (hasPage) {
+      pushState(url);
+    } else {
+      // don't see the addition of the search param as a new state
+      replaceState(url);
+    }
 
     fetch(fetchUrl + "?page=" + newPage)
       .then(res => res.json())

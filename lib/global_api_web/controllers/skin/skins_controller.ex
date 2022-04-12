@@ -9,7 +9,7 @@ defmodule GlobalApiWeb.Skin.SkinsController do
   def recent_bedrock(conn, _) do
     render(
       conn,
-      "index.html",
+      "recent_bedrock.html",
       page_title: "Most recent uploaded skins",
       page_description: "See the most recent converted Bedrock skins"
     )

@@ -3,7 +3,7 @@ use Mix.Config
 domain = "geysermc.org"
 
 config :global_api, :domain_info,
-  protocol: "http",
+  protocol: "https",
   api: %{
     domain: domain,
     subdomain: "api"

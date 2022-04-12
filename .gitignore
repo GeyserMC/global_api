@@ -38,3 +38,6 @@ global_api-*.tar
 **/node_modules/**
 
 native/**/target/**
+priv/native/**
+
+token_cache.json

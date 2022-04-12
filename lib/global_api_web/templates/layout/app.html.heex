@@ -20,7 +20,7 @@
   <meta property="og:description" content={assigns.page_description} />
   <% end %>
 </head>
-<body class="bg-gray-50 dark:bg-gray-800 transition-all">
+<body class="bg-gray-50 dark:bg-gray-800 transition-all" id="base">
   <div id="spinner"/>
 
   <%= if Map.get(assigns, :render_navbar, true) do %>
@@ -34,24 +34,7 @@
   <% end %>
 
   <%= if Map.get(assigns, :render_notification, true) do %>
-  <div role="alert" class="hidden xl:w-4/12 mx-auto sm:mx-0 sm:w-6/12 md:w-2/5 w-11/12 bg-white dark:bg-gray-900 shadow-lg rounded flex sm:flex-row flex-col pr-4 fixed left-0 sm:left-auto right-0 sm:top-0 sm:mt-6 top-4 sm:mr-6 transition duration-150 ease-in-out z-30" id="notification">
-    <div tabindex="0" role="img" class="focus:outline-none sm:px-6 px-4 mt-4 sm:mt-0 flex items-center sm:justify-center dark:border-gray-700 border-gray-300">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="40" height="40" fill="currentColor" class="text-green-700" id="notification-icon-success" aria-label="success icon">
-        <path d="M12 22a10 10 0 1 1 0-20 10 10 0 0 1 0 20zm0-2a8 8 0 1 0 0-16 8 8 0 0 0 0 16zm-2.3-8.7l1.3 1.29 3.3-3.3a1 1 0 0 1 1.4 1.42l-4 4a1 1 0 0 1-1.4 0l-2-2a1 1 0 0 1 1.4-1.42z" />
-      </svg>
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" class="text-red-700" id="notification-icon-failed" aria-label="failed icon">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    </div>
-    <div class="flex flex-col justify-center pl-4 md:pl-0 sm:w-9/12 py-3">
-      <p tabindex="0" class="focus:outline-none text-lg text-gray-800 dark:text-gray-100 font-semibold pb-1" id="notification-title"></p>
-      <p tabindex="0" class="focus:outline-none text-sm text-gray-600 dark:text-gray-400 font-normal pb-2" id="notification-description"></p>
-      <div class="flex gap-3">
-        <span tabindex="0" class="focus:outline-none focus:text-gray-800 text-sm hover:underline font-bold cursor-pointer" id="notification-left-button"></span>
-        <span tabindex="0" class="focus:outline-none focus:text-gray-400 text-sm text-gray-600 hover:underline dark:text-gray-400 cursor-pointer" onclick="closeNotification()">Dismiss</span>
-      </div>
-    </div>
-  </div>
+  <div id="notification"/>
   <% end %>
 
   <%= if Map.get(assigns, :render_news, true) do %>

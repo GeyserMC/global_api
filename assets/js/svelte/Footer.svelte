@@ -1,10 +1,62 @@
 <script>
   import { onMount } from "svelte";
 
-  let selected;
+  const geyserBaseUrl = GEYSER_BASE_URL
+
+  export let content = {
+    cols: [
+      [
+        {
+          name: "Placeholder #1",
+          link: "javascript:void(0)"
+        },
+        {
+          name: "Placeholder #2",
+          link: "javascript:void(0)"
+        },
+        {
+          name: "Placeholder #3",
+          link: "javascript:void(0)"
+        },
+        {
+          name: "Placeholder #4",
+          link: "javascript:void(0)"
+        },
+        {
+          name: "Placeholder #5",
+          link: "javascript:void(0)"
+        },
+      ],
+      [
+        {
+          name: "Skins",
+          url: "https://skin.geysermc.org/"
+        },
+        {
+          name: "Global Linking",
+          url: "https://link.geysermc.org/"
+        },
+        {
+          name: "GeyserMC home page",
+          url: "https://geysermc.org/"
+        },
+      ],
+      [
+        {
+          name: "Placeholder #9",
+          url: "javascript:void(0)"
+        },
+        {
+          name: "Placeholder #10",
+          url: "javascript:void(0)"
+        },
+      ]
+    ]
+  }
+  let selectedTheme;
 
   function switchMode() {
-    setTheme(selected)
+    setTheme(selectedTheme)
   }
 
   function setTheme(mode) {
@@ -17,7 +69,7 @@
     }
     // without this, the value shown in the theme selecter wouldn't be equal to the
     // actual selected theme (when reloading the page/switching to a different page).
-    selected = mode
+    selectedTheme = mode
   }
 
   function chooseTheme() {
@@ -25,7 +77,6 @@
   }
 
   function useTheme(dark) {
-    console.log(dark)
     if (dark) {
       document.documentElement.classList.remove("light")
       document.documentElement.classList.add("dark")
@@ -39,7 +90,7 @@
     setTheme(localStorage.getItem("theme") || "auto")
 
     matchMedia("(prefers-color-scheme: light)").addEventListener("change", () => {
-      if (selected == "auto")
+      if (selectedTheme == "auto")
         setTheme("auto")
     })
   })
@@ -52,27 +103,26 @@
       <div class="lg:flex">
         <div class="w-full lg:w-1/2 mb-16 lg:mb-0 flex">
           <div class="w-full lg:w-1/2 px-6">
-            <ul>
-              <li><a class="focus:outline-none focus:underline text-xs lg:text-sm leading-none hover:text-brand dark:hover:text-brand text-gray-800 dark:text-gray-50" href="javascript:void(0)">Placeholder #1</a></li>
-              <li class="mt-6"><a class="focus:outline-none focus:underline text-xs lg:text-sm leading-none hover:text-brand dark:hover:text-brand text-gray-800 dark:text-gray-50" href="javascript:void(0)">Placeholder #2</a></li>
-              <li class="mt-6"><a class="focus:outline-none focus:underline text-xs lg:text-sm leading-none hover:text-brand dark:hover:text-brand text-gray-800 dark:text-gray-50" href="javascript:void(0)">Placeholder #3</a></li>
-              <li class="mt-6"><a class="focus:outline-none focus:underline text-xs lg:text-sm leading-none hover:text-brand dark:hover:text-brand text-gray-800 dark:text-gray-50" href="javascript:void(0)">Placeholder #4</a></li>
-              <li class="mt-6"><a class="focus:outline-none focus:underline text-xs lg:text-sm leading-none hover:text-brand dark:hover:text-brand text-gray-800 dark:text-gray-50" href="javascript:void(0)">Placeholder #5</a></li>
+            <ul class="flex flex-col gap-6">
+              {#each content.cols[0] as item}
+                <li><a href={item.link} class="focus:outline-none focus:underline text-xs lg:text-sm leading-none hover:text-brand dark:hover:text-brand text-gray-800 dark:text-gray-50">{item.name}</a></li>
+              {/each}
             </ul>
           </div>
           <div class="w-full lg:w-1/2 px-6">
-            <ul>
-              <!-- <li><a class="focus:outline-none focus:underline text-xs lg:text-sm leading-none hover:text-brand dark:hover:text-brand text-gray-800 dark:text-gray-50" href={skin_domain()}>Skins</a></li> -->
-              <!-- <li class="mt-6"><a class="focus:outline-none focus:underline text-xs lg:text-sm leading-none hover:text-brand dark:hover:text-brand text-gray-800 dark:text-gray-50" href={link_domain()}>Global linking</a></li> -->
-              <li class="mt-6"><a class="focus:outline-none focus:underline text-xs lg:text-sm leading-none hover:text-brand dark:hover:text-brand text-gray-800 dark:text-gray-50" href="https://geysermc.org/">GeyserMC home page</a></li>
+            <ul class="flex flex-col gap-6">
+              {#each content.cols[1] as item}
+                <li><a href={item.link} class="focus:outline-none focus:underline text-xs lg:text-sm leading-none hover:text-brand dark:hover:text-brand text-gray-800 dark:text-gray-50">{item.name}</a></li>
+              {/each}
             </ul>
           </div>
         </div>
         <div class="w-full lg:w-1/2 flex">
           <div class="w-full lg:w-1/2 px-6">
-            <ul>
-              <li><a class="focus:underline focus:outline-none text-xs lg:text-sm leading-none hover:text-brand dark:hover:text-brand text-gray-800 dark:text-gray-50" href="javascript:void(0)">Placeholder #9</a></li>
-              <li class="mt-6"><a class="focus:underline focus:outline-none text-xs lg:text-sm leading-none hover:text-brand dark:hover:text-brand text-gray-800 dark:text-gray-50" href="javascript:void(0)">Placeholder #10</a></li>
+            <ul class="flex flex-col gap-6">
+              {#each content.cols[2] as item}
+                <li><a href={item.link} class="focus:outline-none focus:underline text-xs lg:text-sm leading-none hover:text-brand dark:hover:text-brand text-gray-800 dark:text-gray-50">{item.name}</a></li>
+              {/each}
             </ul>
           </div>
           <div class="w-full lg:w-1/2 px-6 flex flex-col justify-between">
@@ -94,7 +144,7 @@
               <!--todo add discord icon-->
             </div>
             <div class="relative w-36">
-              {#if selected == "light"}
+              {#if selectedTheme == "light"}
                 <svg xmlns="http://www.w3.org/2000/svg" class="absolute inset-0 m-auto ml-3 text-gray-700 dark:text-gray-50 icon icon-tabler icon-tabler-brightness-up" width="20" height="20" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
                   <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
                   <circle cx="12" cy="12" r="3"></circle>
@@ -107,7 +157,7 @@
                   <line x1="6" y1="12" x2="4" y2="12"></line>
                   <line x1="7" y1="7" x2="5.6" y2="5.6"></line>
                 </svg>
-              {:else if selected == "dark"}
+              {:else if selectedTheme == "dark"}
                 <svg xmlns="http://www.w3.org/2000/svg" class="absolute inset-0 m-auto ml-3 text-gray-700 dark:text-gray-50 icon icon-tabler icon-tabler-moon" width="20" height="20" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
                   <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
                   <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z"></path>
@@ -124,7 +174,7 @@
                 <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
                 <polyline points="6 9 12 15 18 9"></polyline>
               </svg>
-              <select bind:value={selected} on:change={switchMode} class="w-full focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 focus:outline-none pl-10 py-2 appearance-none flex items-center h-12 border rounded border-gray-700 dark:border-gray-50 text-sm leading-5 dark:bg-gray-900 dark:text-gray-50">
+              <select bind:value={selectedTheme} on:change={switchMode} class="w-full focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 focus:outline-none pl-10 py-2 appearance-none flex items-center h-12 border rounded border-gray-700 dark:border-gray-50 text-sm leading-5 dark:bg-gray-900 dark:text-gray-50">
                 <option selected="" value="auto">Auto</option>
                 <option value="light">Light</option>
                 <option value="dark">Dark</option>
@@ -136,7 +186,7 @@
     </div>
   </div>
   <div class="py-16 flex flex-col justify-center items-center">
-    <a class="focus:outline-none" tabindex="0" aria-label="home link" href="javascript:void(0)">
+    <a class="focus:outline-none" tabindex="0" aria-label="home link" href="{geyserBaseUrl}">
       <img src="https://geysermc.org/img/geyser.png" width="344" height="232" alt="GeyserMC logo (wide)">
     </a>
     <p tabindex="0" class="focus:outline-none mt-6 text-xs lg:text-sm leading-none text-gray-900 dark:text-gray-50">2021 - 2022 GeyserMC. All Rights Reserved.</p>

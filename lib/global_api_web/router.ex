@@ -33,6 +33,14 @@ defmodule GlobalApiWeb.Router do
     scope "/recent" do
       get "/bedrock", SkinsController, :recent_bedrock
     end
+
+    scope "/skin" do
+      get "/:texture_id", ItemInfoController, :skin_info
+    end
+
+    scope "/cape" do
+      get "/:texture_id", ItemInfoController, :cape_info
+    end
   end
 
   scope "/", GlobalApiWeb.Link, host: link_host do

@@ -2,7 +2,9 @@
   import MenuItem from "./skin/MenuItem.svelte";
   import { menuPages } from '../page/skin/page.js';
   import { fly } from 'svelte/transition';
+  import { switchOverview } from './skin/overview/OverviewPage.svelte';
 
+  export let clickAction = (item) => switchOverview(item) 
   export let menuItems = menuPages;
 
   let open = false;
@@ -27,7 +29,7 @@
           <!-- todo make this customisable for other views/templates -->
           <div class="ml-10 flex items-baseline space-x-4">
             {#each menuItems as item}
-              <svelte:component this={MenuItem} {...item} />
+              <svelte:component this={MenuItem} clickAction={() => clickAction(item)} {...item} />
             {/each}
           </div>
         </div>

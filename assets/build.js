@@ -6,13 +6,22 @@ const args = process.argv.slice(2)
 const debug = args.includes('--debug')
 const watch = args.includes('--watch')
 const deploy = args.includes('--deploy')
-const apiBase = args.find(element => element.startsWith("--api-base-url="))?.split("=", 2)[1] ?? "http://api.geysermc"
+
+const httpProtocol = args.find(element => element.startsWith("--http-protocol="))?.split("=", 2)[1] ?? "http"
+const baseUrl = args.find(element => element.startsWith("--base-url="))?.split("=", 2)[1] ?? "geysermc"
+const apiVersion = args.find(element => element.startsWith("--api-version="))?.split("=", 2)[1] ?? "v2"
+
+function baseUrlFor(subdomain) {
+  return httpProtocol + "://" + (subdomain ? subdomain + "." : "") + baseUrl
+}
 
 const loader = {
   // Add loaders for images/fonts/etc, e.g. { '.svg': 'file' }
   '.woff': 'file',
   '.woff2': 'file'
 }
+
+//todo add brotli compression
 
 const plugins = [
   sveltePlugin()
@@ -22,6 +31,9 @@ let opts = {
   entryPoints: [
     'js/base.js',
     'js/page/skin/base.js',
+    'js/page/skin/info.js',
+    'js/page/skin/info/modelViewer.js',
+    'js/page/skin/overview.js',
     'js/page/online.js'
   ],
   bundle: true,
@@ -32,9 +44,13 @@ let opts = {
   outdir: '../priv/static/',
   outbase: './',
   define: {
-    'CLIENT_ID': '"dad9257f-6b54-4509-8463-81286ee5860d"',
-    'API_BASE_URL': '"'+ apiBase + '"',
-    'PROGRAM_NAME': '"global_api"'
+    CLIENT_ID: '"dad9257f-6b54-4509-8463-81286ee5860d"',
+    API_BASE_URL: `"${baseUrlFor("api")}/${apiVersion}"`,
+    PROGRAM_NAME: '"global_api"',
+    // unlike the definitions above these are for html
+    GEYSER_BASE_URL: `"${baseUrlFor()}"`,
+    SKIN_BASE_URL: `"${baseUrlFor("skin")}"`,
+    LINK_BASE_URL: `"${baseUrlFor("link")}"`,
   },
   logLevel: 'info',
   loader,

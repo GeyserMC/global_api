@@ -11,7 +11,7 @@
   }
 </script>
 
-<div on:click={handleClick} class="flex flex-col items-center justify-center w-32 h-48 md:w-40 md:h-60 mx-auto {loading ? "animate-pulse" : ""}" id="skin-template">
+<div on:click={handleClick} class="flex flex-col items-center justify-center w-32 h-48 md:w-40 md:h-60 mx-auto {loading ? "animate-pulse" : "cursor-pointer"}" id="skin-template">
   <div class="w-32 h-48 md:w-40 md:h-60 bg-gray-200 dark:bg-gray-700 rounded-lg flex justify-center items-center {loading ? "shadow-sm" : "shadow-md"}">
     {#if loading}
       <div class="w-auto h-4/5 pointer-events-none skin-image"></div>
