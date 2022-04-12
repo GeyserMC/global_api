@@ -16,7 +16,7 @@ export class CustomModelViewer {
     this.camera = new PerspectiveCamera(60, 1, 1, 500)
 
     this.camera.updateProjectionMatrix()
-		this.controls = new OrbitControls(this.camera, canvasElement)
+    this.controls = new OrbitControls(this.camera, canvasElement)
     this.controls.enableZoom = true
     this.controls.enablePan = false
     this.scene = new Scene()
@@ -24,8 +24,8 @@ export class CustomModelViewer {
     this.model = new Model(modelData, texturePath)
     this.scene.add(this.model.getGroup())
 
-		window.addEventListener('resize', this.onResize.bind(this))
-		this.controls.addEventListener('change', () => this.requestRendering())
+    window.addEventListener('resize', this.onResize.bind(this))
+    this.controls.addEventListener('change', () => this.requestRendering())
 
     this.onResize()
     this.loadedModel = this.loadModel().then(() => this.requestRendering())
@@ -65,43 +65,43 @@ export class CustomModelViewer {
   }
 
   onResize() {
-		this.renderer.setSize(this.width, this.height, true)
-		this.camera.aspect = this.width / this.height
-		this.positionCamera()
-		this.requestRendering()
-	}
+    this.renderer.setSize(this.width, this.height, true)
+    this.camera.aspect = this.width / this.height
+    this.positionCamera()
+    this.requestRendering()
+  }
 
-	dispose() {
-		window.removeEventListener('resize', this.onResize)
-		this.controls.removeEventListener('change', this.requestRendering)
-	}
+  dispose() {
+    window.removeEventListener('resize', this.onResize)
+    this.controls.removeEventListener('change', this.requestRendering)
+  }
 
   getModel() {
     return this.model
   }
 
   // From: https://github.com/mrdoob/three.js/issues/6784#issuecomment-315963625
-	positionCamera(scale = 1.5, rotate = true) {
-		if (rotate) this.model.getGroup().rotation.set(0, -135 * (Math.PI / 180), 0)
-    
-		const boundingSphere = new Box3()
-			.setFromObject(this.model.getGroup())
-			.getBoundingSphere(new Sphere())
+  positionCamera(scale = 1.5, rotate = true) {
+    if (rotate) this.model.getGroup().rotation.set(0, -135 * (Math.PI / 180), 0)
 
-		const objectAngularSize = ((this.camera.fov * Math.PI) / 180) * scale
-		const distanceToCamera = boundingSphere.radius / Math.tan(objectAngularSize / 2)
-		const len = Math.sqrt(Math.pow(distanceToCamera, 2) + Math.pow(distanceToCamera, 2))
+    const boundingSphere = new Box3()
+      .setFromObject(this.model.getGroup())
+      .getBoundingSphere(new Sphere())
 
-		this.camera.position.set(len, boundingSphere.center.y, len)
-		this.controls.update()
+    const objectAngularSize = ((this.camera.fov * Math.PI) / 180) * scale
+    const distanceToCamera = boundingSphere.radius / Math.tan(objectAngularSize / 2)
+    const len = Math.sqrt(Math.pow(distanceToCamera, 2) + Math.pow(distanceToCamera, 2))
 
-		this.camera.lookAt(boundingSphere.center)
-		this.controls.target.set(
-			boundingSphere.center.x,
-			boundingSphere.center.y,
-			boundingSphere.center.z
-		)
+    this.camera.position.set(len, boundingSphere.center.y, len)
+    this.controls.update()
 
-		this.camera.updateProjectionMatrix()
-	}
+    this.camera.lookAt(boundingSphere.center)
+    this.controls.target.set(
+      boundingSphere.center.x,
+      boundingSphere.center.y,
+      boundingSphere.center.z
+    )
+
+    this.camera.updateProjectionMatrix()
+  }
 }
