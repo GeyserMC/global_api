@@ -6,6 +6,11 @@ pipeline {
       steps {
         sh './build.sh'
       }
+      post {
+        success {
+          archiveArtifacts artifacts: '*.tar.gz', fingerprint: true
+        }
+      }
     }
   }
 
