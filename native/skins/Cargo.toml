@@ -14,7 +14,7 @@ name = "skins-bin"
 path = "src/main.rs"
 
 [dependencies]
-rustler = {git = "git://github.com/rusterlium/rustler.git", branch = "master"}
+rustler = {git = "https://github.com/rusterlium/rustler", branch = "master"}
 lodepng = { version = "3.4.6", default-features = false }
 flate2 = { package = "flate2", version = "1.0.20", features = ["zlib"], default-features = false }
 rgb = "0.8.27"
