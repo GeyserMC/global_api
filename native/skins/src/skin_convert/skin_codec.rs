@@ -4,7 +4,6 @@ use json::{JsonValue, parse};
 use lodepng::FilterStrategy;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
-use crate::skin_convert::pixel_cleaner::clear_unused_pixels;
 
 use crate::skin_convert::skin_codec::ErrorType::{InvalidGeometry, InvalidSize};
 
@@ -21,6 +20,12 @@ pub struct SkinInfo {
     pub geometry_data: Vec<u8>,
     pub geometry_patch: JsonValue,
     pub geometry_name: String,
+}
+
+pub struct ImageWithHashes {
+    pub png: Box<[u8]>,
+    pub minecraft_hash: Box<[u8]>,
+    pub hash: Box<[u8]>,
 }
 
 pub fn collect_skin_info(client_claims: &Value) -> Result<SkinInfo, ErrorType> {
@@ -81,26 +86,11 @@ pub fn collect_skin_info(client_claims: &Value) -> Result<SkinInfo, ErrorType> {
     Ok(SkinInfo { needs_convert, raw_skin_data, skin_width, geometry_data, geometry_patch: geometry_patch.clone(), geometry_name })
 }
 
-// only used when run as binary
-#[allow(dead_code)]
-pub fn encode_image_and_get_hash(raw_data: &mut Vec<u8>, w: usize, h: usize) -> (Box<[u8]>, Box<[u8]>) {
-    // encode images like Minecraft does
-    let mut encoder = lodepng::Encoder::new();
-    encoder.set_auto_convert(false);
-    encoder.info_png_mut().interlace_method = 0; // should be 0 but just to be sure
-
-    let png = encoder.encode(raw_data.as_slice(), w, h).unwrap();
-
-    let mut hasher = Sha256::new();
-    hasher.update(&png);
-    let minecraft_hash = hasher.finalize();
-
-    return (Box::from(png.as_slice()), Box::from(minecraft_hash.as_slice()));
+pub fn encode_image(raw_data: &mut Vec<u8>) -> ImageWithHashes {
+    encode_custom_image(raw_data, 64, 64)
 }
 
-pub fn encode_image_and_get_hashes(raw_data: &mut Vec<u8>, is_steve: bool) -> (Box<[u8]>, Box<[u8]>, Box<[u8]>) {
-    let clean_data = clear_unused_pixels(raw_data, is_steve);
-
+pub fn encode_custom_image(raw_data: &mut Vec<u8>, width: usize, height: usize) -> ImageWithHashes {
     // encode images like Minecraft does
     let mut encoder = lodepng::Encoder::new();
     encoder.set_auto_convert(false);
@@ -110,7 +100,7 @@ pub fn encode_image_and_get_hashes(raw_data: &mut Vec<u8>, is_steve: bool) -> (B
     encoder_settings.zlibsettings.set_level(4);
     encoder_settings.filter_strategy = FilterStrategy::ZERO;
 
-    let png = encoder.encode(clean_data.as_slice(), 64, 64).unwrap();
+    let png = encoder.encode(raw_data.as_slice(), width, height).unwrap();
 
     let mut hasher = Sha256::new();
 
@@ -118,8 +108,12 @@ pub fn encode_image_and_get_hashes(raw_data: &mut Vec<u8>, is_steve: bool) -> (B
     let minecraft_hash = hasher.finalize_reset();
 
     // make our own hash
-    hasher.update(clean_data.as_slice());
+    hasher.update(raw_data.as_slice());
     let hash = hasher.finalize();
 
-    (Box::from(png.as_slice()), Box::from(minecraft_hash.as_slice()), Box::from(hash.as_slice()))
+    ImageWithHashes {
+        png: Box::from(png.as_slice()),
+        minecraft_hash: Box::from(minecraft_hash.as_slice()),
+        hash: Box::from(hash.as_slice())
+    }
 }

@@ -6,8 +6,8 @@ use std::io::{Read, Write};
 
 use serde_json::Value;
 
-use crate::skin_codec::{encode_image_and_get_hash, encode_image_and_get_hashes};
-use crate::skin_convert::converter::get_skin_or_convert_geometry;
+use crate::skin_codec::{encode_custom_image, ImageWithHashes};
+use crate::skin_convert::converter::{ConvertResult, do_all};
 use crate::skin_convert::skin_codec;
 
 mod skin_convert;
@@ -32,9 +32,9 @@ fn main() -> Result<(), String> {
 }
 
 fn convert_single_loop(client_data: String) -> Result<(), String> {
-    for _ in 0..5 {
+    // for _ in 0..5 {
         convert_single(client_data.clone())?;
-    }
+    // }
     Ok(())
 }
 
@@ -59,48 +59,29 @@ fn convert_single(mut client_data: String) -> Result<(), String> {
 
     let client_claims = result.unwrap();
 
-    let collect_result = skin_codec::collect_skin_info(&client_claims);
-    if collect_result.is_err() {
-        return Err(format!("Invalid skin! {:?}", collect_result.err().unwrap()));
-    }
+    match do_all(client_claims) {
+        ConvertResult::Invalid(err) =>
+            Err(format!("Invalid skin! {:?}", err)),
 
-    let skin_info = collect_result.ok().unwrap();
+        ConvertResult::Error(err) =>
+            Err(format!("An error happened while converting skins! {}", err)),
 
-    // sometimes its already defined what model a skin is
-    let mut arm_model = -1;
-    let arm_size = client_claims.get("ArmSize");
-    if let Some(arm_size) = arm_size {
-        let arm_size = arm_size.as_str();
-        if let Some(arm_size) = arm_size {
-            arm_model = if arm_size.eq("slim") { 1 } else { 0 };
+        ConvertResult::Success(ImageWithHashes { png, minecraft_hash, hash }, _is_steve) => {
+            let mc_hash_hex = write_hex(minecraft_hash.as_ref());
+            let hash_hex = write_hex(hash.as_ref());
+
+            println!("Successfully encoded the converted image!");
+            println!("Internal hash: {:}, Minecraft hash: {:}", hash_hex, mc_hash_hex);
+
+            let mut file = File::create(format!("{:}.png", mc_hash_hex)).unwrap();
+
+            match file.write_all(png.as_ref()) {
+                Ok(_) => println!("Wrote the converted png to {:}.png", mc_hash_hex),
+                Err(err) => println!("Failed to write converted png! {:?}", err)
+            }
+            Ok(())
         }
     }
-
-    let convert_result = get_skin_or_convert_geometry(skin_info, client_claims);
-    if let Err(err) = convert_result {
-        return Err(format!("An error happened while converting skins! {}", err));
-    }
-
-    let (mut raw_data, mut is_steve) = convert_result.unwrap();
-    if arm_model != -1 {
-        is_steve = arm_model == 0;
-    }
-
-    let (png, minecraft_hash, hash) = encode_image_and_get_hashes(&mut raw_data, is_steve);
-
-    let mc_hash_hex = write_hex(minecraft_hash.as_ref());
-    let hash_hex = write_hex(hash.as_ref());
-
-    println!("Successfully encoded the converted image!");
-    println!("Internal hash: {:}, Minecraft hash: {:}", hash_hex, mc_hash_hex);
-
-    let mut file = File::create(format!("{:}.png", mc_hash_hex)).unwrap();
-
-    match file.write_all(png.as_ref()) {
-        Ok(_) => println!("Wrote the converted png to {:}.png", mc_hash_hex),
-        Err(err) => println!("Failed to write converted png! {:?}", err)
-    }
-    Ok(())
 }
 
 fn encode_and_save_image_loop(raw_data: String, w: usize, h: usize) {
@@ -111,7 +92,8 @@ fn encode_and_save_image_loop(raw_data: String, w: usize, h: usize) {
 
 fn encode_and_save_image(raw_data: String, w: usize, h: usize) {
     let mut data = base64::decode(raw_data).unwrap();
-    let (png, minecraft_hash) = encode_image_and_get_hash(&mut data, w, h);
+
+    let ImageWithHashes { png, minecraft_hash, hash: _hash } = encode_custom_image(&mut data, w, h);
 
     let mc_hash_hex = write_hex(minecraft_hash.as_ref());
 

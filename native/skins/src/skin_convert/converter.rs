@@ -12,16 +12,63 @@ use json::JsonValue;
 
 use serde_json::json;
 use serde_json::Value;
+use crate::skin_convert::converter::ConvertResult::{Error, Invalid, Success};
 use crate::skin_convert::converter::SkinModel::{Alex, Steve, Unknown};
-use crate::skin_convert::skin_codec::SkinInfo;
+use crate::skin_convert::pixel_cleaner::clear_unused_pixels;
+use crate::skin_convert::skin_codec;
+use crate::skin_convert::skin_codec::{encode_image, ErrorType, ImageWithHashes, SkinInfo};
 
 const TEXTURE_TYPE_FACE: i64 = 1;
 
-#[derive(Eq, PartialEq)]
+#[derive(Eq, PartialEq, Debug)]
 pub enum SkinModel {
     Unknown = -1,
     Steve = 1,
     Alex = 2,
+}
+
+pub enum ConvertResult {
+    Invalid(ErrorType),
+    Error(&'static str),
+    Success(ImageWithHashes, bool)
+}
+
+pub fn do_all(client_claims: Value) -> ConvertResult {
+    let collect_result = skin_codec::collect_skin_info(&client_claims);
+    if collect_result.is_err() {
+        return Invalid(collect_result.err().unwrap());
+    }
+
+    let skin_info = collect_result.ok().unwrap();
+
+    // sometimes its already defined which model the skin is
+    let mut arm_model = SkinModel::Unknown;
+    let arm_size = client_claims.get("ArmSize");
+    if let Some(arm_size) = arm_size {
+        let arm_size = arm_size.as_str();
+        if let Some(arm_size) = arm_size {
+            arm_model = match arm_size {
+                "slim" => SkinModel::Alex,
+                "steve" => SkinModel::Steve,
+                _ => SkinModel::Unknown
+            };
+        }
+    }
+
+    let convert_result = get_skin_or_convert_geometry(skin_info, client_claims);
+    if let Err(err) = convert_result {
+        return Error(err);
+    }
+
+    let (mut raw_data, mut is_steve) = convert_result.unwrap();
+    if arm_model != SkinModel::Unknown {
+        is_steve = arm_model == SkinModel::Steve;
+    }
+
+    clear_unused_pixels(&mut raw_data, is_steve);
+    let data = encode_image(&mut raw_data);
+
+    Success(data, is_steve)
 }
 
 pub fn get_skin_or_convert_geometry(info: SkinInfo, client_claims: Value) -> Result<(Vec<u8>, bool), &'static str> {
@@ -38,6 +85,7 @@ pub fn get_skin_or_convert_geometry(info: SkinInfo, client_claims: Value) -> Res
                 Ok((raw_data, skin_model != Alex)),
         }
     } else {
+        let is_steve = !info.geometry_name.ends_with("Slim");
         // we still have to scale even though we technically don't have to convert them
         if info.raw_skin_data.len() != 64 * 64 * 4 {
             let mut new_vec: Vec<u8> = Vec::with_capacity(64 * 64 * 4);
@@ -48,9 +96,9 @@ pub fn get_skin_or_convert_geometry(info: SkinInfo, client_claims: Value) -> Res
                 fill_and_scale_texture(info.raw_skin_data.as_slice(), &mut new_vec, skin_width, 64, skin_width, info.raw_skin_data.len() / 4 / skin_width, 64, 64, 0, 0, 0, 0);
             }
 
-            return Ok((new_vec, !info.geometry_name.ends_with("Slim")));
+            return Ok((new_vec, is_steve));
         }
-        Ok((info.raw_skin_data, !info.geometry_name.ends_with("Slim")))
+        Ok((info.raw_skin_data, is_steve))
     }
 }
 
@@ -93,16 +141,17 @@ fn convert_geometry(skin_data: &[u8], skin_width: usize, client_claims: Value, g
     let mut new_vec: Vec<u8> = Vec::with_capacity(64 * 64 * 4);
     unsafe { new_vec.set_len(new_vec.capacity()) }
 
-    let mut skin_model = Unknown;
+    let mut skin_model: SkinModel = Unknown;
 
     for bone in bones.unwrap() {
-        let model_or_err = translate_bone(skin_data, skin_width, bone, false, &mut new_vec);
-        if let Err(err) = model_or_err {
-            return Err(err);
-        }
-        if skin_model == Unknown {
-            skin_model = model_or_err.unwrap();
-        }
+        match translate_bone(skin_data, skin_width, bone, false, &mut new_vec) {
+            Err(err) => return Err(err),
+            Ok(model) => {
+                if skin_model == Unknown {
+                    skin_model = model
+                }
+            },
+        };
     }
 
     // lets check (and translate it) if the skin also has an animated head
@@ -267,10 +316,11 @@ fn translate_cubed_bone(skin_data: &[u8], w: usize, name: &str, x_tex_offset: us
         return Err("bone size doesn't have the length 3");
     }
 
-    let (success, skin_model, tex_width, tex_height) = size_to_tex_size(size);
-    if !success {
+    let tex_size = size_to_tex_size(size);
+    if tex_size.is_none() {
         return Err("failed converting size to texture size");
     }
+    let (skin_model, tex_width, tex_height) = tex_size.unwrap();
 
     let uv = cube.get("uv");
     if uv.is_none() {
@@ -294,10 +344,11 @@ fn translate_cubed_bone(skin_data: &[u8], w: usize, name: &str, x_tex_offset: us
     }
 
     let uv = uv.unwrap();
-    let (success, x_offset, y_offset) = get_bone_offset(uv);
-    if !success {
+    let offset = get_bone_offset(uv);
+    if offset.is_none() {
         return Err("failed to get bone offset");
     }
+    let (x_offset, y_offset) = offset.unwrap();
 
     fill_and_scale_texture(skin_data, new_vec, w, 64, tex_width, tex_height, x_tex_size, y_tex_size, x_offset, y_offset, x_tex_offset, y_tex_offset);
 
@@ -440,7 +491,7 @@ fn translate_poly_bone(skin_data: &[u8], w: usize, name: &str, x_tex_offset: usi
         _ => Unknown
     };
 
-    let result = if skin_model != Unknown && name.eq_ignore_ascii_case("leftArm") || name.eq_ignore_ascii_case("rightArm") {
+    let result = if skin_model != Unknown && (name.eq_ignore_ascii_case("leftArm") || name.eq_ignore_ascii_case("rightArm")) {
         skin_model
     } else {
         Unknown
@@ -467,11 +518,12 @@ fn translate_bone(skin_data: &[u8], w: usize, bone: &Value, only_face: bool, new
         }
     }
 
-    let (x_tex_offset, y_tex_offset, x_tex_size, y_tex_size) = get_texture_offset(name);
+    let result = get_texture_offset(name);
     // we don't have to map every bone, and bones that we don't have to map have are: 0, 1
-    if x_tex_size == 0 && y_tex_size == 0 {
-        return Ok(Unknown);
+    if result.is_none() {
+        return Ok(Unknown)
     }
+    let (x_tex_offset, y_tex_offset, x_tex_size, y_tex_size) = result.unwrap();
 
     // lets check if it is a cubed bone or a poly bone
 
@@ -497,35 +549,35 @@ fn translate_bone(skin_data: &[u8], w: usize, bone: &Value, only_face: bool, new
     Ok(Unknown)
 }
 
-fn get_bone_offset(uv: &[Value]) -> (bool, usize, usize) {
+fn get_bone_offset(uv: &[Value]) -> Option<(usize, usize)> {
     if uv.len() != 2 {
-        return (false, 0, 0);
+        return None;
     }
 
     let x_offset = uv.get(0);
     let y_offset = uv.get(1);
 
     if x_offset.is_none() || y_offset.is_none() {
-        return (false, 0, 0);
+        return None;
     }
 
     let x_offset = x_offset.unwrap().as_f64();
     let y_offset = y_offset.unwrap().as_f64();
 
     if x_offset.is_none() || y_offset.is_none() {
-        return (false, 0, 0);
+        return None;
     }
 
-    (true, x_offset.unwrap() as usize, y_offset.unwrap() as usize)
+    Some((x_offset.unwrap() as usize, y_offset.unwrap() as usize))
 }
 
-fn size_to_tex_size(size: &[Value]) -> (bool, SkinModel, usize, usize) {
+fn size_to_tex_size(size: &[Value]) -> Option<(SkinModel, usize, usize)> {
     let width = size.get(0).unwrap().as_f64();
     let height = size.get(1).unwrap().as_f64();
     let depth = size.get(2).unwrap().as_f64();
 
     if width.is_none() || height.is_none() || depth.is_none() {
-        return (false, Unknown, 0, 0);
+        return None;
     }
 
     let width = width.unwrap();
@@ -538,24 +590,24 @@ fn size_to_tex_size(size: &[Value]) -> (bool, SkinModel, usize, usize) {
         _ => Unknown
     };
 
-    (true, skin_model, ((depth * 2.0) + (width * 2.0)) as usize, (depth + height).round() as usize)
+    Some((skin_model, ((depth * 2.0) + (width * 2.0)) as usize, (depth + height).round() as usize))
 }
 
-fn get_texture_offset(bone_name: &primitive::str) -> (usize, usize, usize, usize) {
+fn get_texture_offset(bone_name: &primitive::str) -> Option<(usize, usize, usize, usize)> {
     // start x, start y, width, height
     match bone_name {
-        "body" => (16, 16, 24, 16),
-        "head" => (0, 0, 32, 16),
-        "hat" => (32, 0, 32, 16),
-        "leftArm" | "leftarm" => (32, 48, 16, 16),
-        "rightArm" | "rightarm" => (40, 16, 16, 16),
-        "leftSleeve" | "leftsleeve" => (48, 48, 16, 16),
-        "rightSleeve" | "rightsleeve" => (40, 32, 16, 16),
-        "leftLeg" | "leftleg" => (16, 48, 16, 16),
-        "rightLeg" | "rightleg" => (0, 16, 16, 16),
-        "leftPants" | "leftpants" => (0, 48, 16, 16),
-        "rightPants" | "rightpants" => (0, 32, 16, 16),
-        "jacket" => (16, 32, 24, 16),
-        _ => (0, 0, 0, 0),
+        "body" => Some((16, 16, 24, 16)),
+        "head" => Some((0, 0, 32, 16)),
+        "hat" => Some((32, 0, 32, 16)),
+        "leftArm" | "leftarm" => Some((32, 48, 16, 16)),
+        "rightArm" | "rightarm" => Some((40, 16, 16, 16)),
+        "leftSleeve" | "leftsleeve" => Some((48, 48, 16, 16)),
+        "rightSleeve" | "rightsleeve" => Some((40, 32, 16, 16)),
+        "leftLeg" | "leftleg" => Some((16, 48, 16, 16)),
+        "rightLeg" | "rightleg" => Some((0, 16, 16, 16)),
+        "leftPants" | "leftpants" => Some((0, 48, 16, 16)),
+        "rightPants" | "rightpants" => Some((0, 32, 16, 16)),
+        "jacket" => Some((16, 32, 24, 16)),
+        _ => None,
     }
 }
