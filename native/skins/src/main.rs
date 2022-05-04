@@ -7,8 +7,7 @@ use std::io::{Read, Write};
 use serde_json::Value;
 
 use crate::skin_codec::{encode_custom_image, ImageWithHashes};
-use crate::skin_convert::converter::{ConvertResult, do_all};
-use crate::skin_convert::skin_codec;
+use crate::skin_convert::{ConvertResult, convert_skin, skin_codec};
 
 mod skin_convert;
 pub mod rustler_utils;
@@ -59,7 +58,7 @@ fn convert_single(mut client_data: String) -> Result<(), String> {
 
     let client_claims = result.unwrap();
 
-    match do_all(client_claims) {
+    match convert_skin(client_claims) {
         ConvertResult::Invalid(err) =>
             Err(format!("Invalid skin! {:?}", err)),
 

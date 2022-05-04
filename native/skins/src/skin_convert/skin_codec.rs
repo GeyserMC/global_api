@@ -4,14 +4,13 @@ use json::{JsonValue, parse};
 use lodepng::FilterStrategy;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
+use crate::skin_convert::ErrorType;
 
-use crate::skin_convert::skin_codec::ErrorType::{InvalidGeometry, InvalidSize};
+use crate::skin_convert::ErrorType::{InvalidGeometry, InvalidSize};
 
-#[derive(Debug)]
-pub enum ErrorType {
-    InvalidSize,
-    InvalidGeometry,
-}
+pub const SKIN_WIDTH: usize = 64;
+pub const SKIN_HEIGHT: usize = 64;
+pub const SKIN_CHANNELS: usize = 4;
 
 pub struct SkinInfo {
     pub needs_convert: bool,
@@ -35,7 +34,7 @@ pub fn collect_skin_info(client_claims: &Value) -> Result<SkinInfo, ErrorType> {
     let skin_data = client_claims["SkinData"].as_str().unwrap();
     let raw_skin_data = decode(skin_data).unwrap();
 
-    if raw_skin_data.len() != skin_width * skin_height * 4 {
+    if raw_skin_data.len() != skin_width * skin_height * SKIN_CHANNELS {
         return Err(InvalidSize);
     }
 
@@ -114,6 +113,6 @@ pub fn encode_custom_image(raw_data: &mut Vec<u8>, width: usize, height: usize) 
     ImageWithHashes {
         png: Box::from(png.as_slice()),
         minecraft_hash: Box::from(minecraft_hash.as_slice()),
-        hash: Box::from(hash.as_slice())
+        hash: Box::from(hash.as_slice()),
     }
 }
