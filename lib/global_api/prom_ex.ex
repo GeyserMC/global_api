@@ -7,7 +7,6 @@ defmodule GlobalApi.PromEx do
      more details regarding configuring PromEx:
      ```
      config :global_api, GlobalApi.PromEx,
-       disabled: false,
        manual_metrics_start_delay: :no_delay,
        drop_metrics_groups: [],
        grafana: :disabled,
@@ -62,12 +61,11 @@ defmodule GlobalApi.PromEx do
       # PromEx built in plugins
       Plugins.Application,
       Plugins.Beam,
-      {Plugins.Phoenix, router: GlobalApiWeb.Router, endpoint: GlobalApiWeb.Endpoint},
+      {Plugins.Phoenix, router: GlobalApiWeb.Router},
       Plugins.Ecto,
-      # Plugins.Oban,
-      Plugins.PhoenixLiveView,
-      # Plugins.Absinthe,
-      # Plugins.Broadway,
+      # Plugins.Oban
+
+      # todo look into Oban
 
       # Add your own PromEx metrics plugins
       # GlobalApi.Users.PromExPlugin
@@ -77,8 +75,7 @@ defmodule GlobalApi.PromEx do
   @impl true
   def dashboard_assigns do
     [
-      datasource_id: "Prometheus",
-      default_selected_interval: "30s"
+      datasource_id: "Prometheus"
     ]
   end
 
@@ -90,10 +87,7 @@ defmodule GlobalApi.PromEx do
       {:prom_ex, "beam.json"},
       {:prom_ex, "phoenix.json"},
       {:prom_ex, "ecto.json"},
-      # {:prom_ex, "oban.json"},
-      {:prom_ex, "phoenix_live_view.json"},
-      # {:prom_ex, "absinthe.json"},
-      # {:prom_ex, "broadway.json"},
+      # {:prom_ex, "oban.json"}
 
       # Add your dashboard definitions here with the format: {:otp_app, "path_in_priv"}
       # {:global_api, "/grafana_dashboards/user_metrics.json"}

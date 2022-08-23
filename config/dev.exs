@@ -46,7 +46,7 @@ config :global_api, :link_app_info,
   client_secret: "client secret"
 
 config :global_api, :telemetry,
-  host: "ip",
+  host: nil,
   port: 8125,
   server_id: 1
 

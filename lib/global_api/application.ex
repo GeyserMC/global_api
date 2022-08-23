@@ -30,6 +30,8 @@ defmodule GlobalApi.Application do
       create_cache(:bedrock_link, 5),
       GlobalApi.Repo,
       GlobalApi.Telemetry,
+      create_cache(:project_version),
+      GlobalApi.VersionFetcher,
       # Start the Endpoint (http/https)
       GlobalApiWeb.Endpoint
     ]
@@ -53,17 +55,12 @@ defmodule GlobalApi.Application do
     :ok
   end
 
-  defp create_cache(name, expire_time) do
-    Supervisor.child_spec(
-      {
-        Cachex,
-        [
-          name: name,
-          expiration: expiration(default: :timer.minutes(expire_time))
-        ]
-      },
-      id: name
-    )
+  defp create_cache(name, expire_time \\ nil) do
+    options = [name: name] ++ if expire_time,
+      do: [expiration: expiration(default: :timer.minutes(expire_time))],
+      else: []
+
+    Supervisor.child_spec({Cachex, options}, id: name)
   end
 
   def get_env(atom) do

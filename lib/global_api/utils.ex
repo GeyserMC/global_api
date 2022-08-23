@@ -110,22 +110,6 @@ defmodule GlobalApi.Utils do
   # no link found
   def update_username_if_needed(result), do: result
 
-  @doc """
-  Returns first element of a list, or 0 when the list is empty.
-  """
-  @spec first(list) :: any
-  def first(list)
-  def first([]), do: 0
-  def first([first | _]), do: first
-
-  @doc """
-  Returns first element of a list, or the value of fallback when the list is empty.
-  """
-  @spec first(list, any) :: any
-  def first(list, fallback)
-  def first([], fallback), do: fallback
-  def first([first | _], _), do: first
-
   def merge_array_to_map(map, array, convert_function \\ nil)
 
   def merge_array_to_map(map, [], _convert_function ), do: map

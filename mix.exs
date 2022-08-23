@@ -4,8 +4,8 @@ defmodule GlobalApi.MixProject do
   def project do
     [
       app: :global_api,
-      version: "1.0.1",
-      elixir: "~> 1.11",
+      version: "1.0.2",
+      elixir: "~> 1.12",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: Mix.compilers(),
       build_embedded: Mix.env() == :prod,
@@ -39,26 +39,28 @@ defmodule GlobalApi.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
-      {:phoenix, "~> 1.6.6"},
+      {:phoenix, "~> 1.6.11"},
       {:phoenix_ecto, "~> 4.4"},
-      {:ecto_sql, "~> 3.7.2"},
-      {:myxql, "~> 0.6.0"},
-      {:phoenix_live_reload, "~> 1.3", only: :dev},
-      {:phoenix_live_view, "~> 0.17.7"},
-      {:phoenix_live_dashboard, "~> 0.6"},
-      {:httpoison, "~> 1.8"},
+      {:ecto_sql, "~> 3.8.3"},
+      {:myxql, "~> 0.6.2"},
+      {:phoenix_live_reload, "~> 1.3.3", only: :dev},
+      {:phoenix_live_view, "~> 0.17.11"},
+      {:phoenix_live_dashboard, "~> 0.6.5"},
+      {:httpoison, "~> 1.8.2"},
       {:rustler, "~> 0.23"},
       {:jason, "~> 1.3"},
-      {:plug_cowboy, "~> 2.5"},
+      {:plug_cowboy, "~> 2.5.2"},
       {:cachex, "~> 3.4"},
-      {:prom_ex, "~> 1.6.0"},
-      {:cors_plug, "~> 2.0.3"},
-      {:telemetry, "~> 1.0.0"},
-      {:telemetry_metrics, "~> 0.6"},
+      {:prom_ex, "~> 1.7.1"},
+      {:unplug, "~> 1.0"},
+      {:cors_plug, "~> 3.0.3"},
+      {:telemetry, "~> 1.0"},
+      {:telemetry_metrics, "~> 0.6.1"},
+      {:telemetry_metrics_statsd, "~> 0.6.2"},
       {:telemetry_poller, "~> 1.0"},
-      {:sentry, "~> 8.0"},
-      {:distillery, "~> 2.1", only: :prod},
-      {:open_api_spex, "~> 3.11"}
+      {:sentry, "~> 8.0.6"},
+      {:distillery, "~> 2.1", only: :prod, git: "https://github.com/planswell/distillery", branch: "otp-25"},
+      {:open_api_spex, "~> 3.12"}
     ]
   end
 

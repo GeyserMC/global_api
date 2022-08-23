@@ -10,6 +10,11 @@ defmodule GlobalApi.Telemetry do
   end
 
   def init(_arg) do
+    children = if not is_nil(Utils.get_env(:telemetry, :host)), do: get_children()
+    Supervisor.init(children || [], strategy: :one_for_one)
+  end
+
+  defp get_children do
     host = Utils.get_env(:telemetry, :host)
     port = Utils.get_env(:telemetry, :port)
     server_id = Utils.get_env(:telemetry, :server_id)
@@ -25,22 +30,20 @@ defmodule GlobalApi.Telemetry do
               },
               else: host
 
-    children = [
-#      {
-#        TelemetryMetricsStatsd,
-#        metrics: metrics(),
-#        formatter: :datadog,
-#        host: host,
-#        port: port,
-#        global_tags: [
-#          server_id: server_id
-#        ]
-#      }
+    [
+      {
+        TelemetryMetricsStatsd,
+        metrics: metrics(),
+        formatter: :datadog,
+        host: host,
+        port: port,
+        global_tags: [
+          server_id: server_id
+        ]
+      }
     ]
 
-    result = Supervisor.init(children, strategy: :one_for_one)
     startup_stuff(host, port, server_id)
-    result
   end
 
   defp metrics do

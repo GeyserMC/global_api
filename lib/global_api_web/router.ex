@@ -32,7 +32,7 @@ defmodule GlobalApiWeb.Router do
 
     scope "/recent" do
       get "/bedrock", SkinsController, :recent_bedrock
-    end
+  end
 
     scope "/skin" do
       get "/:texture_id", ItemInfoController, :skin_info
@@ -108,6 +108,10 @@ defmodule GlobalApiWeb.Router do
 
       scope "/utils" do
         get "/uuid/bedrock_or_java/:username", UtilsController, :get_bedrock_or_java_uuid
+      end
+
+      scope "/versions" do
+        get "/:project", VersionsController, :project_version
       end
 
       scope "/xbox" do
