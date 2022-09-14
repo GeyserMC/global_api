@@ -4,26 +4,22 @@ defmodule GlobalApiWeb.Endpoint do
 
   @static_url Application.get_env(:global_api, GlobalApiWeb.Endpoint)[:static_url][:host]
 
-  # Live Dashboard and live code reload is only enabled during development
+  # The session will be stored in the cookie and signed,
+  # this means its contents can be read but not tampered with.
+  # Set :encryption_salt if you would also like to encrypt it.
+  @session_options [
+    store: :cookie,
+    key: "_global_api_key",
+    signing_salt: "jvggC7w3"
+  ]
+
+  socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
+
+  # Live Dashboard and is only enabled during development
   if Mix.env() == :dev do
-    # The session will be stored in the cookie and signed,
-    # this means its contents can be read but not tampered with.
-    # Set :encryption_salt if you would also like to encrypt it.
-    @session_options [
-      store: :cookie,
-      key: "_global_api_key",
-      signing_salt: "jvggC7w3"
-    ]
-
-    socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
-
     plug Phoenix.LiveDashboard.RequestLogger,
          param_key: "request_logger",
          cookie_key: "request_logger"
-
-    plug Plug.RequestId
-
-    plug Plug.Session, @session_options
   end
 
   if code_reloading? do
@@ -40,7 +36,8 @@ defmodule GlobalApiWeb.Endpoint do
     plug Plug.SSL
   end
 
-  plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint], log: Mix.env() != :prod
+  plug Plug.RequestId
+  plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
 
   # only serve the assets at the cdn subdomain
   plug :static_assets, nil
@@ -65,5 +62,9 @@ defmodule GlobalApiWeb.Endpoint do
 
   def static_assets(conn, _) do
     if @static_url == conn.host, do: Plug.Static.call(conn, @static_opts), else: conn
+  end
+
+  def session_options do
+    @session_options
   end
 end

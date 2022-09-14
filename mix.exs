@@ -60,7 +60,9 @@ defmodule GlobalApi.MixProject do
       {:telemetry_poller, "~> 1.0"},
       {:sentry, "~> 8.0.6"},
       {:distillery, "~> 2.1", only: :prod, git: "https://github.com/planswell/distillery", branch: "otp-25"},
-      {:open_api_spex, "~> 3.12"}
+      {:open_api_spex, "~> 3.12"},
+      {:esbuild, "~> 0.3", runtime: Mix.env() == :dev},
+      {:tailwind, "~> 0.1", runtime: Mix.env() == :dev, git: "https://github.com/mcrumm/tailwind", branch: "mc-tls"}
     ]
   end
 
@@ -72,10 +74,13 @@ defmodule GlobalApi.MixProject do
   # See the documentation for `Mix` for more info on aliases.
   defp aliases do
     [
-      setup: ["deps.get", "ecto.setup", "cmd npm install --prefix assets"],
+      setup: ["deps.get", "ecto.setup"],
+      get_and_compile: ["deps.get", "compile"],
+      start: ["setup", "phx.server"],
       "ecto.setup": ["ecto.create", "ecto.migrate"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
-      test: ["ecto.create --quiet", "ecto.migrate --quiet" , "test"]
+      test: ["ecto.create --quiet", "ecto.migrate --quiet" , "test"],
+      "assets.deploy": ["tailwind default --minify", "esbuild default --minify", "phx.digest"]
     ]
   end
 end

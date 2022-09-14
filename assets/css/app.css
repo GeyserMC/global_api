@@ -1,6 +1,6 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
 
 @layer utilities {
   .render-pixelated {
@@ -8,9 +8,9 @@
     image-rendering: -moz-crisp-edges;
   }
 }
-
+  
 @font-face {
-  font-family: 'Inter';
+  font-family: 'Inter var';
   font-weight: 100 900;
   src: url('../font/Inter.var.woff2') format('woff2-variations');
 }

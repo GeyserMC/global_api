@@ -41,6 +41,22 @@ defmodule GlobalApi.Utils do
     length >= min && length <= max
   end
 
+  @spec get_positive_int(integer | binary) :: :error | {:ok, integer}
+  def get_positive_int(data)
+
+  def get_positive_int(data) when is_integer(data) do
+    if data > 0, do: {:ok, data}, else: :error
+  end
+
+  def get_positive_int(data) do
+    try do
+      String.to_integer(data)
+      |> get_positive_int()
+    rescue
+      _ -> :error
+    end
+  end
+
   def is_int_rounded_and_positive(xuid) when is_integer(xuid), do: true
 
   def is_int_rounded_and_positive(xuid) do

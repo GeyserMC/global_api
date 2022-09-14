@@ -1,0 +1,46 @@
+version: "3.9"
+
+services:
+  server:
+    build:
+      context: .
+      target: dev
+      args:
+        MIX_ENV: dev
+    ports:
+      - 80:80
+    volumes:
+      - ./lib:/app/lib:ro
+      - ./config:/app/config:ro
+      - ./assets:/app/assets:rw
+      - ./assets/node_modules:/app/assets/node_modules:rw
+      - ./priv/repo:/app/priv/repo:ro
+      - ./priv/native:/app/priv/native:rw
+      - ./native:/app/native:rw
+      - ./_build:/app/_build:rw
+      - ./deps:/app/deps:rw
+    depends_on:
+      - db
+    healthcheck:
+      test: curl api.geysermc/health
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  db:
+    image: mariadb:latest
+    environment:
+      MARIADB_ROOT_PASSWORD: global_api
+      MARIADB_DATABASE: global_api_dev
+    restart: unless-stopped
+    # expose:
+    #   - 3306
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 500M
+    ports:
+      - 3306:3306

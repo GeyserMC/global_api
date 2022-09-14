@@ -5,7 +5,7 @@
 # is restricted to this project.
 
 # General application configuration
-use Mix.Config
+import Config
 
 config :global_api,
   ecto_repos: [GlobalApi.Repo]
@@ -16,11 +16,11 @@ config :global_api, :app,
 
 config :sentry,
   dsn: "your sentry dsn",
-  environment_name: Mix.env,
+  environment_name: config_env(),
   enable_source_code_context: true,
   root_source_code_path: File.cwd!(),
   tags: %{
-    env: Mix.env
+    env: config_env()
   },
   included_environments: [:prod]
 
@@ -31,6 +31,24 @@ config :global_api, GlobalApiWeb.Endpoint,
   render_errors: [view: GlobalApiWeb.ErrorView, accepts: ~w(json), layout: false],
   pubsub_server: GlobalApi.PubSub,
   live_view: [signing_salt: "H1cVO7Kw"]
+
+config :esbuild,
+  version: "0.14.0",
+  default: [
+    args:
+      ~w(js/app.js js/render.js --bundle --target=es2021 --outdir=../priv/static/assets/ --external:/font/*),
+    cd: Path.expand("../assets", __DIR__),
+    env: %{"NODE_PATH" => Path.expand("../deps", __DIR__)}
+  ]
+
+config :tailwind, version: "3.1.8", default: [
+  args: ~w(
+    --config=tailwind.config.js
+    --input=css/app.css
+    --output=../priv/static/assets/app.css
+  ),
+  cd: Path.expand("../assets", __DIR__)
+]
 
 # Configures Elixir's Logger
 config :logger, :console,

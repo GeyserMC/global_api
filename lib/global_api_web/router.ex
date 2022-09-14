@@ -9,6 +9,9 @@ defmodule GlobalApiWeb.Router do
   link_host = domain_info[:link][:subdomain] <> "."
   skin_host = domain_info[:skin][:subdomain] <> "."
 
+  @json_subdomains ["api.", "cdn."]
+
+
   pipeline :api do
     plug :accepts, ["json"]
   end
@@ -19,6 +22,12 @@ defmodule GlobalApiWeb.Router do
 
   pipeline :browser do
     plug :accepts, ["html"]
+    plug Plug.Session, GlobalApiWeb.Endpoint.session_options()
+    plug :fetch_session
+    plug :fetch_live_flash
+    plug :put_root_layout, {GlobalApiWeb.LayoutView, :root}
+    plug :protect_from_forgery
+    plug :put_secure_browser_headers
   end
 
   scope "/", host: cdn_host do
@@ -31,15 +40,24 @@ defmodule GlobalApiWeb.Router do
     get "/", SkinsController, :index
 
     scope "/recent" do
-      get "/bedrock", SkinsController, :recent_bedrock
-  end
+      live "/bedrock", RecentBedrock
+    end
+
+    scope "/popular" do
+      live "/bedrock", PopularBedrock
+    end
 
     scope "/skin" do
-      get "/:texture_id", ItemInfoController, :skin_info
+      live "/:id", SkinInfo
+      # get "/:texture_id", ItemInfoController, :skin_info
     end
 
     scope "/cape" do
-      get "/:texture_id", ItemInfoController, :cape_info
+      # get "/:texture_id", ItemInfoController, :cape_info
+    end
+
+    scope "/profile" do
+      live "/:id", ProfileInfo
     end
   end
 
@@ -98,7 +116,9 @@ defmodule GlobalApiWeb.Router do
       end
 
       scope "/skin" do
-        get "/recent_uploads", SkinController, :get_recent_uploads
+        scope "/bedrock" do
+          get "/recent", SkinController, :get_recent_uploads
+        end
         get "/:xuid", SkinController, :get_skin
       end
 
@@ -158,7 +178,7 @@ defmodule GlobalApiWeb.Router do
 
   #todo expand this to include other errors as well
   defp handle_errors(conn, %{reason: %Phoenix.Router.NoRouteError{}}) do
-    if String.starts_with?(conn.host, "api.") do
+    if String.starts_with?(conn.host, @json_subdomains) do
       handle_errors(conn, nil) # pass it through to the function below
     else
       conn

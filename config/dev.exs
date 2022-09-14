@@ -1,13 +1,13 @@
-use Mix.Config
+import Config
 
 # Configure your database
 config :global_api, GlobalApi.Repo,
-  hostname: "ip",
-  port: 3306,
-  username: "username",
-  password: "password",
-  database: "database",
-  pool_size: 2
+  hostname: System.get_env("DATABASE_HOSTNAME", "host.docker.internal"),
+  username: System.get_env("DATABASE_USERNAME", "root"),
+  password: System.get_env("DATABASE_PASSWORD", "global_api"),
+  database: System.get_env("DATABASE_DATABASE", "global_api_dev"),
+  pool_size: String.to_integer(System.get_env("DATABASE_POOL_SIZE", "3")),
+  timeout: 25000
 
 # we require local DNS (api.geysermc e.g.) in order to test
 # the global api fully.
@@ -58,12 +58,9 @@ config :global_api, GlobalApiWeb.Endpoint,
   code_reloader: true,
   check_origin: false,
   watchers: [
-    node: [
-      "build.js",
-      "--watch",
-      "--api-base-url=" <> "http://api.geysermc",
-      cd: Path.expand("../assets", __DIR__)
-    ]
+    # Start the esbuild watcher by calling Esbuild.install_and_run(:default, args)
+    esbuild: {Esbuild, :install_and_run, [:default, ~w(--sourcemap=inline --watch)]},
+    tailwind: {Tailwind, :install_and_run, [:default, ~w(--watch)]}
   ]
 
 # ## SSL Support
@@ -110,7 +107,7 @@ config :global_api, GlobalApiWeb.Endpoint,
     patterns: [
       ~r"priv/static/.*(js|css|png|jpeg|jpg|gif|svg)$",
       ~r"lib/global_api_web/(live|views)/.*(ex)$",
-      ~r"lib/global_api_web/templates/.*(eex)$"
+      ~r"lib/global_api_web/templates/.*(heex)$"
     ]
   ]
 
