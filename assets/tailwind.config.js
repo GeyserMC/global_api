@@ -6,8 +6,8 @@ module.exports = {
   content: [
     './js/**/*.js',
     './js/svelte/**/*.svelte',
-    '../lib/**/*.html.heex',
-    '../lib/**/*_view.ex'
+    '../lib/*_web.ex',
+    '../lib/*_web/**/*.*ex'
   ],
   theme: {
     extend: {

@@ -17,6 +17,10 @@ defmodule GlobalApi.Application do
       GlobalApi.SkinUploader,
       GlobalApi.Node.NodeManager,
       create_cache(:xuid_to_skin, 2),
+      create_cache(:skin_id_to_skin, 10),
+      create_cache(:skin_usage_sample, 5),
+      create_cache(:skin_usage_count, 15),
+      create_cache(:popular_bedrock_skins, 15),
       create_cache(:hash_to_skin, 15), # skin hashes are static
       create_cache(:xuid_request_cache, 7),
       create_cache(:general, 60 * 24 * 365),

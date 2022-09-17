@@ -1,15 +1,48 @@
 defmodule GlobalApi.SkinsRepo do
+  import Ecto.Query
+
   alias GlobalApi.Repo
   alias GlobalApi.PlayerSkin
   alias GlobalApi.UniqueSkin
-  import Ecto.Query
 
-  def get_player_skin(id) do
+  def get_player_skin(xuid) do
     Repo.one(
       from s in PlayerSkin,
       join: u in assoc(s, :skin),
-      where: s.bedrock_id == ^id,
+      where: s.bedrock_id == ^xuid,
       preload: [skin: u]
+    )
+  end
+
+  def get_skin(skin_id) do
+    Repo.one(
+      from s in UniqueSkin,
+      where: s.id == ^skin_id
+    )
+  end
+
+  def get_skin_sample(skin_id, sample_size) when is_integer(sample_size) do
+    Repo.all(
+      from s in PlayerSkin,
+      select: s.bedrock_id,
+      where: s.skin_id == ^skin_id,
+      limit: ^sample_size
+    )
+  end
+
+  def get_skin_usage(skin_id) do
+    Repo.one(
+      from s in PlayerSkin,
+      select: count(),
+      where: s.skin_id == ^skin_id
+    )
+  end
+
+  def get_player_skin_id(xuid) do
+    Repo.one(
+      from s in PlayerSkin,
+      select: {s.skin_id, s.updated_at},
+      where: s.bedrock_id == ^xuid
     )
   end
 
@@ -27,9 +60,27 @@ defmodule GlobalApi.SkinsRepo do
   def get_most_recent_unique(limit) do
     Repo.all(
       from u in UniqueSkin,
-      select: {u.id, u.texture_id},
+      select: map(u, [:id, :texture_id]),
       order_by: [desc: :inserted_at],
       limit: ^limit
+    )
+  end
+
+  def most_popular(limit) do
+    popular = from(
+      s in PlayerSkin,
+      select: %{skin_id: s.skin_id, count: count()},
+      group_by: :skin_id,
+      order_by: [desc: count()],
+      limit: ^limit
+    )
+
+    Repo.all(
+      from u in UniqueSkin,
+      select: map(u, [:id, :texture_id]),
+      right_join: s in subquery(popular),
+      on: s.skin_id == u.id,
+      limit: ^limit # just to be sure :sweat_smile:
     )
   end
 

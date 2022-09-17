@@ -1,17 +1,19 @@
 defmodule GlobalApiWeb.Skin.SkinInfo do
   use GlobalApiWeb, :live_view
-
   import GlobalApiWeb.Skin.Component.ItemInfo, only: [item_info: 1]
+
+  alias GlobalApi.Service.SkinService
+  alias GlobalApiWeb.WrappedError
+  alias GlobalApiWeb.NotFoundError
 
   def render(assigns) do
     ~H"""
     <.item_info
       category="skin"
-      count={5}
-      sample={[%{id: "12345", name: "Tim203"}]}
-      geometry=""
-      model="steve"
-      texture_url="https://textures.minecraft.net/texture/e29d1acf283b44c77e9b9af7779c173e638a2d63c9b3b3ac0c39f1f8db5d7d9a"
+      count={@count}
+      sample={@sample}
+      model={@model}
+      texture_url={"https://textures.minecraft.net/texture/" <> @texture_id}
       socket={@socket}
     />
     """
@@ -20,6 +22,22 @@ defmodule GlobalApiWeb.Skin.SkinInfo do
   def mount(%{"id" => skin_id} = params, session, socket) do
     IO.inspect(params)
     IO.inspect(session)
-    {:ok, assign(socket, :id, skin_id)}
+    IO.inspect(socket)
+    {:ok, load_skin(skin_id, socket)}
+  end
+
+  def load_skin(skin_id, socket) do
+    case SkinService.skin_info_with_names(skin_id) do
+      {:error, status_code, message} ->
+        raise WrappedError, {message, status_code}
+      nil ->
+        raise NotFoundError
+      info ->
+        socket
+        |> assign(:count, info.count)
+        |> assign(:sample, info.sample)
+        |> assign(:model, if info.skin.is_steve do "steve" else "alex" end)
+        |> assign(:texture_id, info.skin.texture_id)
+    end
   end
 end

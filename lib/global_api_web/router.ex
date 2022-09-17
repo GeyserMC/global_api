@@ -176,25 +176,37 @@ defmodule GlobalApiWeb.Router do
     end
   end
 
-  #todo expand this to include other errors as well
-  defp handle_errors(conn, %{reason: %Phoenix.Router.NoRouteError{}}) do
-    if String.starts_with?(conn.host, @json_subdomains) do
-      handle_errors(conn, nil) # pass it through to the function below
-    else
-      conn
-      |> put_view(GlobalApiWeb.ErrorView)
-      |> put_layout({GlobalApiWeb.LayoutView, "app.html"})
-      |> render(
-        "error.html",
-        page_title: conn.status,
-        page_description: Plug.Conn.Status.reason_phrase(conn.status)
-      )
-    end
+  defp handle_errors(conn, %{reason: %GlobalApiWeb.WrappedError{message: message, status_code: status_code}}) do
+    handle_error(conn, status_code, message)
   end
 
   defp handle_errors(conn, _) do
+    handle_error(conn, conn.status, Plug.Conn.Status.reason_phrase(conn.status))
+  end
+
+  defp handle_error(conn, status_code, message) do
+    if String.starts_with?(conn.host, @json_subdomains) do
+      handle_json_error(conn, status_code, message)
+    else
+      handle_html_error(conn, status_code, message)
+    end
+  end
+
+  defp handle_json_error(conn, status_code, message) do
     conn
-    |> json(%{message: "#{conn.status} #{Plug.Conn.Status.reason_phrase(conn.status)}"})
+    |> put_status(status_code)
+    |> json(%{message: message})
     |> halt()
+  end
+
+  defp handle_html_error(conn, status_code, message) do
+    conn
+    |> put_view(GlobalApiWeb.ErrorView)
+    |> put_layout({GlobalApiWeb.LayoutView, "app.html"})
+    |> render(
+      "error.html",
+      page_title: status_code,
+      page_description: message
+    )
   end
 end

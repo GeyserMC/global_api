@@ -9,24 +9,22 @@ defmodule GlobalApi.XboxApi do
   after that it'll fetch from the official xbox api.
   """
   def get_gamertag_batch([]), do: {:ok, []}
-  def get_gamertag_batch(xuids), do: get_gamertag_batch([], [], xuids, :cache)
+  def get_gamertag_batch(xuids), do: get_gamertag_batch(%{}, [], xuids, :cache)
 
   defp get_gamertag_batch(handled, [], [], :cache), do: {:ok, handled}
   defp get_gamertag_batch(handled, not_found, [], :cache),
        do: get_gamertag_batch(handled, not_found, :database)
 
   defp get_gamertag_batch(handled, not_found, [head | tail], :cache) do
-    case Utils.is_int_rounded_and_positive(head) do
-      false ->
-        {:error, "entries contained an invalid xuid"}
-      true ->
-        xuid = Utils.get_int_if_string(head)
-
+    case Utils.get_positive_int(head) do
+      :error ->
+        {:error, :bad_request, "entries contains an invalid xuid"}
+      {:ok, xuid} ->
         {:ok, gamertag} = Cachex.get(:get_gamertag, xuid)
         if is_nil(gamertag) do
           get_gamertag_batch(handled, [xuid | not_found], tail, :cache)
         else
-          get_gamertag_batch([%{xuid: xuid, gamertag: gamertag} | handled], not_found, tail, :cache)
+          get_gamertag_batch(Map.put(handled, xuid, gamertag), not_found, tail, :cache)
         end
     end
   end
@@ -34,15 +32,24 @@ defmodule GlobalApi.XboxApi do
   defp get_gamertag_batch(handled, to_handle, :database) do
     players_found = XboxRepo.get_by_xuid_bulk(to_handle)
 
-    Cachex.put_many(:get_gamertag, Enum.map(players_found, fn player -> {player.xuid, player.gamertag} end))
-    Cachex.put_many(:get_xuid, Enum.map(players_found, fn player -> {player.gamertag, player.xuid} end))
+    Cachex.put_many(:get_gamertag, players_found)
+    Cachex.put_many(:get_xuid, Enum.map(players_found, fn {xuid, gamertag} -> {gamertag, xuid} end))
 
-    handled = handled ++ players_found
+    players_found = Enum.into(players_found, %{})
 
-    to_reject = Utils.map_array_to_array(players_found, fn player -> player.xuid end)
-    to_handle = Enum.reject(to_handle, fn xuid -> xuid in to_reject end)
+    {handled, to_handle} = Enum.reduce(
+      to_handle,
+      {handled, []},
+      fn xuid, {handled, to_handle} ->
+        gamertag = players_found[xuid]
+        if is_nil(gamertag) do
+          {handled, [xuid | to_handle]}
+        else
+          {Map.put(handled, xuid, gamertag), to_handle}
+        end
+    end)
 
-    if length(to_handle) > 0 do
+    if to_handle != [] do
       get_gamertag_batch(handled, to_handle, :request)
     else
       {:ok, handled}
@@ -67,8 +74,12 @@ defmodule GlobalApi.XboxApi do
         database_data = Enum.map(data, fn {xuid, gamertag} -> [xuid: xuid, gamertag: gamertag, inserted_at: time] end)
         XboxRepo.insert_bulk(database_data)
 
-        data = Enum.map(data, fn {xuid, gamertag} -> %{xuid: xuid, gamertag: gamertag} end)
-        {:ok, handled ++ data}
+        {
+          :ok,
+          Enum.reduce(data, handled, fn {xuid, gamertag}, handled ->
+            Map.put(handled, xuid, gamertag)
+          end)
+        }
       {:error, _} ->
         {:part, "an unknown error occurred", handled, to_handle}
     end

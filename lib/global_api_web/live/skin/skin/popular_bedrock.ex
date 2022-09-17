@@ -20,9 +20,9 @@ defmodule GlobalApiWeb.Skin.PopularBedrock do
   end
 
   def load_skins(current_page, socket) do
-    case SkinService.recent_uploads(current_page) do
-      {:error, _, message} ->
-        {:ok, items, page_limit, current_page} = SkinService.recent_uploads(1)
+    case SkinService.popular_bedrock_skins(current_page) do
+      {:error, _, _} ->
+        {:ok, items, page_limit, current_page} = SkinService.popular_bedrock_skins(1)
         set_skins(socket, items, page_limit, current_page)
 
       {:ok, items, page_limit, current_page} ->

@@ -46,46 +46,21 @@ defmodule GlobalApiWeb.Api.SkinController do
   end
 
   def get_skin(conn, %{"xuid" => xuid}) do
-    case Utils.is_int_rounded_and_positive(xuid) do
-      false ->
+    case SkinService.get_skin_by_xuid(xuid) do
+      {:error, status_code, message} ->
         conn
-        |> put_status(:bad_request)
-        |> put_resp_header("cache-control", "max-age=604800, immutable, public")
-        |> json(%{message: "xuid should be an int"})
-
-      true ->
-        {_, result} = Cachex.fetch(
-          :xuid_to_skin,
-          xuid,
-          fn (xuid) ->
-            case SkinsRepo.get_player_skin(xuid) do
-              nil ->
-                {:ignore, nil} #todo why don't I cache this?
-              player_skin ->
-                {
-                  :commit,
-                  %{
-                    hash: player_skin.skin.hash,
-                    texture_id: player_skin.skin.texture_id,
-                    value: player_skin.skin.value,
-                    signature: player_skin.skin.signature,
-                    is_steve: player_skin.skin.is_steve,
-                    last_update: player_skin.updated_at
-                  }
-                }
-            end
-          end
-        )
-
-        if result == nil do
-          conn
-          |> put_resp_header("cache-control", "max-age=120, public")
-          |> json(%{})
-        else
-          conn
-          |> put_resp_header("cache-control", "max-age=60, public")
-          |> json(%{result | hash: Utils.hash_string(result.hash)})
-        end
+        |> put_status(status_code)
+        |> put_resp_header("cache-control", "max-age=86400, immutable, public")
+        |> json(%{message: message})
+      nil ->
+        # todo 204 or 404 makes more sense
+        conn
+        |> put_resp_header("cache-control", "max-age=120, public")
+        |> json(%{})
+      skin ->
+        conn
+        |> put_resp_header("cache-control", "max-age=60, public")
+        |> json(%{skin | hash: Utils.hash_string(skin.hash)})
     end
   end
 end

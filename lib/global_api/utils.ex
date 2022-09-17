@@ -34,6 +34,14 @@ defmodule GlobalApi.Utils do
   defp bit_count(int, count), do: bit_count(div(int, 2), count + 1)
 
   @doc """
+  Returns first element of a list, or the default value when the list is empty.
+  """
+  @spec first(list, any) :: any
+  def first(list, default)
+  def first([], default), do: default
+  def first([first | _], _), do: first
+
+  @doc """
   If the string is in range. Both min and max are inclusive
   """
   def is_in_range(string, min, max) do

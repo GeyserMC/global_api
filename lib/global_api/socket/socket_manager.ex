@@ -71,7 +71,7 @@ defmodule GlobalApi.SocketManager do
 
     subscribers = :ets.lookup(:skin_subscribers, id)
     count = length(subscribers)
-    pending_uploads = Utils.first(:ets.lookup(:skin_pending_count, id))
+    pending_uploads = Utils.first(:ets.lookup(:skin_pending_count, id), 0)
 
     Enum.each(subscribers, fn {_, pid} ->
       send pid, {:creator_disconnected, id}
@@ -159,7 +159,7 @@ defmodule GlobalApi.SocketManager do
 
   def broadcast_message(id, message, channel \\ :broadcast) do
     message = message
-      |> Map.put(:pending_uploads, Utils.first(:ets.lookup(:skin_pending_count, id)))
+      |> Map.put(:pending_uploads, Utils.first(:ets.lookup(:skin_pending_count, id), 0))
       |> Map.put(:id, id)
       |> Jason.encode!
 

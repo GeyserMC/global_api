@@ -7,7 +7,6 @@ defmodule GlobalApiWeb.Api.XboxController do
   alias GlobalApi.XboxApi
   alias GlobalApi.XboxRepo
   alias GlobalApi.XboxUtils
-  alias OpenApiSpex.Example
   alias GlobalApiWeb.Schemas
 
   tags ["xbox"]
@@ -118,10 +117,14 @@ defmodule GlobalApiWeb.Api.XboxController do
       {:ok, data} ->
         json(conn, %{data: data})
       {:part, message, handled, not_handled} ->
-        json(conn, %{data: handled, message: message, not_handled: not_handled})
-      {:error, message} ->
+        json(conn, %{
+          data: Enum.map(handled, fn {xuid, gamertag} -> %{xuid: xuid, gamertag: gamertag} end),
+          message: message,
+          not_handled: not_handled
+        })
+      {:error, status_code, message} ->
         conn
-        |> put_status(:bad_request)
+        |> put_status(status_code)
         |> json(%{message: message})
     end
   end
@@ -129,7 +132,7 @@ defmodule GlobalApiWeb.Api.XboxController do
   def get_gamertag_batch(conn, %{"xuids" => _}) do
     conn
     |> put_status(:bad_request)
-    |> json(%{message: "xuids is not an array or has more than 75 elements"})
+    |> json(%{message: "xuids is not an array or has more than 600 elements"})
   end
 
   def get_xuid_v2(conn, data) do

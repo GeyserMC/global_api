@@ -7,11 +7,12 @@ defmodule GlobalApi.XboxRepo do
     Repo.one(from i in XboxIdentity, where: i.xuid == ^xuid)
   end
 
+  @spec get_by_xuid_bulk(list(integer)) :: list({integer, binary})
   def get_by_xuid_bulk(xuids) do
     Repo.all(
       from i in XboxIdentity,
       where: i.xuid in ^xuids,
-      select: map(i, [:xuid, :gamertag])
+      select: {i.xuid, i.gamertag}
     )
   end
 

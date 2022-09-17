@@ -6,7 +6,7 @@ defmodule GlobalApi.PlayerSkin do
   schema "player_skins" do
     belongs_to :skin, GlobalApi.UniqueSkin
 
-    timestamps(type: :integer, autogenerate: {:os,:system_time,[:millisecond]})
+    timestamps(type: :integer, autogenerate: {:os, :system_time, [:millisecond]})
   end
 
   def changeset(skin, attrs) do
