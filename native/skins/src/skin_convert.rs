@@ -25,14 +25,14 @@ pub enum ErrorType {
     InvalidGeometry,
 }
 
-pub enum ConvertResult {
+pub enum ConvertResult<'a> {
     Invalid(ErrorType),
-    Error(&'static str),
+    Error(&'a str),
     Success(ImageWithHashes, bool),
 }
 
-pub fn convert_skin(client_claims: Value) -> ConvertResult {
-    let collect_result = skin_codec::collect_skin_info(&client_claims);
+pub fn convert_skin(client_claims: &Value) -> ConvertResult {
+    let collect_result = skin_codec::collect_skin_info(client_claims);
     if collect_result.is_err() {
         return Invalid(collect_result.err().unwrap());
     }

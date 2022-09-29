@@ -36,7 +36,7 @@ npm-debug.log
 /config/
 
 # IntelliJ / VSCode stuff
-/.idea/
+**/.idea/
 *.iml
 .elixir_ls
 
@@ -44,3 +44,6 @@ native/**/target/**
 priv/native/**
 
 token_cache.json
+
+native/skins/client_data.txt
+native/skins/skin_data_to_png.txt

@@ -3,6 +3,7 @@ extern crate core;
 
 use std::fs::File;
 use std::io::{Read, Write};
+use std::time::Instant;
 
 use serde_json::Value;
 
@@ -13,6 +14,34 @@ mod skin_convert;
 pub mod rustler_utils;
 
 fn main() -> Result<(), String> {
+    handle_skin_data_to_png_file().unwrap();
+    handle_client_data_file().unwrap();
+    Ok(())
+}
+
+/// the format of the file is width.height.skin_data
+/// each line will be handled as a separate entry, so each line should have that format
+fn handle_skin_data_to_png_file() -> Result<(), String> {
+    let mut skin_data_content: Vec<u8> = Vec::new();
+
+    let data_file = File::open("skin_data_to_png.txt");
+    if data_file.is_err() {
+        return Err("Unable to open client_data.txt!".to_string());
+    }
+    let mut data_file = data_file.unwrap();
+    data_file.read_to_end(&mut skin_data_content).unwrap();
+
+    let string = String::from_utf8(skin_data_content).unwrap();
+    string.lines()
+        .filter(|entry| !entry.starts_with('#'))
+        .for_each(|entry| decode_and_save_image(entry.to_string()).unwrap());
+
+    Ok(())
+}
+
+/// format is either the full client_data jwt or just the data section (headers.data.signature)
+/// each line will be handled as a separate entry so each line should follow the format
+fn handle_client_data_file() -> Result<(), String> {
     let mut client_data_content: Vec<u8> = Vec::new();
 
     let data_file = File::open("client_data.txt");
@@ -58,7 +87,8 @@ fn convert_single(mut client_data: String) -> Result<(), String> {
 
     let client_claims = result.unwrap();
 
-    match convert_skin(client_claims) {
+    let start_time = Instant::now();
+    match convert_skin(&client_claims) {
         ConvertResult::Invalid(err) =>
             Err(format!("Invalid skin! {:?}", err)),
 
@@ -66,6 +96,8 @@ fn convert_single(mut client_data: String) -> Result<(), String> {
             Err(format!("An error happened while converting skins! {}", err)),
 
         ConvertResult::Success(ImageWithHashes { png, minecraft_hash, hash }, _is_steve) => {
+            println!("Took {:.2?} to convert skin", start_time.elapsed());
+
             let mc_hash_hex = write_hex(minecraft_hash.as_ref());
             let hash_hex = write_hex(hash.as_ref());
 
@@ -83,16 +115,22 @@ fn convert_single(mut client_data: String) -> Result<(), String> {
     }
 }
 
-fn encode_and_save_image_loop(raw_data: String, w: usize, h: usize) {
+fn decode_and_save_image_loop(raw_data: String) -> Result<(), String> {
     for _ in 0..5 {
-        encode_and_save_image(raw_data.clone(), w, h);
+        decode_and_save_image(raw_data.clone()).unwrap();
     }
+    Ok(())
 }
 
-fn encode_and_save_image(raw_data: String, w: usize, h: usize) {
-    let mut data = base64::decode(raw_data).unwrap();
+fn decode_and_save_image(raw_data: String) -> Result<(), String> {
+    let format: Vec<&str> = raw_data.split('.').collect();
+    let mut data: Vec<u8> = base64::decode(format[2]).unwrap();
+    encode_and_save_image(&mut data, format[0].parse().unwrap(), format[1].parse().unwrap());
+    Ok(())
+}
 
-    let ImageWithHashes { png, minecraft_hash, hash: _hash } = encode_custom_image(&mut data, w, h);
+fn encode_and_save_image(data: &mut Vec<u8>, w: usize, h: usize) {
+    let ImageWithHashes { png, minecraft_hash, hash: _hash } = encode_custom_image(data, w, h);
 
     let mc_hash_hex = write_hex(minecraft_hash.as_ref());
 
