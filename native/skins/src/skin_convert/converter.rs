@@ -580,7 +580,7 @@ fn get_bone_offset(uv: &JsonValue) -> Option<(usize, usize)> {
     if uv.len() != 2 {
         return None;
     }
-    Some((uv[0].as_usize()?, uv[1].as_usize()?))
+    Some((uv[0].as_f64()? as usize, uv[1].as_f64()? as usize))
 }
 
 fn size_to_tex_size(size: &JsonValue) -> Option<(SkinModel, usize, usize)> {

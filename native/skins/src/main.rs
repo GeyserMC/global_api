@@ -95,13 +95,13 @@ fn convert_single(mut client_data: String) -> Result<(), String> {
         ConvertResult::Error(err) =>
             Err(format!("An error happened while converting skins! {}", err)),
 
-        ConvertResult::Success(ImageWithHashes { png, minecraft_hash, hash }, _is_steve) => {
+        ConvertResult::Success(ImageWithHashes { png, minecraft_hash, hash }, is_steve) => {
             println!("Took {:.2?} to convert skin", start_time.elapsed());
 
             let mc_hash_hex = write_hex(minecraft_hash.as_ref());
             let hash_hex = write_hex(hash.as_ref());
 
-            println!("Successfully encoded the converted image!");
+            println!("Successfully encoded the converted image! is steve? {:}", is_steve);
             println!("Internal hash: {:}, Minecraft hash: {:}", hash_hex, mc_hash_hex);
 
             let mut file = File::create(format!("{:}.png", mc_hash_hex)).unwrap();
