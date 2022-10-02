@@ -2,18 +2,11 @@ defmodule GlobalApiWeb.Endpoint do
   use Sentry.PlugCapture
   use Phoenix.Endpoint, otp_app: :global_api
 
+  alias GlobalApiWeb.Router
+
   @static_url Application.get_env(:global_api, GlobalApiWeb.Endpoint)[:static_url][:host]
 
-  # The session will be stored in the cookie and signed,
-  # this means its contents can be read but not tampered with.
-  # Set :encryption_salt if you would also like to encrypt it.
-  @session_options [
-    store: :cookie,
-    key: "_global_api_key",
-    signing_salt: "jvggC7w3"
-  ]
-
-  socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
+  socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: Router.session_options()]]
 
   # Live Dashboard and is only enabled during development
   if Mix.env() == :dev do
@@ -62,9 +55,5 @@ defmodule GlobalApiWeb.Endpoint do
 
   def static_assets(conn, _) do
     if @static_url == conn.host, do: Plug.Static.call(conn, @static_opts), else: conn
-  end
-
-  def session_options do
-    @session_options
   end
 end

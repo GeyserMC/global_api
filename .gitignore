@@ -47,3 +47,5 @@ token_cache.json
 
 native/skins/client_data.txt
 native/skins/skin_data_to_png.txt
+
+*.tar.gz

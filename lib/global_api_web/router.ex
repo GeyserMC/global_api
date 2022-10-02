@@ -11,6 +11,16 @@ defmodule GlobalApiWeb.Router do
 
   @json_subdomains ["api.", "cdn."]
 
+  # The session will be stored in the cookie and signed,
+  # this means its contents can be read but not tampered with.
+  # Set :encryption_salt if you would also like to encrypt it.
+  @session_options [
+    store: :cookie,
+    key: "_global_api_key",
+    signing_salt: "jvggC7w3"
+  ]
+  def session_options, do: @session_options
+
 
   pipeline :api do
     plug :accepts, ["json"]
@@ -22,7 +32,7 @@ defmodule GlobalApiWeb.Router do
 
   pipeline :browser do
     plug :accepts, ["html"]
-    plug Plug.Session, GlobalApiWeb.Endpoint.session_options()
+    plug Plug.Session, @session_options
     plug :fetch_session
     plug :fetch_live_flash
     plug :put_root_layout, {GlobalApiWeb.LayoutView, :root}
