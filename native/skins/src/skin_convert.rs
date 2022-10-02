@@ -1,5 +1,4 @@
 extern crate base64;
-extern crate bytes;
 extern crate jsonwebtokens;
 extern crate lodepng;
 extern crate rgb;

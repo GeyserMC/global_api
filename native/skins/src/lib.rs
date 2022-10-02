@@ -39,7 +39,7 @@ pub fn validate_and_get_png<'a>(env: Env<'a>, chain_data: Term<'a>, client_data:
     let issued_at = last_data["iat"].as_i64().unwrap() * 1000; // seconds to ms
     let extra_data = make_tuple(env, &[xuid.encode(env), gamertag.encode(env), issued_at.encode(env)]);
 
-    match convert_skin(client_claims) {
+    match convert_skin(&client_claims) {
         ConvertResult::Invalid(err) => {
             let atom = match err {
                 ErrorType::InvalidSize => invalid_size(),
