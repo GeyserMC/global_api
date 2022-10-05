@@ -23,7 +23,7 @@ defmodule GlobalApiWeb.Skin.RecentBedrock do
 
   def load_skins(current_page, socket) do
     case SkinService.recent_uploads(current_page) do
-      {:error, _, message} ->
+      {:error, _, _message} ->
         {:ok, items, page_limit, current_page} = SkinService.recent_uploads(1)
         set_skins(socket, items, page_limit, current_page)
 

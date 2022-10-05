@@ -1,59 +1,19 @@
-<!DOCTYPE html>
-<html lang={lang_code(@conn)} class="dark"><!-- start with dark directly so that the dark users won't be blinded -->
+<div id="spinner"/>
 
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<%= if Map.get(assigns, :render_navbar, true) do %>
+<div id="navbar"/>
+<% end %>
 
-  <title><%= assigns.page_title %></title>
-  <meta name="description" content={assigns.page_description}>
-  <meta name="msapplication-TileColor" content="#1f2937">
-  <meta name="theme-color" content="#1f2937">
+<%= @inner_content %>
 
-  <link phx-track-static href={Routes.static_url(@conn, "/app.css")} rel="stylesheet" />
-  <script defer phx-track-static src={Routes.static_url(@conn, "/app.js")} type="text/javascript"></script>
+<%= if Map.get(assigns, :render_footer, true) do %>
+<div id="footer"/>
+<% end %>
 
-  <%= if assigns[:custom_meta] do %>
-  <meta property="og:title" content={assigns.custom_meta.title} />
-  <meta property="og:description" content={assigns.custom_meta.description} />
-  <% else %>
-  <meta property="og:title" content={assigns.page_title} />
-  <meta property="og:description" content={assigns.page_description} />
-  <% end %>
-</head>
-<body class="bg-gray-50 dark:bg-gray-800 transition-all" id="base">
-  <div id="spinner"/>
+<%= if Map.get(assigns, :render_notification, true) do %>
+<div id="notification"/>
+<% end %>
 
-  <%= if Map.get(assigns, :render_navbar, true) do %>
-  <div id="navbar"/>
-  <% end %>
-
-  <%= @inner_content %>
-
-  <%= if Map.get(assigns, :render_footer, true) do %>
-  <div id="footer"/>
-  <% end %>
-
-  <%= if Map.get(assigns, :render_notification, true) do %>
-  <div id="notification"/>
-  <% end %>
-
-  <%= if Map.get(assigns, :render_news, true) do %>
-  <div id="news"/>
-  <% end %>
-
-  <!-- people without JavaScript can't use the light theme -->
-  <noscript class="fixed bottom-0 w-screen shadow-inner p-5 rounded-t-md bg-gray-700 text-gray-200 text-center" id="hide-no-js">
-    <style>
-        #hide-no-js:target {
-            display: none;
-        }
-    </style>
-    Hi!<br>
-    Various parts of this website require JavaScript to be enabled, but it looks like JavaScript is disabled!<br>
-    We don't have trackers, ads or whatever. So please enable JavaScript if you want this website to function normally.<br>
-    <a class="text-red-400" href="#hide-no-js">Hide</a>
-  </noscript>
-</body>
-
-</html>
+<%= if Map.get(assigns, :render_news, true) do %>
+<div id="news"/>
+<% end %>

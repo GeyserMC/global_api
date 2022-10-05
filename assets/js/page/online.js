@@ -1,3 +1,7 @@
+// todo convert this to a template with multiple components
+const CLIENT_ID = "dad9257f-6b54-4509-8463-81286ee5860d"
+const API_BASE_URL = "https://api.geysermc.org/v2"
+
 const LOGIN_BASE_URL = 'https://login.live.com/oauth20_authorize.srf?client_id=' + CLIENT_ID + '&response_type=code&display=popup&scope=Xboxlive.signin&redirect_uri=';
 const LINK_URL = API_BASE_URL + '/link/online';
 
