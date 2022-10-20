@@ -3,10 +3,11 @@ defmodule GlobalApi.Service.XboxService do
   alias GlobalApi.XboxApi
   alias GlobalApi.XboxRepo
 
+  @spec gamertag(integer | binary) :: binary | nil | {:error, {atom, atom}}
   def gamertag(xuid) do
     case Utils.get_positive_int(xuid) do
-      {:error, _status_code, _message} = response ->
-        response
+      :error ->
+        {:error, {:not_int, :xuid}}
       {:ok, xuid} ->
         {_, response} = Cachex.fetch(
           :get_gamertag,
@@ -30,6 +31,7 @@ defmodule GlobalApi.Service.XboxService do
     end
   end
 
+  @spec gamertag_batch(list(integer | binary)) :: map | {:error, {atom, atom}}
   def gamertag_batch(xuids) when is_list(xuids) do
     if Enum.count_until(xuids, 601) <= 600 do
       case XboxApi.get_gamertag_batch(xuids) do
@@ -37,11 +39,14 @@ defmodule GlobalApi.Service.XboxService do
           data
         {:part, _message, _handled, _not_handled} = response ->
           response
-        {:error, _message} = response ->
+        {:error, _error_type} = response ->
           response
       end
     else
-      {:error, :bad_request, "list has more than 600 elements"}
+      {:error, {:list_too_large, 600}}
     end
   end
+
+  def error_details({:not_int, type}), do: {:bad_request, "#{type} should be an int"}
+  def error_details({:list_too_large, limit}), do: {:bad_request, "list has more than #{limit} elements"}
 end

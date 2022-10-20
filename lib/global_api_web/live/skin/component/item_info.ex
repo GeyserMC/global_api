@@ -3,11 +3,16 @@ defmodule GlobalApiWeb.Skin.Component.ItemInfo do
 
   alias GlobalApiWeb.Skin.ProfileInfo
 
-  def item_info(%{category: _, count: _, sample: _, model: _, texture_url: _, socket: _} = assigns) do
-    assigns =
-      assigns
-      |> assign_new(:geometry, fn -> "" end)
+  attr :category, :string, required: true
+  attr :name, :string
+  attr :count, :integer, required: true
+  attr :sample, :list, required: true
+  attr :model, :string, required: true
+  attr :geometry, :string, default: ""
+  attr :texture_url, :string, required: true
+  attr :socket, :any, required: true
 
+  def item_info(assigns) do
     ~H"""
     <div class="w-full flex justify-center items-center flex-col md:flex-row">
       <div id="left-side" class="w-1/2 flex justify-center items-center">

@@ -9,14 +9,14 @@ defmodule GlobalApi.Service.SkinService do
 
   @sample_size 100
 
-  @spec recent_uploads(integer | binary) :: {:ok, list, integer, integer} | {:error, integer, binary}
+  @spec recent_uploads(integer | binary) :: {:ok, list, integer, integer} | {:error, {atom, atom}}
   def recent_uploads(page_number) do
     case Utils.get_positive_int(page_number) do
       :error ->
-        {:error, :bad_request, "the page number must be a positive integer"}
+        {:error, {:invalid_page_number, :invalid}}
       {:ok, page_number} ->
         if page_number > @page_limit do
-          {:error, :bad_request, "the page number must be an integer between 1 and #{@page_limit}"}
+          {:error, {:invalid_page_number, :larger}}
         else
           {:ok, cached} = Cachex.get(:recent_skin_uploads, page_number)
           cached =
@@ -36,13 +36,14 @@ defmodule GlobalApi.Service.SkinService do
     end
   end
 
+  @spec popular_bedrock_skins(integer | binary) :: {:ok, list(map), integer, integer} | {:error, {atom, atom}}
   def popular_bedrock_skins(page_number) do
     case Utils.get_positive_int(page_number) do
       :error ->
-        {:error, :bad_request, "the page number must be a positive integer"}
+        {:error, {:invalid_page_number, :invalid}}
       {:ok, page_number} ->
         if page_number > @page_limit do
-          {:error, :bad_request, "the page number must be an integer between 1 and #{@page_limit}"}
+          {:error, {:invalid_page_number, :larger}}
         else
           {:ok, cached} = Cachex.get(:popular_bedrock_skins, page_number)
           cached =
@@ -64,10 +65,11 @@ defmodule GlobalApi.Service.SkinService do
     end
   end
 
+  @spec skin_info(integer | binary) :: map | nil | {:error, {atom, atom}}
   def skin_info(skin_id) do
     case Utils.get_positive_int(skin_id) do
       :error ->
-        {:error, :bad_request, "xuid should be an int"}
+        {:error, {:not_int, :xuid}}
 
       {:ok, skin_id} ->
 
@@ -83,7 +85,7 @@ defmodule GlobalApi.Service.SkinService do
                   skin_info_response(skin, sample, sample_length)
                 else
                   case skin_usage_count(skin_id) do
-                    {:error, _status_code, _message} = response ->
+                    {:error, _error_type} = response ->
                       response
                     count ->
                       skin_info_response(skin, sample, count || -1)
@@ -102,15 +104,16 @@ defmodule GlobalApi.Service.SkinService do
     end
   end
 
+  @spec skin_info_with_names(integer | binary) :: map | nil | {:error, {atom, atom}}
   def skin_info_with_names(skin_id) do
     case skin_info(skin_id) do
-      {:error, _status_code, _message} = response ->
+      {:error, _error_type} = response ->
         response
       nil ->
         nil
       %{sample: sample} = response ->
         case XboxService.gamertag_batch(sample) do
-          {:error, _, _} ->
+          {:error, _error_type} ->
             # ignore it
             %{response | sample: skin_info_sample_response(sample)}
           {:part, _message, handled, _not_handled} ->
@@ -140,11 +143,11 @@ defmodule GlobalApi.Service.SkinService do
     }
   end
 
-  @spec get_skin_by_xuid(integer | binary) :: {:error, atom, binary} | nil | map
+  @spec get_skin_by_xuid(integer | binary) :: map | nil | {:error, {atom, atom}}
   def get_skin_by_xuid(xuid) do
     case Utils.get_positive_int(xuid) do
       :error ->
-        {:error, :bad_request, "xuid should be an int"}
+        {:error, {:not_int, :skin_id}}
       {:ok, xuid} ->
         {_, skin_info} = Cachex.fetch(:xuid_to_skin, xuid, fn xuid ->
           case SkinsRepo.get_player_skin_id(xuid) do
@@ -168,11 +171,11 @@ defmodule GlobalApi.Service.SkinService do
     end
   end
 
-  @spec get_skin_by_id(integer | binary) :: {:error, atom, binary} | nil | map
+  @spec get_skin_by_id(integer | binary) :: map | nil | {:error, {atom, atom}}
   def get_skin_by_id(skin_id) do
     case Utils.get_positive_int(skin_id) do
       :error ->
-        {:error, :bad_request, "skin id should be an int"}
+        {:error, {:not_int, :skin_id}}
       {:ok, skin_id} ->
         {_, skin} = Cachex.fetch(:skin_id_to_skin, skin_id, fn skin_id ->
           case SkinsRepo.get_skin(skin_id) do
@@ -196,11 +199,11 @@ defmodule GlobalApi.Service.SkinService do
     end
   end
 
-  @spec skin_usage_sample(integer | binary, integer) :: {:error, atom, binary} | nil | list
+  @spec skin_usage_sample(integer | binary, integer) :: list | nil | {:error, {atom, atom}}
   def skin_usage_sample(skin_id, sample_size) when is_integer(sample_size) do
     case Utils.get_positive_int(skin_id) do
       :error ->
-        {:error, :bad_request, "skin id should be an int"}
+        {:error, {:not_int, :skin_id}}
       {:ok, skin_id} ->
         {_, sample} = Cachex.fetch(:skin_usage_sample, skin_id, fn skin_id ->
           case SkinsRepo.get_skin_sample(skin_id, sample_size) do
@@ -215,10 +218,11 @@ defmodule GlobalApi.Service.SkinService do
     end
   end
 
+  @spec skin_usage_count(integer | binary) :: integer | nil| {:error, {atom, atom}}
   def skin_usage_count(skin_id) do
     case Utils.get_positive_int(skin_id) do
       :error ->
-        {:error, :bad_request, "skin id should be an int"}
+        {:error, {:not_int, :skin_id}}
       {:ok, skin_id} ->
         {_, count} = Cachex.fetch(:skin_usage_count, skin_id, fn skin_id ->
           case SkinsRepo.get_skin_usage(skin_id) do
@@ -232,4 +236,11 @@ defmodule GlobalApi.Service.SkinService do
         count
     end
   end
+
+  def is_in_bounds(page), do: page >= 1 && page <= @page_limit
+
+  #todo store these in one central module (e.g. Service)
+  def error_details({:invalid_page_number, :invalid}), do: {:bad_request, "the page number must be a positive integer"}
+  def error_details({:invalid_page_number, :larger}), do: {:bad_request, "the page number must be an integer between 1 and #{@page_limit}"}
+  def error_details({:not_int, type}), do: {:bad_request, "#{type} should be an int"}
 end

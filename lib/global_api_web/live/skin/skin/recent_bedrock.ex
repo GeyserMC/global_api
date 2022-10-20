@@ -3,7 +3,11 @@ defmodule GlobalApiWeb.Skin.RecentBedrock do
   import GlobalApiWeb.Skin.ItemOverview
 
   alias GlobalApi.Service.SkinService
+
+  alias GlobalApiWeb.WrappedError
   alias GlobalApiWeb.Skin.SkinInfo
+
+  @fallback_page 5
 
   def render(assigns) do
     ~H"""
@@ -15,17 +19,20 @@ defmodule GlobalApiWeb.Skin.RecentBedrock do
     """
   end
 
+  #todo abstract paged pages
+
   def mount(params, _session, socket) do
-    IO.inspect(params)
-    IO.inspect(_session)
     {:ok, load_skins(params["page"] || 1, socket), temporary_assigns: [items: []]}
   end
 
   def load_skins(current_page, socket) do
     case SkinService.recent_uploads(current_page) do
-      {:error, _, _message} ->
-        {:ok, items, page_limit, current_page} = SkinService.recent_uploads(1)
-        set_skins(socket, items, page_limit, current_page)
+      {:error, error_type} ->
+        if current_page == @fallback_page do
+          raise WrappedError, SkinService.error_details(error_type)
+        else
+          push_navigate(socket, to: "/?page=#{@fallback_page}")
+        end
 
       {:ok, items, page_limit, current_page} ->
         set_skins(socket, items, page_limit, current_page)
@@ -45,7 +52,6 @@ defmodule GlobalApiWeb.Skin.RecentBedrock do
   end
 
   def handle_params(params, _url, socket) do
-    IO.inspect(socket.assigns)
     current_page = params["page"] || 1
     {:noreply, load_skins(current_page, socket)}
   end

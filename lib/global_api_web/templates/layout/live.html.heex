@@ -19,7 +19,7 @@
                     do: "text-gray-900 dark:text-white bg-gray-200 dark:bg-gray-700",
                     else: "text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-800 transition-colors duration-200 transform dark:hover:text-white"
                 ) %>
-                <%= live_redirect item.text, to: item.path, class: classes %>
+                <.link navigate={item.path} class={classes}><%= item.text %></.link>
               <% end %>
             </div>
           </div>
@@ -79,7 +79,7 @@
               do: "text-gray-900 dark:text-white bg-gray-200 dark:bg-gray-900",
               else: "text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors duration-200 transform dark:hover:text-white"
           ) %>
-          <%= live_redirect item.text, to: item.path, class: classes %>
+          <.link navigate={item.path} class={classes}><%= item.text %></.link>
         <% end %>
       </div>
       <div class="pt-4 pb-3 border-t border-gray-200 dark:border-gray-700">

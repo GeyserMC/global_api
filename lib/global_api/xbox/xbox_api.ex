@@ -8,6 +8,12 @@ defmodule GlobalApi.XboxApi do
   Calling this method will first check which xuids are cached, then it'll fetch from the database and
   after that it'll fetch from the official xbox api.
   """
+  @spec get_gamertag_batch(list(integer | binary)) ::
+    {:ok, list(integer)} |
+    {:part, atom, list(integer), list(integer)} |
+    {:error, {atom, atom}}
+  def get_gamertag_batch(xuids)
+
   def get_gamertag_batch([]), do: {:ok, []}
   def get_gamertag_batch(xuids), do: get_gamertag_batch(%{}, [], xuids, :cache)
 
@@ -18,7 +24,7 @@ defmodule GlobalApi.XboxApi do
   defp get_gamertag_batch(handled, not_found, [head | tail], :cache) do
     case Utils.get_positive_int(head) do
       :error ->
-        {:error, :bad_request, "entries contains an invalid xuid"}
+        {:error, {:not_int, :xuid}}
       {:ok, xuid} ->
         {:ok, gamertag} = Cachex.get(:get_gamertag, xuid)
         if is_nil(gamertag) do
@@ -65,7 +71,7 @@ defmodule GlobalApi.XboxApi do
           handled,
           to_handle
         }
-      {:rate_limit, _} -> {:part, "rate limited", handled, to_handle}
+      {:rate_limit, _} -> {:part, :rate_limit, handled, to_handle}
       {:ok, data} ->
         Cachex.put_many(:get_gamertag, data)
         Cachex.put_many(:get_xuid, Enum.map(data, fn {xuid, gamertag} -> {gamertag, xuid} end))
@@ -81,9 +87,11 @@ defmodule GlobalApi.XboxApi do
           end)
         }
       {:error, _} ->
-        {:part, "an unknown error occurred", handled, to_handle}
+        {:part, :unknown_error, handled, to_handle}
     end
   end
+
+  #todo replace string errors below with error atoms
 
   @doc """
   This is a special version of XboxApi.request_batch/1 for big batches (more than 75 xuids)

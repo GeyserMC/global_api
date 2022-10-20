@@ -7,10 +7,7 @@ defmodule GlobalApiWeb.Skin.ProfileInfo do
     """
   end
 
-  def mount(%{"id" => skin_id} = params, session, socket) do
-    IO.inspect(params)
-    IO.inspect(session)
-    IO.inspect(socket)
-    {:ok, socket}
+  def mount(%{"id" => id}, _session, socket) do
+    {:ok, assign(socket, :id, id)}
   end
 end

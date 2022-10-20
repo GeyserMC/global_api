@@ -3,7 +3,11 @@ defmodule GlobalApiWeb.Skin.PopularBedrock do
   import GlobalApiWeb.Skin.ItemOverview
 
   alias GlobalApi.Service.SkinService
+
+  alias GlobalApiWeb.WrappedError
   alias GlobalApiWeb.Skin.SkinInfo
+
+  @fallback_page 5
 
   def render(assigns) do
     ~H"""
@@ -21,10 +25,12 @@ defmodule GlobalApiWeb.Skin.PopularBedrock do
 
   def load_skins(current_page, socket) do
     case SkinService.popular_bedrock_skins(current_page) do
-      {:error, _, _} ->
-        {:ok, items, page_limit, current_page} = SkinService.popular_bedrock_skins(1)
-        set_skins(socket, items, page_limit, current_page)
-
+      {:error, error_type} ->
+        if current_page == @fallback_page do
+          raise WrappedError, SkinService.error_details(error_type)
+        else
+          push_navigate(socket, to: "/?page=#{@fallback_page}")
+        end
       {:ok, items, page_limit, current_page} ->
         set_skins(socket, items, page_limit, current_page)
     end

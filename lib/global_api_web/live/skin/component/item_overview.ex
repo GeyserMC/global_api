@@ -2,14 +2,16 @@ defmodule GlobalApiWeb.Skin.ItemOverview do
   use GlobalApiWeb, :component
   @moduledoc false
 
-  alias GlobalApiWeb.Skin, as: Skin
+  attr :type, :atom, required: true
+  attr :description, :string, required: true
+  attr :current_page, :integer, required: true
+  attr :first_page, :integer, default: 1
+  attr :middle_page, :integer
+  attr :last_page, :integer, required: true
+  attr :items, :list, required: true
 
-  def overview(%{type: _, description: _, last_page: _, current_page: _, items: _} = assigns) do
-    assigns =
-      assigns
-      |> assign_new(:first_page, fn -> 1 end)
-      |> assign_new(:middle_page, fn -> div(assigns.last_page, 2) end)
-
+  def overview(assigns) do
+    assigns = assign_new(assigns, :middle_page, fn -> div(assigns.last_page, 2) end)
     ~H"""
     <header class="bg-white text-gray-900 dark:bg-gray-700 dark:text-gray-200 shadow">
       <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
@@ -39,33 +41,40 @@ defmodule GlobalApiWeb.Skin.ItemOverview do
     """
   end
 
-  def page_button_number(%{socket: _, number: _} = assigns) do
+  attr :number, :integer, required: true
+  attr :socket, :any, required: true
+
+  def page_button_number(assigns) do
     ~H"""
-    <%=
-      live_patch @number,
-        to: Routes.live_path(@socket, @socket.view, page: @number),
-        class: "px-4 py-2 shadow-md rounded-md dark:text-gray-300 bg-gray-200 dark:bg-gray-700"
-    %>
+    <.link patch={Routes.live_path(@socket, @socket.view, page: @number)} class="px-4 py-2 shadow-md rounded-md dark:text-gray-300 bg-gray-200 dark:bg-gray-700">
+      <%= @number %>
+    </.link>
     """
   end
 
-  def page_button_arrow(%{number: _, arrow_data: _, first_page: _, last_page: _} = assigns) do
+  attr :number, :integer, required: true
+  attr :arrow_data, :string, required: true
+  attr :socket, :any, required: true
+
+  def page_button_arrow(assigns) do
     ~H"""
-    <%=
-      live_patch to: Routes.live_path(@socket, @socket.view, page: @number),
-        class: "px-4 py-1.5 shadow-md cursor-pointer rounded-md bg-gray-200 dark:bg-gray-700 dark:text-gray-300" do %>
+    <.link patch={Routes.live_path(@socket, @socket.view, page: @number)} class="px-4 py-1.5 shadow-md cursor-pointer rounded-md bg-gray-200 dark:bg-gray-700 dark:text-gray-300">
       <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d={@arrow_data} />
       </svg>
-    <% end %>
+    </.link>
     """
   end
 
-  def overview_item(%{type: _, img_url: _, id: _, name: _} = assigns) do
+  attr :type, :atom, required: true
+  attr :img_url, :string, required: true
+  attr :id, :any, required: true
+  attr :name, :string, required: true
+  attr :socket, :any, required: true
+
+  def overview_item(assigns) do
     ~H"""
-    <%=
-      live_redirect to: Routes.live_path(@socket, @type, @id),
-        class: "flex flex-col items-center justify-center w-32 h-48 md:w-40 md:h-60 mx-auto" do %>
+    <.link navigate={Routes.live_path(@socket, @type, @id)} class="flex flex-col items-center justify-center w-32 h-48 md:w-40 md:h-60 mx-auto">
       <div class="w-32 h-48 md:w-40 md:h-60 bg-gray-200 dark:bg-gray-700 rounded-lg flex justify-center items-center shadow-md">
         <img class="w-auto h-4/5 pointer-events-none render-pixelated" src={@img_url} loading="lazy" alt="skin of a player"/>
       </div>
@@ -74,7 +83,7 @@ defmodule GlobalApiWeb.Skin.ItemOverview do
           <%= @name %>
         </div>
       </div>
-    <% end %>
+    </.link>
     """
   end
 end

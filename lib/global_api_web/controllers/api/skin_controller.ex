@@ -2,10 +2,8 @@ defmodule GlobalApiWeb.Api.SkinController do
   use GlobalApiWeb, :controller
   use OpenApiSpex.ControllerSpecs
 
-  alias GlobalApi.SkinsRepo
   alias GlobalApi.Service.SkinService
   alias GlobalApi.Utils
-  alias OpenApiSpex.Example
   alias GlobalApiWeb.Schemas
 
   tags ["skin"]
@@ -32,7 +30,8 @@ defmodule GlobalApiWeb.Api.SkinController do
 
   def get_recent_uploads(conn, %{"page" => page}) do
     case SkinService.recent_uploads(page) do
-      {:error, status_code, message} ->
+      {:error, error_type} ->
+        {status_code, message} = SkinService.error_details(error_type)
         conn
         |> put_status(status_code)
         |> json(%{message: message})
@@ -47,7 +46,8 @@ defmodule GlobalApiWeb.Api.SkinController do
 
   def get_skin(conn, %{"xuid" => xuid}) do
     case SkinService.get_skin_by_xuid(xuid) do
-      {:error, status_code, message} ->
+      {:error, error_type} ->
+        {status_code, message} = SkinService.error_details(error_type)
         conn
         |> put_status(status_code)
         |> put_resp_header("cache-control", "max-age=86400, immutable, public")

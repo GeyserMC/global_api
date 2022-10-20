@@ -19,17 +19,14 @@ defmodule GlobalApiWeb.Skin.SkinInfo do
     """
   end
 
-  def mount(%{"id" => skin_id} = params, session, socket) do
-    IO.inspect(params)
-    IO.inspect(session)
-    IO.inspect(socket)
+  def mount(%{"id" => skin_id}, _session, socket) do
     {:ok, load_skin(skin_id, socket)}
   end
 
   def load_skin(skin_id, socket) do
     case SkinService.skin_info_with_names(skin_id) do
-      {:error, status_code, message} ->
-        raise WrappedError, {message, status_code}
+      {:error, error_type} ->
+        raise WrappedError, SkinService.error_details(error_type)
       nil ->
         raise NotFoundError
       info ->
