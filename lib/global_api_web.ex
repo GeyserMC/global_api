@@ -23,6 +23,7 @@ defmodule GlobalApiWeb do
 
       import Plug.Conn
       alias GlobalApiWeb.Router.Helpers, as: Routes
+      alias GlobalApiWeb.Router, as: Router
     end
   end
 
@@ -98,6 +99,7 @@ defmodule GlobalApiWeb do
       import GlobalApiWeb.ErrorHelpers
       import GlobalApiWeb.LiveHelpers
       alias GlobalApiWeb.Router.Helpers, as: Routes
+      alias GlobalApiWeb.Router, as: Router
     end
   end
 

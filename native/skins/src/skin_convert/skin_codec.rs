@@ -4,13 +4,14 @@ use json::{JsonValue, parse};
 use lodepng::FilterStrategy;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
+use crate::common::RGBA_CHANNELS;
 use crate::skin_convert::ErrorType;
 
 use crate::skin_convert::ErrorType::{InvalidGeometry, InvalidSize};
 
 pub const SKIN_WIDTH: usize = 64;
 pub const SKIN_HEIGHT: usize = 64;
-pub const SKIN_CHANNELS: usize = 4;
+pub const SKIN_CHANNELS: usize = RGBA_CHANNELS;
 
 pub struct SkinInfo {
     pub needs_convert: bool,
@@ -74,7 +75,7 @@ pub fn collect_skin_info(client_claims: &Value) -> Result<SkinInfo, ErrorType> {
         return Err(InvalidGeometry);
     };
 
-    let geometry_name = &geometry_patch["default"].as_str();
+    let geometry_name = geometry_patch["default"].as_str();
     if geometry_name.is_none() {
         return Err(InvalidGeometry);
     }
@@ -82,14 +83,21 @@ pub fn collect_skin_info(client_claims: &Value) -> Result<SkinInfo, ErrorType> {
     let geometry_name = String::from(geometry_name.unwrap());
     let geometry_data = geometry_data_res.unwrap();
 
-    Ok(SkinInfo { needs_convert, raw_skin_data, skin_width, geometry_data, geometry_patch: geometry_patch.clone(), geometry_name })
+    Ok(SkinInfo {
+        needs_convert,
+        raw_skin_data,
+        skin_width,
+        geometry_data,
+        geometry_patch: geometry_patch.clone(),
+        geometry_name
+    })
 }
 
-pub fn encode_image(raw_data: &mut Vec<u8>) -> ImageWithHashes {
-    encode_custom_image(raw_data, 64, 64)
+pub fn encode_image(raw_data: &mut [u8]) -> ImageWithHashes {
+    encode_custom_image(raw_data, SKIN_WIDTH, SKIN_HEIGHT)
 }
 
-pub fn encode_custom_image(raw_data: &mut Vec<u8>, width: usize, height: usize) -> ImageWithHashes {
+pub fn encode_custom_image(raw_data: &[u8], width: usize, height: usize) -> ImageWithHashes {
     // encode images like Minecraft does
     let mut encoder = lodepng::Encoder::new();
     encoder.set_auto_convert(false);
@@ -99,7 +107,7 @@ pub fn encode_custom_image(raw_data: &mut Vec<u8>, width: usize, height: usize) 
     encoder_settings.zlibsettings.set_level(4);
     encoder_settings.filter_strategy = FilterStrategy::ZERO;
 
-    let png = encoder.encode(raw_data.as_slice(), width, height).unwrap();
+    let png = encoder.encode(raw_data, width, height).unwrap();
 
     let mut hasher = Sha256::new();
 
@@ -107,7 +115,7 @@ pub fn encode_custom_image(raw_data: &mut Vec<u8>, width: usize, height: usize) 
     let minecraft_hash = hasher.finalize_reset();
 
     // make our own hash
-    hasher.update(raw_data.as_slice());
+    hasher.update(raw_data);
     let hash = hasher.finalize();
 
     ImageWithHashes {

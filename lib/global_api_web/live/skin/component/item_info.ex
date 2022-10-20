@@ -40,7 +40,7 @@ defmodule GlobalApiWeb.Skin.Component.ItemInfo do
     <script>
       window.geometry = "<%= @geometry %>"
       window.model = "<%= @model %>"
-      window.texture_url = "https://test.cors.workers.dev/?<%= @texture_url %>"
+      window.texture_url = "<%= @texture_url %>"
     </script>
     <script src={Routes.static_url(@socket, "/assets/render.js")}></script>
     """

@@ -13,7 +13,7 @@ defmodule GlobalApiWeb.Skin.SkinInfo do
       count={@count}
       sample={@sample}
       model={@model}
-      texture_url={"https://textures.minecraft.net/texture/" <> @texture_id}
+      texture_url={Router.cdn_host() <> Routes.render_path(GlobalApiWeb.Endpoint, :raw, @texture_id)}
       socket={@socket}
     />
     """

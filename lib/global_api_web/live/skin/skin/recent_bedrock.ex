@@ -41,8 +41,8 @@ defmodule GlobalApiWeb.Skin.RecentBedrock do
 
   defp set_skins(socket, items, page_limit, current_page) do
     items = Enum.map(items, fn item ->
-      # Routes.render_path(GlobalApiWeb.Endpoint, :front, item.texture_id)
-      %{id: item.id, name: "##{item.id}", img_url: "https://mc-heads.net/player/#{item.texture_id}"}
+      img_path = Routes.render_path(GlobalApiWeb.Endpoint, :front, item.texture_id, model: if item.is_steve do "classic" else "slim" end)
+      %{id: item.id, name: "##{item.id}", img_url: Router.cdn_host() <> img_path}
     end)
 
     socket

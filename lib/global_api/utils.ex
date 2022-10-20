@@ -17,6 +17,13 @@ defmodule GlobalApi.Utils do
     |> String.downcase
   end
 
+  def is_hexadecimal(data) do
+    case Base.decode16(data, case: :lower) do
+      {:ok, _} -> true
+      _ -> false
+    end
+  end
+
   @doc """
   Makes a specific string as long as desired by appending 'repeat string' as long as needed
   """

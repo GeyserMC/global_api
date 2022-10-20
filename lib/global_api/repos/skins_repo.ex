@@ -60,7 +60,7 @@ defmodule GlobalApi.SkinsRepo do
   def get_most_recent_unique(limit) do
     Repo.all(
       from u in UniqueSkin,
-      select: map(u, [:id, :texture_id]),
+      select: map(u, [:id, :texture_id, :is_steve]),
       order_by: [desc: :inserted_at],
       limit: ^limit
     )
@@ -77,7 +77,7 @@ defmodule GlobalApi.SkinsRepo do
 
     Repo.all(
       from u in UniqueSkin,
-      select: map(u, [:id, :texture_id]),
+      select: map(u, [:id, :texture_id, :is_steve]),
       right_join: s in subquery(popular),
       on: s.skin_id == u.id,
       limit: ^limit # just to be sure :sweat_smile:

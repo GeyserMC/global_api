@@ -1,4 +1,4 @@
-pub fn clear_unused_pixels(raw_data: &mut Vec<u8>, is_steve: bool) -> &mut Vec<u8> {
+pub fn clear_unused_pixels(raw_data: &mut [u8], is_steve: bool) -> &mut [u8] {
     // clear the unused sections of a 64x64 skin
 
     // first row
@@ -140,7 +140,7 @@ pub fn clear_unused_pixels(raw_data: &mut Vec<u8>, is_steve: bool) -> &mut Vec<u
     raw_data
 }
 
-fn set_pixel(vec: &mut Vec<u8>, x: usize, y: usize, width: usize, r: u8, g: u8, b: u8, a: u8) {
+fn set_pixel(vec: &mut [u8], x: usize, y: usize, width: usize, r: u8, g: u8, b: u8, a: u8) {
     vec[(y * width + x) * 4] = r;
     vec[(y * width + x) * 4 + 1] = g;
     vec[(y * width + x) * 4 + 2] = b;

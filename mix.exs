@@ -46,7 +46,7 @@ defmodule GlobalApi.MixProject do
       {:phoenix_ecto, "~> 4.4.0"},
       {:ecto_sql, "~> 3.9.0"},
       {:myxql, "~> 0.6.3"},
-      {:httpoison, "~> 1.8.2"},
+      {:httpoison, "~> 1.8.2"}, #todo switch to finch
       {:rustler, "~> 0.26"},
       {:jason, "~> 1.4.0"},
       {:plug_cowboy, "~> 2.5.2"},

@@ -1,34 +1,39 @@
 extern crate rustler;
 
-use rustler::{atoms, Encoder, Env, ListIterator, Term};
+use rgb::ComponentBytes;
+use rustler::{atoms, Binary, Encoder, Env, init, ListIterator, nif, Term};
 use rustler::types::atom::{false_, true_};
 use rustler::types::tuple::make_tuple;
 
+use crate::common::skin::{SkinLayer, SkinModel};
 use crate::rustler_utils::as_binary;
-use crate::skin_convert::{ConvertResult, convert_skin, ErrorType};
+use crate::skin_convert::{convert_skin, ConvertResult, ErrorType};
 use crate::skin_convert::chain_validator::validate_chain;
-use crate::skin_convert::skin_codec::{ImageWithHashes};
+use crate::skin_convert::skin_codec::ImageWithHashes;
+use crate::skin_render::flat_render::render_front;
 
+mod common;
 mod skin_render;
 mod skin_convert;
 pub mod rustler_utils;
 
 atoms! {
-    invalid_chain_data,
+    // convert
+    invalid_data,
     invalid_client_data,
     invalid_size,
     invalid_image,
     invalid_geometry,
-    hash_doesnt_match
+    hash_doesnt_match,
 }
 
-#[rustler::nif]
-pub fn validate_and_get_png<'a>(env: Env<'a>, chain_data: Term<'a>, client_data: &'a str) -> Term<'a> {
+#[nif(schedule = "DirtyCpu")]
+pub fn validate_and_convert<'a>(env: Env<'a>, chain_data: Term<'a>, client_data: &'a str) -> Term<'a> {
     let list_iterator: ListIterator = chain_data.decode().unwrap();
     let validation_result = validate_chain(list_iterator, client_data);
 
     if validation_result.is_none() {
-        return invalid_chain_data().to_term(env);
+        return invalid_data().to_term(env);
     }
 
     let (last_data, client_claims) = validation_result.unwrap();
@@ -57,5 +62,27 @@ pub fn validate_and_get_png<'a>(env: Env<'a>, chain_data: Term<'a>, client_data:
     }
 }
 
+#[nif]
+pub fn render_skin_front<'a>(
+    env: Env<'a>,
+    data: Binary<'a>,
+    layer: SkinLayer,
+    model: SkinModel,
+    target_width: usize,
+) -> Term<'a> {
+    let png = lodepng::decode32(data.as_slice());
+    if png.is_err() {
+        return invalid_image().to_term(env);
+    }
+    let png = png.unwrap();
 
-rustler::init!("Elixir.GlobalApi.SkinsNif", [validate_and_get_png]);
+    let render = render_front(png.buffer.as_bytes(), png.width, &layer, &model, target_width);
+
+    let encoded = lodepng::encode32(render.as_ref(), render.width() as usize, render.height() as usize)
+        .expect("failed to encode image");
+
+
+    as_binary(env, encoded.as_ref())
+}
+
+init!("Elixir.GlobalApi.SkinsNif", [validate_and_convert, render_skin_front]);

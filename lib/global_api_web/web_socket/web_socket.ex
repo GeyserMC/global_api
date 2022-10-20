@@ -29,13 +29,12 @@ defmodule GlobalApiWeb.WebSocket do
   @invalid_action Jason.encode!(%{error: "invalid action"})
   @invalid_data Jason.encode!(%{error: "invalid data"})
 
-  @invalid_chain_data Jason.encode!(%{error: "invalid chain data"})
-  @invalid_client_data Jason.encode!(%{error: "invalid client data"})
+  @invalid_data Jason.encode!(%{error: "invalid chain and/or client data"})
 
   @creator_left Jason.encode!(%{info: "creator left and there are no uploads left"})
   @internal_error Jason.encode!(%{info: "the service experienced an unexpected error"})
 
-  def init(request, state) do
+  def init(request, _state) do
     opts = %{:idle_timeout => @idle_timeout, :max_frame_size => 1_572_864} # 1.5mb
     {:cowboy_websocket, request, URI.decode_query(request.qs), opts}
   end
@@ -109,12 +108,9 @@ defmodule GlobalApiWeb.WebSocket do
   def websocket_handle({:json, %{"chain_data" => chain_data, "client_data" => client_data}}, state)
       when is_list(chain_data) and is_binary(client_data) do
     try do
-      case SkinsNif.validate_and_get_png(chain_data, client_data) do
-        :invalid_chain_data ->
-          {[{:close, @invalid_chain_data}], state}
-
-        :invalid_client_data ->
-          {[{:close, @invalid_client_data}], state}
+      case SkinsNif.validate_and_convert(chain_data, client_data) do
+        :invalid_data ->
+          {[{:close, @invalid_data}], state}
 
         {:invalid_size, extra_data} ->
           handle_extra_data(extra_data)

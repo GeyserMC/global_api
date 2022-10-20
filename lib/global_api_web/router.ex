@@ -40,8 +40,13 @@ defmodule GlobalApiWeb.Router do
     plug :put_secure_browser_headers
   end
 
-  scope "/", host: cdn_host do
+  scope "/", GlobalApiWeb.Cdn, host: cdn_host do
     pipe_through :api
+
+    scope "/render" do
+      get "/front/:texture_id", RenderController, :front
+      get "/raw/:texture_id", RenderController, :raw
+    end
   end
 
   scope "/", GlobalApiWeb.Skin, host: skin_host do
@@ -218,5 +223,10 @@ defmodule GlobalApiWeb.Router do
       page_title: status_code,
       page_description: message
     )
+  end
+
+  def cdn_host do
+    domain_info = Application.get_env(:global_api, :domain_info)
+    domain_info[:protocol] <> "://" <> domain_info[:cdn][:subdomain] <> "." <> domain_info[:cdn][:domain]
   end
 end

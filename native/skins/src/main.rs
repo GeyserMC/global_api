@@ -4,20 +4,36 @@ extern crate core;
 use std::fs::File;
 use std::io::{Read, Write};
 use std::time::Instant;
+use image::RgbaImage;
+use rgb::ComponentBytes;
 
 use serde_json::Value;
+use crate::common::Offset;
+use crate::common::skin::{SkinLayer, SkinModel, SkinSection};
 
 use crate::skin_codec::{encode_custom_image, ImageWithHashes};
 use crate::skin_convert::{ConvertResult, convert_skin, skin_codec};
+use crate::skin_render::flat_render::{render_front, render_section};
 
+mod common;
 mod skin_convert;
+mod skin_render;
 pub mod rustler_utils;
 
 fn main() -> Result<(), String> {
     handle_skin_data_to_png_file().unwrap();
     handle_client_data_file().unwrap();
+
+    render_skin("resources/steve_skin.png", 64, SkinModel::Classic, SkinRenderType::Front)?;
+    // render_skin(
+    //     "resources/alex_skin.png", 64, SkinModel::Slim,
+    //     SkinRenderType::Section(SkinSection(&SkinPart::Body, SkinLayer::Both))
+    // )?;
+
     Ok(())
 }
+
+//region skins
 
 /// the format of the file is width.height.skin_data
 /// each line will be handled as a separate entry, so each line should have that format
@@ -124,12 +140,12 @@ fn decode_and_save_image_loop(raw_data: String) -> Result<(), String> {
 
 fn decode_and_save_image(raw_data: String) -> Result<(), String> {
     let format: Vec<&str> = raw_data.split('.').collect();
-    let mut data: Vec<u8> = base64::decode(format[2]).unwrap();
-    encode_and_save_image(&mut data, format[0].parse().unwrap(), format[1].parse().unwrap());
+    let data: Vec<u8> = base64::decode(format[2]).unwrap();
+    encode_and_save_image(&data, format[0].parse().unwrap(), format[1].parse().unwrap());
     Ok(())
 }
 
-fn encode_and_save_image(data: &mut Vec<u8>, w: usize, h: usize) {
+fn encode_and_save_image(data: &[u8], w: usize, h: usize) {
     let ImageWithHashes { png, minecraft_hash, hash: _hash } = encode_custom_image(data, w, h);
 
     let mc_hash_hex = write_hex(minecraft_hash.as_ref());
@@ -149,3 +165,32 @@ fn write_hex(bytes: &[u8]) -> String {
     }
     s
 }
+//endregion
+//region render
+
+enum SkinRenderType<'a> {
+    Front,
+    Section(SkinSection<'a>)
+}
+
+fn render_skin(path: &str, data_width: usize, model: SkinModel, render_type: SkinRenderType) -> Result<(), String> {
+    let png = lodepng::decode32_file(path).expect("failed to decode image");
+    let data = png.buffer.as_bytes();
+
+    let render: RgbaImage = match render_type {
+        SkinRenderType::Front => {
+            render_front(data, data_width, &SkinLayer::Both, &model, 16)
+        }
+        SkinRenderType::Section(section) => {
+            let mut target = RgbaImage::new(32, 16);
+            render_section(section, data, data_width, &mut target, &Offset::new(0, 0), 1);
+            target
+        }
+    };
+
+    encode_and_save_image(render.as_ref(), render.width() as usize, render.height() as usize);
+
+    Ok(())
+}
+
+//endregion
