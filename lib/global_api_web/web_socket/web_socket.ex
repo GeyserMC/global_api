@@ -76,7 +76,7 @@ defmodule GlobalApiWeb.WebSocket do
   end
 
   def websocket_handle(:ping, state) do
-    current_time = :os.system_time(:millisecond)
+    current_time = System.monotonic_time(:millisecond)
     if current_time - state.last_ping < 10_000 do
       {[{:close, @ping_too_fast}], state}
     else
@@ -238,7 +238,7 @@ defmodule GlobalApiWeb.WebSocket do
             value: skin_value,
             signature: skin_signature,
             is_steve: is_steve,
-            last_update: :os.system_time(:millisecond)
+            last_update: System.system_time(:millisecond)
           }
         )
         #todo we can prob also use the return value of set_skin as last_update
@@ -262,7 +262,7 @@ defmodule GlobalApiWeb.WebSocket do
               value: skin_value,
               signature: skin_signature,
               is_steve: is_steve,
-              last_update: :os.system_time(:millisecond)
+              last_update: System.system_time(:millisecond)
             }
           }
         )
@@ -281,7 +281,7 @@ defmodule GlobalApiWeb.WebSocket do
               value: unique_skin.value,
               signature: unique_skin.signature,
               is_steve: unique_skin.is_steve,
-              last_update: :os.system_time(:millisecond)
+              last_update: System.system_time(:millisecond)
             }
           )
 
@@ -306,7 +306,7 @@ defmodule GlobalApiWeb.WebSocket do
               event_id: 3,
               xuid: xuid,
               success: true,
-              data: UniqueSkin.to_public(unique_skin, %{last_update: :os.system_time(:millisecond)})
+              data: UniqueSkin.to_public(unique_skin, %{last_update: System.system_time(:millisecond)})
             }
           )
         else

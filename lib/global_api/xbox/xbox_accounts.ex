@@ -67,7 +67,7 @@ defmodule GlobalApi.XboxAccounts do
           xbox_token_valid_until: xbox_token_valid_until
         } = data
       ) do
-    current_datetime = :os.system_time(:second)
+    current_datetime = System.system_time(:second)
     # the updater checks every hour. + 1 minute just to be sure
     min_remaining_time = 61 * 60
 

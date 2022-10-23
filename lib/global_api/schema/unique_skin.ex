@@ -17,7 +17,7 @@ defmodule GlobalApi.UniqueSkin do
     skin
     |> cast(attrs, [:hash, :texture_id, :value, :signature, :is_steve])
     |> validate_required([:hash, :texture_id, :value, :signature, :is_steve], message: "cannot add an incomplete skin")
-    |> put_change(:inserted_at, :os.system_time(:millisecond))
+    |> put_change(:inserted_at, System.system_time(:millisecond))
   end
 
   def to_protected(%__MODULE__{} = unique_skin, %GlobalApi.PlayerSkin{} = player_skin),

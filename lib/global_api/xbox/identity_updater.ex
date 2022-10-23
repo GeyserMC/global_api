@@ -10,7 +10,7 @@ defmodule GlobalApi.IdentityUpdater do
   # but they fall under a different category and thus we can divide the check time by 2
   @check_time ceil(11 / 2)
 
-  @identity_update_threshold 60 * 60 * 24 * 1000 # one day
+  @identity_update_threshold 48 * 60 * 60 * 1000 # 48 hours
 
   def start_link(init_arg) do
     GenServer.start_link(__MODULE__, init_arg, name: __MODULE__)
@@ -18,7 +18,7 @@ defmodule GlobalApi.IdentityUpdater do
 
   @impl true
   def init(_init_arg) do
-    schedule()
+    check_after_seconds()
     {:ok, %{v2: true}}
   end
 
@@ -29,17 +29,17 @@ defmodule GlobalApi.IdentityUpdater do
     if length(identities) > 0 do
       least_recent = List.first(identities)
       # if the least recent entry hasn't been updated and passes the threshold
-      if :os.system_time(:millisecond) - least_recent.inserted_at > @identity_update_threshold do
+      if System.system_time(:millisecond) - least_recent.inserted_at > @identity_update_threshold do
         # update it :)
         update0(identities, is_v2)
 
-        schedule()
+        check_after_seconds()
       else
-        # we can wait until the least recent entry passed the 24 hours
-        schedule(least_recent.inserted_at + @identity_update_threshold - :os.system_time(:millisecond), true)
+        # we can wait until the least recent entry passed the threshold
+        check_after_millis(least_recent.inserted_at + @identity_update_threshold - System.system_time(:millisecond))
       end
     else
-      schedule(60 * 60)
+      check_after_seconds(60 * 60)
     end
     {:noreply, %{v2: !is_v2}}
 #    {:noreply, %{v2: true}}
@@ -49,7 +49,7 @@ defmodule GlobalApi.IdentityUpdater do
     list = Enum.map(identities, fn identity -> identity.xuid end)
     case XboxApi.request_big_batch(list, true, true) do
       {:ok, data} ->
-        time = :os.system_time(:millisecond)
+        time = System.system_time(:millisecond)
         mapped = Enum.map(data, fn {xuid, gamertag} -> [xuid: xuid, gamertag: gamertag, inserted_at: time] end)
         XboxRepo.insert_bulk(mapped)
       _ -> :ignore # everything else can be ignored
@@ -60,17 +60,13 @@ defmodule GlobalApi.IdentityUpdater do
     list = Enum.map(identities, fn identity -> identity.xuid end)
     case XboxApi.request_batch(list, true) do
       {:ok, data} ->
-        time = :os.system_time(:millisecond)
+        time = System.system_time(:millisecond)
         mapped = Enum.map(data, fn {xuid, gamertag} -> [xuid: xuid, gamertag: gamertag, inserted_at: time] end)
         XboxRepo.insert_bulk(mapped)
       _ -> :ignore # everything else can be ignored
     end
   end
 
-  defp schedule(check_time \\ @check_time) do
-    Process.send_after(self(), :update, check_time * 1000)
-  end
-  defp schedule(check_time, is_millis) when is_millis == true do
-    schedule(ceil(check_time / 1000))
-  end
+  defp check_after_millis(check_time), do: Process.send_after(self(), :update, check_time)
+  defp check_after_seconds(check_time \\ @check_time), do: check_after_millis(check_time * 1000)
 end

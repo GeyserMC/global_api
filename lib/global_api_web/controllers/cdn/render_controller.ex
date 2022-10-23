@@ -71,10 +71,6 @@ defmodule GlobalApiWeb.Cdn.RenderController do
     end
   end
 
-  defp fetch_texture(texture_id) do
-
-  end
-
   @spec model_to_atom(binary) :: :classic | :slim | :invalid
   defp model_to_atom(model) do
     case model do

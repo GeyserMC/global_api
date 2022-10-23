@@ -30,10 +30,10 @@ defmodule GlobalApi.SkinPreUploader do
 
   @impl true
   def handle_cast({queue, request}, :ok) do
-    #start_time = :os.system_time(:millisecond)
+    #start_time = System.monotonic_time(:millisecond)
     upload_and_store(request, true)
 
-    #time_took = :os.system_time(:millisecond) - start_time
+    #time_took = System.monotonic_time(:millisecond) - start_time
     ## Mineskin has two rate-limits, just make sure that we don't spam their server
     #if time_took < 1_000 do
     #  :timer.sleep(1_000 - time_took)
@@ -78,7 +78,7 @@ defmodule GlobalApi.SkinPreUploader do
     #              IO.puts(inspect(body))
     #            end
 
-    #            timeout = ceil((body["nextRequest"] || 0) * 1_000) - :os.system_time(:millisecond)
+    #            timeout = ceil((body["nextRequest"] || 0) * 1_000) - System.monotonic_time(:millisecond)
     #            timeout = max(timeout, 1_000)
 
     #            if is_too_many do
@@ -122,7 +122,7 @@ defmodule GlobalApi.SkinPreUploader do
     #            }
     #          )
 
-    #          timeout = ceil((body["nextRequest"] || 0) * 1000) - :os.system_time(:millisecond)
+    #          timeout = ceil((body["nextRequest"] || 0) * 1000) - System.monotonic_time(:millisecond)
     #          if timeout > 0 do
     #            :timer.sleep(timeout)
     #          end

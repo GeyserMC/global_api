@@ -4,9 +4,11 @@ defmodule GlobalApi.XboxUtils do
   alias GlobalApi.Utils
   alias GlobalApi.XboxAccounts
 
-  @known_rate_limit_types [:profile, :social]
   # burst, sustain
-  @known_rate_limit_values [{10, 30}, {10, 30}]
+  @known_rate_limits %{
+    profile: {10, 30},
+    social: {10, 30}
+  }
 
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -22,7 +24,7 @@ defmodule GlobalApi.XboxUtils do
       account_loop: [],
       rate_limits: %{},
       updater: %{},
-      next_check: :os.system_time(:seconds) + 60 * 60
+      next_check: System.monotonic_time(:second) + 60 * 60
     }
 
     result =
@@ -38,9 +40,7 @@ defmodule GlobalApi.XboxUtils do
             IO.puts("Hey! Don't forgot to add a xbox account for the identity updater! >:(")
           end
 
-          IO.puts(
-            "Found cached token data for #{length(accounts)} account(s)! We'll try to use them now."
-          )
+          IO.puts("Found cached token data for #{length(accounts)} account(s)! We'll try to use them now.")
           case XboxAccounts.check_and_save_token_data(accounts, updater) do
             {:ok, accounts, updater} ->
               Map.put(result, :updater, updater || %{})
@@ -64,12 +64,10 @@ defmodule GlobalApi.XboxUtils do
     accounts = state.accounts ++ [account]
     account_loop = state.account_loop ++ [account]
     rate_limit =
-      for i <- 0..(length(@known_rate_limit_types) - 1),
+      for {type, rate_limits} <- @known_rate_limits,
           into: %{},
-          do: {
-            Enum.at(@known_rate_limit_types, i),
-            create_rate_limit(Enum.at(@known_rate_limit_values, i))
-          }
+          do: {type, create_rate_limit(rate_limits)}
+
     state
     |> Map.put(:accounts, accounts)
     |> Map.put(:account_loop, account_loop)
@@ -82,8 +80,8 @@ defmodule GlobalApi.XboxUtils do
       sustain_limit: sustain_limit,
       burst_request_count: 0,
       sustain_request_count: 0,
-      next_burst: :os.system_time(:millisecond) + (15 * 1000),
-      next_sustain: :os.system_time(:millisecond) + (5 * 60 * 1000)
+      next_burst: System.monotonic_time(:millisecond) + (15 * 1000),
+      next_sustain: System.monotonic_time(:millisecond) + (5 * 60 * 1000)
     }
   end
 
@@ -176,21 +174,23 @@ defmodule GlobalApi.XboxUtils do
 
   defp reset_time_check(rate_limit) do
     rate_limit
-    |> reset_burst_check
-    |> reset_sustain_check
+    |> reset_burst_check()
+    |> reset_sustain_check()
   end
 
   defp reset_burst_check(rate_limit) do
-    if rate_limit.next_burst < :os.system_time(:millisecond) do
-      %{rate_limit | next_burst: rate_limit.next_burst + 15 * 1000, burst_request_count: 0}
+    current_time = System.monotonic_time(:millisecond)
+    if current_time > rate_limit.next_burst do
+      %{rate_limit | next_burst: current_time + 15 * 1000, burst_request_count: 0}
     else
       rate_limit
     end
   end
 
   defp reset_sustain_check(rate_limit) do
-    if rate_limit.next_sustain < :os.system_time(:millisecond) do
-      %{rate_limit | next_sustain: rate_limit.next_sustain + 5 * 60 * 1000, sustain_request_count: 0}
+    current_time = System.monotonic_time(:millisecond)
+    if current_time > rate_limit.next_sustain do
+      %{rate_limit | next_sustain: current_time + 5 * 60 * 1000, sustain_request_count: 0}
     else
       rate_limit
     end
@@ -198,14 +198,17 @@ defmodule GlobalApi.XboxUtils do
 
   defp get_next_account(state) do
     [next | remaining] = state.account_loop
-    case remaining do
-      [] ->  {next, %{state | account_loop: state.accounts}}
-      _ -> {next, %{state | account_loop: remaining}}
-    end
+    {
+      next,
+      case remaining do
+        [] -> %{state | account_loop: state.accounts}
+        _ -> %{state | account_loop: remaining}
+      end
+    }
   end
 
   defp validate_tokens_check(state) do
-    if state.next_check > :os.system_time(:second) do
+    if System.monotonic_time(:second) < state.next_check do
        state
     else
       case XboxAccounts.check_and_save_token_data(state.accounts, state.updater) do
@@ -226,11 +229,11 @@ defmodule GlobalApi.XboxUtils do
             accounts: accounts,
             account_loop: account_loop,
             updater: updater,
-            next_check: :os.system_time(:second) + 60 * 60
+            next_check: System.monotonic_time(:second) + 60 * 60
           }
         {:error, reason} ->
-          IO.puts("Error whilst checking tokens! #{reason}. Will try it again in 60 sec")
-          %{state | next_check: :os.system_time(:second) + 60}
+          IO.puts("Error while checking tokens! #{reason}. Will try it again in 60 sec")
+          %{state | next_check: System.monotonic_time(:second) + 60}
       end
     end
   end

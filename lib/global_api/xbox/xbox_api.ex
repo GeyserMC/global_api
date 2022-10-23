@@ -76,7 +76,7 @@ defmodule GlobalApi.XboxApi do
         Cachex.put_many(:get_gamertag, data)
         Cachex.put_many(:get_xuid, Enum.map(data, fn {xuid, gamertag} -> {gamertag, xuid} end))
 
-        time = :os.system_time(:millisecond)
+        time = System.system_time(:millisecond)
         database_data = Enum.map(data, fn {xuid, gamertag} -> [xuid: xuid, gamertag: gamertag, inserted_at: time] end)
         XboxRepo.insert_bulk(database_data)
 
@@ -287,7 +287,12 @@ defmodule GlobalApi.XboxApi do
 
     {:ok, response} = HTTPoison.get(
       "https://profile.xboxlive.com/users/me/profile/settings?settings=Gamertag",
-      headers
+      headers,
+      [
+        hackney: [
+          pool: false
+        ]
+      ]
     )
     response = Jason.decode!(response.body)
 

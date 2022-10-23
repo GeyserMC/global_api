@@ -195,7 +195,7 @@ defmodule GlobalApi.SocketManager do
   defp handle_skin_upload_failed([]), do: :ok
 
   defp handle_skin_uploaded([{id, xuid} | tail], xuids, rgba_hash, data_map) do
-    cached = Map.merge(data_map, %{hash: rgba_hash, last_update: :os.system_time(:millisecond)})
+    cached = Map.merge(data_map, %{hash: rgba_hash, last_update: System.system_time(:millisecond)})
     Cachex.put(:xuid_to_skin, xuid, cached)
 
     # realistically it's not possible that the id doesn't exist in here,

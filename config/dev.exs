@@ -36,9 +36,9 @@ config :global_api, :domain_info,
 # e.g. make sure that build.js tries to use http instead of https
 
 config :global_api, :xbox_accounts_app_info,
-  client_id: "client id",
-  redirect_url: "https://api.geysermc.org/xbox/token",
-  client_secret: "client secret"
+  client_id: "client_id",
+  redirect_url: "https://api.geysermc.org/v2/admin/xbox/token",
+  client_secret: "client_secret"
 
 config :global_api, :link_app_info,
   client_id: "client id",

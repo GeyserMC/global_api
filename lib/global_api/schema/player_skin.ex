@@ -6,14 +6,14 @@ defmodule GlobalApi.PlayerSkin do
   schema "player_skins" do
     belongs_to :skin, GlobalApi.UniqueSkin
 
-    timestamps(type: :integer, autogenerate: {:os, :system_time, [:millisecond]})
+    timestamps(type: :integer, autogenerate: {System, :system_time, [:millisecond]})
   end
 
   def changeset(skin, attrs) do
     skin
     |> cast(attrs, [:bedrock_id, :skin_id])
     |> validate_required([:bedrock_id, :skin_id], message: "cannot add an incomplete skin")
-    |> put_change(:updated_at, :os.system_time(:millisecond))
+    |> put_change(:updated_at, System.system_time(:millisecond))
   end
 
   def to_public(%__MODULE__{} = skin) do

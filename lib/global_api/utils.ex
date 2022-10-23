@@ -123,7 +123,7 @@ defmodule GlobalApi.Utils do
   end
 
   def update_username_if_needed(%Link{java_id: java_id, java_name: java_name, updated_at: updated_at} = result) do
-    time_since_update = :os.system_time(:millisecond) - updated_at
+    time_since_update = System.system_time(:millisecond) - updated_at
     if time_since_update >= 86_400 * 1000 do # one day
       username = MojangApi.get_current_username(java_id)
       if username != java_name do
