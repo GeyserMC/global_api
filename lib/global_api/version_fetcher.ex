@@ -7,7 +7,8 @@ defmodule GlobalApi.VersionFetcher do
 
   @impl true
   def init(_init_arg) do
-    queue_fetch()
+    # fetch the latest version information directly, not after x minutes
+    queue_fetch(0)
     {:ok, :ok}
   end
 
@@ -22,7 +23,7 @@ defmodule GlobalApi.VersionFetcher do
     {:noreply, state}
   end
 
-  defp queue_fetch do
-    Process.send_after(self(), :fetch, 15 * 60_000)
+  defp queue_fetch(wait_millis \\ 15 * 60_0000) do
+    Process.send_after(self(), :fetch, wait_millis)
   end
 end
