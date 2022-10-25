@@ -33,7 +33,7 @@ defmodule GlobalApiWeb.Api.StatsController do
               fn _ ->
                 {
                   :commit,
-                  upload_queue_length * (@sample_length / SkinsRepo.get_recently_uploaded(@sample_length))
+                  upload_queue_length * (@sample_length / max(1, SkinsRepo.get_recently_uploaded(@sample_length)))
                 }
               end
             ) do

@@ -17,6 +17,7 @@ defmodule GlobalApiWeb.WebSocket do
   defstruct subscriptions: nil, creator_of: nil, last_ping: 0
 
   @idle_timeout if Mix.env() == :prod, do: 20_000, else: 60 * 60 * 1_000
+  @ping_interval 5_000
 
   @debug -1
   @info 0
@@ -25,7 +26,7 @@ defmodule GlobalApiWeb.WebSocket do
   @invalid_code Jason.encode!(%{error: "invalid code and/or verify code"})
   @code_not_found Jason.encode!(%{error: "failed to find the given code in combination with the verify code"})
 
-  @ping_too_fast Jason.encode!(%{error: "pings have to be at least 10 seconds apart"})
+  @ping_too_fast Jason.encode!(%{error: "pings have to be at least #{ceil(@ping_interval / 1_000)} seconds apart"})
   @invalid_action Jason.encode!(%{error: "invalid action"})
   @invalid_data Jason.encode!(%{error: "invalid data"})
 
@@ -77,7 +78,7 @@ defmodule GlobalApiWeb.WebSocket do
 
   def websocket_handle(:ping, state) do
     current_time = System.monotonic_time(:millisecond)
-    if current_time - state.last_ping < 10_000 do
+    if (current_time - state.last_ping) < @ping_interval do
       {[{:close, @ping_too_fast}], state}
     else
       {:ok, %{state | last_ping: current_time}}

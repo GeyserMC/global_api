@@ -105,7 +105,7 @@ defmodule GlobalApi.SocketManager do
   def skin_upload_failed(rgba_hash) do
     #todo look into why we don't store the bool is_steve?
     :ets.take(:skin_pending, rgba_hash)
-    |> handle_skin_upload_failed
+    |> handle_skin_upload_failed()
   end
 
   def skin_uploaded(rgba_hash, data_map) do
@@ -163,11 +163,10 @@ defmodule GlobalApi.SocketManager do
       |> Map.put(:id, id)
       |> Jason.encode!
 
-    :ets.lookup(:skin_subscribers, id)
-    |> Enum.each(fn {_, pid} -> send pid, {channel, message} end)
+    send_subscribers_pid({channel, message}, id)
   end
 
-  defp handle_skin_upload_failed([{id, xuid} | tail]) do
+  defp handle_skin_upload_failed([{_, {id, xuid}} | tail]) do
     # realistically it's not possible that the id doesn't exist in here,
     # but we also don't want it to lead to unintended behaviour.
     pending_count = :ets.update_counter(:skin_pending_count, id, -1, {id, 1})
@@ -181,12 +180,10 @@ defmodule GlobalApi.SocketManager do
     })
     subscribers = :ets.lookup(:skin_subscribers, id)
 
-    Enum.each(subscribers, fn pid -> send pid, result end)
+    send_subscribers_pid(result, subscribers)
 
     if pending_count <= 0 && !:ets.member(:skin_uploaders, id) do
-      Enum.each(subscribers, fn pid ->
-        send pid, {:creator_disconnected, id}
-      end)
+      send_subscribers_pid({:creator_disconnected, id}, subscribers)
       :ets.delete(:skin_subscribers, id)
     end
     handle_skin_upload_failed(tail)
@@ -194,7 +191,7 @@ defmodule GlobalApi.SocketManager do
 
   defp handle_skin_upload_failed([]), do: :ok
 
-  defp handle_skin_uploaded([{id, xuid} | tail], xuids, rgba_hash, data_map) do
+  defp handle_skin_uploaded([{_, {id, xuid}} | tail], xuids, rgba_hash, data_map) do
     cached = Map.merge(data_map, %{hash: rgba_hash, last_update: System.system_time(:millisecond)})
     Cachex.put(:xuid_to_skin, xuid, cached)
 
@@ -212,12 +209,10 @@ defmodule GlobalApi.SocketManager do
     })
     subscribers = :ets.lookup(:skin_subscribers, id)
 
-    Enum.each(subscribers, fn pid -> send pid, result end)
+    send_subscribers_pid(result, subscribers)
 
     if pending_count <= 0 && !:ets.member(:skin_uploaders, id) do
-      Enum.each(subscribers, fn pid ->
-        send pid, {:creator_disconnected, id}
-      end)
+      send_subscribers_pid({:creator_disconnected, id}, subscribers)
       :ets.delete(:skin_subscribers, id)
     end
     handle_skin_uploaded(tail, MapSet.put(xuids, xuid), rgba_hash, data_map)
@@ -232,4 +227,11 @@ defmodule GlobalApi.SocketManager do
   def get_pending_upload_count(id), do:
     :ets.lookup(:skin_pending_count, id)
     |> Utils.first(0)
+
+
+  defp send_subscribers_pid(data, id) when is_integer(id),
+    do: send_subscribers_pid(data, :ets.lookup(:skin_subscribers, id))
+
+  defp send_subscribers_pid(data, subscribers),
+    do: Enum.each(subscribers, fn {_, pid} -> send pid, data end)
 end

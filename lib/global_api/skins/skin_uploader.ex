@@ -64,7 +64,7 @@ defmodule GlobalApi.SkinUploader do
               IO.puts("Error while uploading skin! #{body["errorCode"]} #{error}. First try? #{first_try}")
               IO.puts(inspect(body))
 
-              timeout = ceil((body["nextRequest"] || 0) * 1000) - System.monotonic_time(:millisecond)
+              timeout = ceil((body["nextRequest"] || 0) * 1000) - System.system_time(:millisecond)
               timeout = max(timeout, 0)
 
               if first_try do
@@ -98,7 +98,7 @@ defmodule GlobalApi.SkinUploader do
               )
               :telemetry.execute([:global_api, :metrics, :skins, :skin_uploaded], %{count: 1, first_try: first_try})
 
-              timeout = ceil((body["nextRequest"] || 0) * 1_000) - System.monotonic_time(:millisecond)
+              timeout = ceil((body["nextRequest"] || 0) * 1_000) - System.system_time(:millisecond)
               if timeout > 0 do
                 :timer.sleep(timeout)
               end

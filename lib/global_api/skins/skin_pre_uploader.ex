@@ -78,7 +78,7 @@ defmodule GlobalApi.SkinPreUploader do
     #              IO.puts(inspect(body))
     #            end
 
-    #            timeout = ceil((body["nextRequest"] || 0) * 1_000) - System.monotonic_time(:millisecond)
+    #            timeout = ceil((body["nextRequest"] || 0) * 1_000) - System.system_time(:millisecond)
     #            timeout = max(timeout, 1_000)
 
     #            if is_too_many do
@@ -122,7 +122,7 @@ defmodule GlobalApi.SkinPreUploader do
     #            }
     #          )
 
-    #          timeout = ceil((body["nextRequest"] || 0) * 1000) - System.monotonic_time(:millisecond)
+    #          timeout = ceil((body["nextRequest"] || 0) * 1000) - System.system_time(:millisecond)
     #          if timeout > 0 do
     #            :timer.sleep(timeout)
     #          end
