@@ -21,7 +21,6 @@ pub fn texture_position(section: SkinSection) -> Option<OffsetAndDimension> {
     }
 }
 
-#[inline(never)]
 pub fn texture_position_face(part: &SkinPart, layer: &SkinLayer, face: &SkinFace, model: &SkinModel)
     -> Option<OffsetAndDimension> {
 
