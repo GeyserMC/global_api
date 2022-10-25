@@ -5,8 +5,8 @@ pub fn texture_position(section: SkinSection) -> Option<OffsetAndDimension> {
     // start x, start y, width, height
     let new = OffsetAndDimension::new;
     match section {
-        SkinSection(SkinPart::Head, SkinLayer::Bottom) => Some(new(16, 16, 24, 16)),
-        SkinSection(SkinPart::Head, SkinLayer::Top) => Some(new(0, 0, 32, 16)),
+        SkinSection(SkinPart::Head, SkinLayer::Bottom) => Some(new(0, 0, 32, 16)),
+        SkinSection(SkinPart::Head, SkinLayer::Top) => Some(new(32, 0, 32, 16)),
         SkinSection(SkinPart::ArmLeft, SkinLayer::Bottom) => Some(new(32, 48, 16, 16)),
         SkinSection(SkinPart::ArmLeft, SkinLayer::Top) => Some(new(48, 48, 16, 16)),
         SkinSection(SkinPart::Body, SkinLayer::Bottom) => Some(new(16, 16, 24, 16)),
@@ -155,9 +155,10 @@ pub fn texture_position_face(part: &SkinPart, layer: &SkinLayer, face: &SkinFace
 
 
 pub fn scale_and_fill_texture(source_data: &[u8], target_data: &mut [u8], source_width: usize, target_width: usize, source: &OffsetAndDimension, target: &OffsetAndDimension) {
-    if target.width == source.width && target.height == source.height {
-        return;
-    }
+    //todo uncomment and place fill in statement when fill will be replaced with upscale
+    // if target.width == source.width && target.height == source.height {
+    //     return;
+    // }
 
     if target.width >= source.width || target.height >= source.height {
         // fill
