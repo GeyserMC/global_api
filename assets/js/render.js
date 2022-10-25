@@ -29,7 +29,7 @@ export const viewer = new CustomModelViewer(
 
 async function setupViewer() {
     await viewer.loadedModel
-    viewer.addHelpers()
+    // viewer.addHelpers()
 
     const model = viewer.getModel()
     const winterskyScene = new Wintersky.Scene()

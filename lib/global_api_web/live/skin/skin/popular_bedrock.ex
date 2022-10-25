@@ -38,7 +38,7 @@ defmodule GlobalApiWeb.Skin.PopularBedrock do
 
   defp set_skins(socket, items, page_limit, current_page) do
     items = Enum.map(items, fn item ->
-      img_path = Routes.render_path(GlobalApiWeb.Endpoint, :front, texture_id: item.texture_id, model: if item.is_steve do "classic" else "slim" end)
+      img_path = Routes.render_path(GlobalApiWeb.Endpoint, :front, item.texture_id, model: if item.is_steve do "classic" else "slim" end)
       %{id: item.id, name: "##{item.id}", img_url: Router.cdn_host() <> img_path}
     end)
 

@@ -1,9 +1,10 @@
 use Mix.Config
 
+protocol = "https"
 domain = "geysermc.org"
 
 config :global_api, :domain_info,
-  protocol: "https",
+  protocol: protocol,
   api: %{
     domain: domain,
     subdomain: "api"
@@ -44,7 +45,7 @@ config :global_api, GlobalApiWeb.Endpoint,
     log_level: :error
   ],
   force_ssl: [hsts: true, host: nil, log: false],
-  check_origin: ["*." <> domain],
+  check_origin: [protocol <> "://*." <> domain],
   url: [host: "api." <> domain],
   static_url: [host: "cdn." <> domain],
   cache_static_manifest: "priv/static/cache_manifest.json",

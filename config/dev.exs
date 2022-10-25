@@ -7,6 +7,7 @@ config :global_api, GlobalApi.Repo,
   password: System.get_env("DATABASE_PASSWORD", "global_api"),
   database: System.get_env("DATABASE_DATABASE", "global_api_dev"),
   pool_size: String.to_integer(System.get_env("DATABASE_POOL_SIZE", "3")),
+  port: String.to_integer(System.get_env("DATABASE_PORT", "3306")),
   timeout: 25000
 
 # we require local DNS (api.geysermc e.g.) in order to test
