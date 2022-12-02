@@ -8,25 +8,21 @@ extern crate sha2;
 
 use std::primitive;
 use std::str::from_utf8;
+use std::sync::MutexGuard;
 use json::JsonValue;
 
 use serde_json::Value;
+use crate::SkinModel;
 use crate::common::OffsetAndDimension;
+use crate::common::geometry::BoneType;
 use crate::common::skin::{SkinLayer, SkinPart, SkinSection};
 use crate::common::texture::{scale_and_fill_texture, texture_position};
-use crate::skin_convert::converter::SkinModel::{Alex, Steve, Unknown};
 use crate::skin_convert::skin_codec::{SKIN_CHANNELS, SKIN_HEIGHT, SKIN_WIDTH, SkinInfo};
+use crate::SkinModel::{Classic, Slim};
 
 const TEXTURE_TYPE_FACE: i64 = 1;
 
 const SKIN_DATA_LENGTH: usize = SKIN_WIDTH * SKIN_HEIGHT * SKIN_CHANNELS;
-
-#[derive(Eq, PartialEq, Debug)]
-pub enum SkinModel {
-    Unknown = -1,
-    Steve = 1,
-    Alex = 2,
-}
 
 pub fn get_skin_or_convert_geometry(info: SkinInfo, client_claims: &Value) -> Result<(Vec<u8>, bool), &'static str> {
     let skin_width = info.skin_width;
@@ -39,7 +35,7 @@ pub fn get_skin_or_convert_geometry(info: SkinInfo, client_claims: &Value) -> Re
             Err(err) => Err(err),
             Ok((raw_data, skin_model)) =>
             // fallback to Steve if model can't be found
-                Ok((raw_data, skin_model != Alex)),
+                Ok((raw_data, skin_model != Some(Slim))),
         }
     } else {
         let is_steve = !info.geometry_name.ends_with("Slim");
@@ -72,7 +68,7 @@ pub fn get_skin_or_convert_geometry(info: SkinInfo, client_claims: &Value) -> Re
     }
 }
 
-fn convert_geometry(skin_data: &[u8], mut skin_width: usize, client_claims: &Value, geometry_data: &[u8], geometry_patch: & JsonValue, geometry_name: &str) -> Result<(Vec<u8>, SkinModel), &'static str> {
+fn convert_geometry(skin_data: &[u8], mut skin_width: usize, client_claims: &Value, geometry_data: &[u8], geometry_patch: &JsonValue, geometry_name: &str) -> Result<(Vec<u8>, Option<SkinModel>), &'static str> {
     let geometry_data_string = from_utf8(geometry_data);
     if geometry_data_string.is_err() {
         return Err("invalid utf-8 data");
@@ -128,6 +124,9 @@ fn convert_geometry(skin_data: &[u8], mut skin_width: usize, client_claims: &Val
         accurate_skin = skin_data;
     }
 
+    on_start_convert(client_claims, &json, geometry_patch);
+    on_change_geometry(geometry_name, geometry_entry, accurate_skin, skin_width);
+
     let bones = &geometry_entry["bones"];
     if bones.is_null() {
         return Err("geometry data doesn't have any bones");
@@ -138,13 +137,13 @@ fn convert_geometry(skin_data: &[u8], mut skin_width: usize, client_claims: &Val
 
     let mut new_vec: Vec<u8> = vec![0; SKIN_DATA_LENGTH];
 
-    let mut skin_model: SkinModel = Unknown;
+    let mut skin_model: Option<SkinModel> = None;
 
     for bone in bones.members() {
         match translate_bone(accurate_skin, skin_width, bone, false, &mut new_vec) {
             Err(err) => return Err(err),
             Ok(model) => {
-                if skin_model == Unknown {
+                if skin_model.is_none() {
                     skin_model = model
                 }
             }
@@ -230,7 +229,10 @@ fn convert_geometry(skin_data: &[u8], mut skin_width: usize, client_claims: &Val
             return Err("animated frame image has an incorrect length");
         }
 
-        let (geometry_entry, tex_width, tex_height) = get_correct_entry(format_version, &json, animated_face.unwrap())?;
+        let name = animated_face.unwrap();
+        let (geometry_entry, tex_width, tex_height) = get_correct_entry(format_version, &json, name)?;
+
+        on_change_geometry(name, geometry_entry, &face_data, face_width);
 
         if tex_width != face_width || tex_height != face_height {
             return Err("the image width and height doesn't match the geometry data width and height");
@@ -245,6 +247,8 @@ fn convert_geometry(skin_data: &[u8], mut skin_width: usize, client_claims: &Val
             translate_bone(face_data.as_slice(), face_width, bone, true, &mut new_vec)?;
         }
     }
+
+    on_finish_convert(&new_vec);
 
     Ok((new_vec, skin_model))
 }
@@ -293,7 +297,14 @@ fn get_correct_entry<'a>(format_version: &'a str, geometry_data: &'a JsonValue, 
     }
 }
 
-fn translate_cubed_bone(skin_data: &[u8], w: usize, name: &str, position: &OffsetAndDimension, cubes: &JsonValue, new_vec: &mut [u8]) -> Result<SkinModel, &'static str> {
+fn translate_cubed_bone(
+    skin_data: &[u8],
+    w: usize,
+    name: &str,
+    position: &OffsetAndDimension,
+    cubes: &JsonValue,
+    new_vec: &mut [u8]
+) -> Result<Option<SkinModel>, &'static str> {
     let cube = &cubes[0];
 
     let size = &cube["size"];
@@ -312,11 +323,10 @@ fn translate_cubed_bone(skin_data: &[u8], w: usize, name: &str, position: &Offse
         return Err("cube doesn't have uv");
     }
 
-    // temp pos
-    let result = if skin_model != Unknown && (name.eq_ignore_ascii_case("leftArm") || name.eq_ignore_ascii_case("rightArm")) {
+    let result = if skin_model.is_some() && is_bottom_arm(name) {
         skin_model
     } else {
-        Unknown
+        None
     };
 
     // temp 'fix'
@@ -343,11 +353,19 @@ fn translate_cubed_bone(skin_data: &[u8], w: usize, name: &str, position: &Offse
     };
 
     scale_and_fill_texture(skin_data, new_vec, w, SKIN_WIDTH, &source, position);
+    on_cube_translated(name, skin_data, w, &source, new_vec);
 
     Ok(result)
 }
 
-fn translate_poly_bone(skin_data: &[u8], w: usize, name: &str, position: &OffsetAndDimension, poly_mesh: &JsonValue, new_vec: &mut [u8]) -> Result<SkinModel, &'static str> {
+fn translate_poly_bone(
+    skin_data: &[u8],
+    w: usize,
+    name: &str,
+    position: &OffsetAndDimension,
+    poly_mesh: &JsonValue,
+    new_vec: &mut [u8]
+) -> Result<Option<SkinModel>, &'static str> {
     let is_normalized = poly_mesh["normalized_uvs"].as_bool().unwrap_or(false);
 
     let polys = &poly_mesh["polys"];
@@ -443,24 +461,25 @@ fn translate_poly_bone(skin_data: &[u8], w: usize, name: &str, position: &Offset
 
     //todo impl mirroring
     scale_and_fill_texture(skin_data, new_vec, w, SKIN_WIDTH, &source, position);
+    on_poly_translated(name, skin_data, w, &source, new_vec);
 
     //todo check
     let skin_model = match tex_width {
-        18 => Alex,
-        20 => Steve,
-        _ => Unknown
+        18 => Some(Slim),
+        20 => Some(Classic),
+        _ => None
     };
 
-    let result = if skin_model != Unknown && (name.eq_ignore_ascii_case("leftArm") || name.eq_ignore_ascii_case("rightArm")) {
-        skin_model
-    } else {
-        Unknown
-    };
+    if skin_model.is_some() && is_bottom_arm(name) {
+        return Ok(skin_model)
+    }
 
-    Ok(result)
+    Ok(None)
 }
 
-fn translate_bone(skin_data: &[u8], w: usize, bone: &JsonValue, only_face: bool, new_vec: &mut [u8]) -> Result<SkinModel, &'static str> {
+fn translate_bone(skin_data: &[u8], w: usize, bone: &JsonValue, only_face: bool, new_vec: &mut [u8])
+    -> Result<Option<SkinModel>, &'static str> {
+
     let name = bone["name"].as_str();
     if name.is_none() {
         return Err("bone doesn't have a name");
@@ -470,14 +489,14 @@ fn translate_bone(skin_data: &[u8], w: usize, bone: &JsonValue, only_face: bool,
     if only_face {
         // only translate the face
         if !"hat".eq(name) && !"head".eq(name) {
-            return Ok(Unknown);
+            return Ok(None);
         }
     }
 
     let result = get_texture_position(name);
-    // we don't have to map every bone, and bones that we don't have to map have are: 0, 1
+    // we don't have to map every bone
     if result.is_none() {
-        return Ok(Unknown);
+        return Ok(None);
     }
     let position = result.unwrap();
 
@@ -485,22 +504,26 @@ fn translate_bone(skin_data: &[u8], w: usize, bone: &JsonValue, only_face: bool,
 
     let cubes = &bone["cubes"];
     if !cubes.is_null() {
+        on_bone_found(name, BoneType::Cube, bone);
+
         if !cubes.is_array() {
             return Err("cubes isn't an array");
         }
         if cubes.is_empty() {
-            return Ok(Unknown); // apparently empty cubes is valid :shrug:
+            return Ok(None); // apparently empty cubes is valid :shrug:
         }
         return translate_cubed_bone(skin_data, w, name, &position, cubes, new_vec);
     }
 
     let poly_mesh = &bone["poly_mesh"];
     if !poly_mesh.is_null() {
+        on_bone_found(name, BoneType::Poly, bone);
+
         return translate_poly_bone(skin_data, w, name, &position, poly_mesh, new_vec);
     }
 
     // not every bone has cubes nor a poly mesh
-    Ok(Unknown)
+    Ok(None)
 }
 
 fn get_bone_offset(uv: &JsonValue) -> Option<(usize, usize)> {
@@ -510,20 +533,27 @@ fn get_bone_offset(uv: &JsonValue) -> Option<(usize, usize)> {
     Some((uv[0].as_f64()? as usize, uv[1].as_f64()? as usize))
 }
 
-fn size_to_tex_size(size: &JsonValue) -> Option<(SkinModel, usize, usize)> {
+fn size_to_tex_size(size: &JsonValue) -> Option<(Option<SkinModel>, usize, usize)> {
     let width = size[0].as_f64()?;
     let height = size[1].as_f64()?;
     let depth = size[2].as_f64()?;
 
     let skin_model = match width.ceil() as i32 {
-        3 => Alex,
-        4 => Steve,
-        _ => Unknown
+        3 => Some(Slim),
+        4 => Some(Classic),
+        _ => None
     };
 
     Some((skin_model, ((depth * 2.0) + (width * 2.0)) as usize, (depth + height).round() as usize))
 }
 
+fn is_bottom_arm(bone_name: &str) -> bool {
+    // todo alternatively we add a method that converts a SkinPart + SkinLayer to the bone name?
+    let section =
+        bone_name_to_skin_section(bone_name)
+            .expect("we only translate bones that have a section??");
+    section.1 == SkinLayer::Bottom && section.0 == &SkinPart::ArmLeft || section.0 == &SkinPart::ArmRight
+}
 
 fn bone_name_to_skin_section(bone_name: &primitive::str) -> Option<SkinSection> {
     match bone_name {
@@ -543,8 +573,83 @@ fn bone_name_to_skin_section(bone_name: &primitive::str) -> Option<SkinSection> 
     }
 }
 
-
 fn get_texture_position(bone_name: &primitive::str) -> Option<OffsetAndDimension> {
     let section = bone_name_to_skin_section(bone_name)?;
     texture_position(section)
 }
+
+//region skin debugger
+#[cfg(feature = "build-binary")]
+fn get_instance<'a>() -> MutexGuard<'a, crate::gui::skin_convert::SkinConvertData> {
+    crate::gui::skin_convert::INSTANCE.lock().unwrap()
+}
+
+#[cfg(feature = "build-binary")]
+fn on_start_convert(client_claims: &Value, geometry_data: &JsonValue, resource_patch: &JsonValue) {
+    get_instance().start_convert(client_claims, geometry_data, resource_patch);
+}
+
+#[cfg(not(feature = "build-binary"))]
+#[inline(always)]
+fn on_start_convert(client_claims: &Value, geometry_data: &JsonValue, resource_patch: &JsonValue) {}
+
+#[cfg(feature = "build-binary")]
+fn on_change_geometry(
+    geometry_name: &str,
+    geometry_entry: &JsonValue,
+    source_image: &[u8],
+    image_width: usize
+) {
+    get_instance().change_geometry_entry(geometry_name, geometry_entry, source_image, image_width);
+}
+
+#[cfg(not(feature = "build-binary"))]
+#[inline(always)]
+fn on_change_geometry(
+    geometry_name: &str,
+    geometry_entry: &JsonValue,
+    source_image: &[u8],
+    image_width: usize
+) {}
+
+
+#[cfg(feature = "build-binary")]
+fn on_bone_found(name: &str, bone_type: BoneType, geometry: &JsonValue) {
+    get_instance().found_bone(name, bone_type, geometry);
+}
+
+#[cfg(not(feature = "build-binary"))]
+#[inline(always)]
+fn on_bone_found(name: &str, bone_type: BoneType, geometry: &JsonValue) {}
+
+
+#[cfg(feature = "build-binary")]
+fn on_cube_translated(name: &str, source: &[u8], source_width: usize, source_section: &OffsetAndDimension, step_image: &[u8]) {
+    get_instance().bone_handled(name, source, source_width, source_section, step_image);
+}
+
+#[cfg(not(feature = "build-binary"))]
+#[inline(always)]
+fn on_cube_translated(name: &str, source: &[u8], source_width: usize, source_section: &OffsetAndDimension, step_image: &[u8]) {}
+
+
+#[cfg(feature = "build-binary")]
+fn on_poly_translated(name: &str, source: &[u8], source_width: usize, source_section: &OffsetAndDimension, step_image: &[u8]) {
+    get_instance().bone_handled(name, source, source_width, source_section, step_image);
+}
+
+#[cfg(not(feature = "build-binary"))]
+#[inline(always)]
+fn on_poly_translated(name: &str, source: &[u8], source_width: usize, source_section: &OffsetAndDimension, step_image: &[u8]) {}
+
+
+#[cfg(feature = "build-binary")]
+fn on_finish_convert(final_image: &[u8]) {
+    get_instance().finish_convert(final_image);
+}
+
+#[cfg(not(feature = "build-binary"))]
+#[inline(always)]
+fn on_finish_convert(final_image: &[u8]) {}
+
+//endregion

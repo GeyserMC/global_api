@@ -8,10 +8,11 @@ extern crate sha2;
 
 use serde_json::Value;
 
-use crate::skin_convert::converter::{get_skin_or_convert_geometry, SkinModel};
+use crate::skin_convert::converter::get_skin_or_convert_geometry;
 use crate::skin_convert::ConvertResult::{Error, Invalid, Success};
 use crate::skin_convert::pixel_cleaner::clear_unused_pixels;
 use crate::skin_convert::skin_codec::{encode_image, ImageWithHashes};
+use crate::SkinModel;
 
 pub mod converter;
 mod pixel_cleaner;
@@ -39,15 +40,15 @@ pub fn convert_skin(client_claims: &Value) -> ConvertResult {
     let skin_info = collect_result.ok().unwrap();
 
     // sometimes its already defined which model the skin is
-    let mut arm_model = SkinModel::Unknown;
+    let mut arm_model: Option<SkinModel> = None;
     let arm_size = client_claims.get("ArmSize");
     if let Some(arm_size) = arm_size {
         let arm_size = arm_size.as_str();
         if let Some(arm_size) = arm_size {
             arm_model = match arm_size {
-                "slim" => SkinModel::Alex,
-                "steve" => SkinModel::Steve,
-                _ => SkinModel::Unknown
+                "slim" => Some(SkinModel::Slim),
+                "steve" => Some(SkinModel::Classic),
+                _ => None
             };
         }
     }
@@ -58,8 +59,8 @@ pub fn convert_skin(client_claims: &Value) -> ConvertResult {
     }
 
     let (mut raw_data, mut is_steve) = convert_result.unwrap();
-    if arm_model != SkinModel::Unknown {
-        is_steve = arm_model == SkinModel::Steve;
+    if let Some(model) = arm_model {
+        is_steve = model == SkinModel::Classic;
     }
 
     clear_unused_pixels(&mut raw_data, is_steve);

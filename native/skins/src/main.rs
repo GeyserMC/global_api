@@ -10,6 +10,7 @@ use rgb::ComponentBytes;
 use serde_json::Value;
 use crate::common::Offset;
 use crate::common::skin::{SkinLayer, SkinModel, SkinSection};
+use crate::gui::start_gui;
 
 use crate::skin_codec::{encode_custom_image, ImageWithHashes};
 use crate::skin_convert::{ConvertResult, convert_skin, skin_codec};
@@ -18,17 +19,20 @@ use crate::skin_render::flat_render::{render_front, render_section};
 mod common;
 mod skin_convert;
 mod skin_render;
-pub mod rustler_utils;
+mod rustler_utils;
+pub mod gui;
 
 fn main() -> Result<(), String> {
-    handle_skin_data_to_png_file().unwrap();
-    handle_client_data_file().unwrap();
+    // handle_skin_data_to_png_file().unwrap();
+    // handle_client_data_file().unwrap();
 
-    render_skin("resources/steve_skin.png", 64, SkinModel::Classic, SkinRenderType::Front)?;
+    // render_skin("resources/steve_skin.png", 64, SkinModel::Classic, SkinRenderType::Front)?;
     // render_skin(
     //     "resources/alex_skin.png", 64, SkinModel::Slim,
     //     SkinRenderType::Section(SkinSection(&SkinPart::Body, SkinLayer::Both))
     // )?;
+
+    start_gui();
 
     Ok(())
 }

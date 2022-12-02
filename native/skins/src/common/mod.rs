@@ -1,5 +1,6 @@
 use rustler::NifTuple;
 
+pub mod geometry;
 pub mod skin;
 pub mod texture;
 

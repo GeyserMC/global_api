@@ -235,3 +235,9 @@ pub fn scale_and_fill_texture(source_data: &[u8], target_data: &mut [u8], source
     }
 }
 
+pub fn set_rgb_pixel(image: &mut [u8], width: usize, x: usize, y: usize, r: u8, g: u8, b: u8) {
+    image[(y * width + x) * RGBA_CHANNELS] = r;
+    image[(y * width + x) * RGBA_CHANNELS + 1] = g;
+    image[(y * width + x) * RGBA_CHANNELS + 2] = b;
+    image[(y * width + x) * RGBA_CHANNELS + 3] = 255;
+}
