@@ -1,5 +1,3 @@
-extern crate rustler;
-
 use rgb::ComponentBytes;
 use rustler::{atoms, Binary, Encoder, Env, init, ListIterator, nif, Term};
 use rustler::types::atom::{false_, true_};

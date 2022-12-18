@@ -1,3 +1,5 @@
+use crate::common::RGBA_CHANNELS;
+
 pub fn clear_unused_pixels(raw_data: &mut [u8], is_steve: bool) -> &mut [u8] {
     // clear the unused sections of a 64x64 skin
 
@@ -141,8 +143,8 @@ pub fn clear_unused_pixels(raw_data: &mut [u8], is_steve: bool) -> &mut [u8] {
 }
 
 fn set_pixel(vec: &mut [u8], x: usize, y: usize, width: usize, r: u8, g: u8, b: u8, a: u8) {
-    vec[(y * width + x) * 4] = r;
-    vec[(y * width + x) * 4 + 1] = g;
-    vec[(y * width + x) * 4 + 2] = b;
-    vec[(y * width + x) * 4 + 3] = a;
+    vec[(y * width + x) * RGBA_CHANNELS] = r;
+    vec[(y * width + x) * RGBA_CHANNELS + 1] = g;
+    vec[(y * width + x) * RGBA_CHANNELS + 2] = b;
+    vec[(y * width + x) * RGBA_CHANNELS + 3] = a;
 }

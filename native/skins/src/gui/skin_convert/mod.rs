@@ -60,6 +60,10 @@ impl SkinConvertData {
         self.geometry_entries.clear();
     }
 
+    pub fn initialized(&mut self) -> bool {
+        self.context.is_some()
+    }
+
     pub fn start_convert(
         &mut self,
         client_claims: &Value,

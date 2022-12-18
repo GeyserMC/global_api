@@ -2,7 +2,7 @@
 name = "skins"
 version = "0.1.0"
 authors = ["Tim203 <mctim203@gmail.com>"]
-edition = "2018"
+edition = "2021"
 
 [lib]
 name = "skins"

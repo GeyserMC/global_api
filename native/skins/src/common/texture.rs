@@ -153,18 +153,30 @@ pub fn texture_position_face(part: &SkinPart, layer: &SkinLayer, face: &SkinFace
 }
 
 
-pub fn scale_and_fill_texture(source_data: &[u8], target_data: &mut [u8], source_width: usize, target_width: usize, source: &OffsetAndDimension, target: &OffsetAndDimension) {
-    //todo uncomment and place fill in statement when fill will be replaced with upscale
-    // if target.width == source.width && target.height == source.height {
-    //     return;
-    // }
+pub fn scale_and_fill_texture(
+    source_data: &[u8],
+    target_data: &mut [u8],
+    source_width: usize,
+    target_width: usize,
+    source: &OffsetAndDimension,
+    target: &OffsetAndDimension
+) {
+    //todo instead of scaling the whole texture, it'd be better to scale the individual faces.
+    // some faces are larger than they should be in ratio to the rest of the texture
+    // e.g. a golem body is deeper than it should be in ratio to its height
+    // so the up and down faces should be scaled down more than the other faces
+    if target.width > source.width || target.height > source.height {
+        // upscale / fill
+        let x_scale = source.width as f64 / target.width as f64;
+        let y_scale = source.height as f64 / target.height as f64;
+        for x in 0..target.width {
+            for y in 0..target.height {
+                let source_pixel =
+                    (source.y_offset as f64 + y as f64 * y_scale).floor() as usize * source_width +
+                    (source.x_offset as f64 + x as f64 * x_scale).floor() as usize;
 
-    if target.width >= source.width || target.height >= source.height {
-        // fill
-        for x in 0..source.width {
-            for y in 0..source.height {
                 for i in (0..RGBA_CHANNELS).rev() {
-                    let val = source_data[((source.y_offset + y) * source_width + source.x_offset + x) * RGBA_CHANNELS + i];
+                    let val = source_data[source_pixel * RGBA_CHANNELS + i];
 
                     if i == RGBA_CHANNELS - 1 && val == 0 {
                         // alpha channel comes first,
@@ -176,48 +188,44 @@ pub fn scale_and_fill_texture(source_data: &[u8], target_data: &mut [u8], source
                 }
             }
         }
-
-        //todo should fill be replaced with upscale when the source's width/height doesn't match
-        // the target's width/height?
-        //
-        // let x_scale = source.width as f32 / target.width as f32;
-        // let y_scale = source.height as f32 / target.height as f32;
-        // for x in 0..target.width {
-        //     for y in 0..target.height {
-        //         let x1 = (((x + source.x_offset) as f32 + 0.5) * x_scale).floor() as usize;
-        //         let y1 = (((y + source.y_offset) as f32 + 0.5) * y_scale).floor() as usize;
-        //         for i in 0..SKIN_CHANNELS {
-        //             let pixel = skin_data[(y1 * skin_data_width + x1) * SKIN_CHANNELS + i];
-        //             new_vec[((target.y_offset + y) * new_width + target.x_offset + x) * SKIN_CHANNELS + i] = pixel
-        //         }
-        //     }
-        // }
-
     } else {
         // downscale
-        let x_scale = source.width / target.width;
-        let y_scale = source.height / target.height;
-        let sample_count = x_scale * y_scale;
+        let x_scale = source.width as f64 / target.width as f64;
+        let y_scale = source.height as f64 / target.height as f64;
+
+        // floor it as it'd otherwise take data from
+        // other parts of the skin that we don't want to scale
+        let x_sample_count = x_scale.floor() as usize;
+        let y_sample_count = y_scale.floor() as usize;
+        let sample_count = x_sample_count * y_sample_count;
+
+        let source_height = source_data.len() / RGBA_CHANNELS / source_width;
 
         // average x_scale x y_scale pixels
 
         for x in 0..target.width {
             for y in 0..target.height {
+                let source_x = (source.x_offset as f64 + x as f64 * x_scale).floor() as usize;
+                let source_y = (source.y_offset as f64 + y as f64 * y_scale).floor() as usize;
                 for i in (0..RGBA_CHANNELS).rev() {
                     let mut total: usize = 0;
+                    let mut sample_count = sample_count;
 
-                    let source_x = x + source.x_offset;
-                    let source_y = y + source.y_offset;
-                    for x_channel_sample in 0..x_scale {
-                        for y_channel_sample in 0..y_scale {
-                            let source_x = source_x * x_scale + x_channel_sample;
-                            let source_y = source_y * y_scale + y_channel_sample;
+                    for x_channel_sample in 0..x_sample_count {
+                        for y_channel_sample in 0..y_sample_count {
+                            let source_x = source_x + x_channel_sample;
+                            let source_y = source_y + y_channel_sample;
+
+                            if source_x >= source_width || source_y >= source_height {
+                                sample_count -= 1;
+                                continue;
+                            }
 
                             total += source_data[(source_y * source_width + source_x) * RGBA_CHANNELS + i] as usize;
                         }
                     }
 
-                    let average = total / sample_count;
+                    let average = (total / sample_count) as u8;
 
                     if i == RGBA_CHANNELS - 1 && average == 0 {
                         // alpha channel comes first,
@@ -228,7 +236,7 @@ pub fn scale_and_fill_texture(source_data: &[u8], target_data: &mut [u8], source
                     //todo should probably use the average of the already existing pixel
                     // if it has any. At the moment it's just overridden
 
-                    target_data[((target.y_offset + y) * target_width + target.x_offset + x) * RGBA_CHANNELS + i] = average as u8;
+                    target_data[((target.y_offset + y) * target_width + target.x_offset + x) * RGBA_CHANNELS + i] = average;
                 }
             }
         }

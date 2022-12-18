@@ -1,14 +1,6 @@
-extern crate base64;
-extern crate jsonwebtokens;
-extern crate lodepng;
-extern crate rgb;
-extern crate rustler;
-extern crate serde_json;
-extern crate sha2;
-
 use serde_json::Value;
 
-use crate::skin_convert::converter::get_skin_or_convert_geometry;
+use crate::skin_convert::converter::convert_skin as other_convert_skin;
 use crate::skin_convert::ConvertResult::{Error, Invalid, Success};
 use crate::skin_convert::pixel_cleaner::clear_unused_pixels;
 use crate::skin_convert::skin_codec::{encode_image, ImageWithHashes};
@@ -53,18 +45,18 @@ pub fn convert_skin(client_claims: &Value) -> ConvertResult {
         }
     }
 
-    let convert_result = get_skin_or_convert_geometry(skin_info, client_claims);
+    let convert_result = other_convert_skin(skin_info, client_claims);
     if let Err(err) = convert_result {
         return Error(err);
     }
 
-    let (mut raw_data, mut is_steve) = convert_result.unwrap();
+    let (mut raw_data, mut is_classic) = convert_result.unwrap();
     if let Some(model) = arm_model {
-        is_steve = model == SkinModel::Classic;
+        is_classic = model == SkinModel::Classic;
     }
 
-    clear_unused_pixels(&mut raw_data, is_steve);
+    clear_unused_pixels(&mut raw_data, is_classic);
     let data = encode_image(&mut raw_data);
 
-    Success(data, is_steve)
+    Success(data, is_classic)
 }

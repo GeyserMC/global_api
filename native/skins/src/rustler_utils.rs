@@ -1,5 +1,3 @@
-extern crate rustler;
-
 use rustler::{Binary, Env, OwnedBinary, Term};
 
 pub fn as_binary<'a>(env: Env<'a>, data: &[u8]) -> Term<'a> {

@@ -29,14 +29,6 @@ impl OffsetAndDimension {
     pub fn new(x_offset: usize, y_offset: usize, width: usize, height: usize) -> OffsetAndDimension {
         OffsetAndDimension { x_offset, y_offset, width, height }
     }
-    pub fn nul() -> OffsetAndDimension {
-        OffsetAndDimension {
-            x_offset: 0,
-            y_offset: 0,
-            width: 0,
-            height: 0
-        }
-    }
 }
 
 impl Offset {
