@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::ops::DerefMut;
 use std::sync::{Arc, Mutex};
-use egui::{ColorImage, Context, SidePanel, TextureFilter, TextureHandle, Window};
+use egui::{ColorImage, Context, Label, Sense, SidePanel, TextureFilter, TextureHandle, Window};
 use json::JsonValue;
 use lazy_static::lazy_static;
 use serde_json::Value;
@@ -163,7 +163,9 @@ impl SkinWindowContext for SkinConvertData {
 
             Window::new("client claims").vscroll(true).show(ctx, |ui| {
                 if let Some(data) = &data.client_claims {
-                    ui.label(data);
+                    if ui.add(Label::new(data).sense(Sense::click())).clicked() {
+                        ui.output().copied_text = data.to_owned();
+                    }
                 } else {
                     ui.label("Please insert client_data first!");
                 }
@@ -171,7 +173,9 @@ impl SkinWindowContext for SkinConvertData {
 
             Window::new("geometry data").vscroll(true).show(ctx, |ui| {
                 if let Some(data) = &data.geometry_data {
-                    ui.label(data);
+                    if ui.add(Label::new(data).sense(Sense::click())).clicked() {
+                        ui.output().copied_text = data.to_owned();
+                    }
                 } else {
                     ui.label("Please insert client_data first!");
                 }
@@ -194,7 +198,9 @@ impl SkinWindowContext for SkinConvertData {
 
             Window::new("resource patch").vscroll(true).show(ctx, |ui| {
                 if let Some(data) = &data.resource_patch {
-                    ui.label(data);
+                    if ui.add(Label::new(data).sense(Sense::click())).clicked() {
+                        ui.output().copied_text = data.to_owned();
+                    }
                 } else {
                     ui.label("Please insert client_data first!");
                 }

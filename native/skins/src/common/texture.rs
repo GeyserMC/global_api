@@ -165,18 +165,31 @@ pub fn scale_and_fill_texture(
     // some faces are larger than they should be in ratio to the rest of the texture
     // e.g. a golem body is deeper than it should be in ratio to its height
     // so the up and down faces should be scaled down more than the other faces
+
+    //todo what to do with skins where the offset + width/height > the width/height of the texture?
+    // e.g. 3ace113df9627893fd5be22b29164957
+
     if target.width > source.width || target.height > source.height {
         // upscale / fill
         let x_scale = source.width as f64 / target.width as f64;
         let y_scale = source.height as f64 / target.height as f64;
+
+        let source_height = source_data.len() / RGBA_CHANNELS / source_width;
+
         for x in 0..target.width {
             for y in 0..target.height {
-                let source_pixel =
-                    (source.y_offset as f64 + y as f64 * y_scale).floor() as usize * source_width +
-                    (source.x_offset as f64 + x as f64 * x_scale).floor() as usize;
+                let source_x = (source.x_offset as f64 + x as f64 * x_scale).floor() as usize;
+                let source_y = (source.y_offset as f64 + y as f64 * y_scale).floor() as usize;
+
+                if source_x >= source_width || source_y >= source_height {
+                    // println!("{:} {:}, {:} {:} ({:} {:})", x, y, source_x, source_y, x_scale, y_scale);
+                    continue;
+                }
+
+                let source_pixel = (source_y * source_width + source_x) * RGBA_CHANNELS;
 
                 for i in (0..RGBA_CHANNELS).rev() {
-                    let val = source_data[source_pixel * RGBA_CHANNELS + i];
+                    let val = source_data[source_pixel + i];
 
                     if i == RGBA_CHANNELS - 1 && val == 0 {
                         // alpha channel comes first,
@@ -225,6 +238,12 @@ pub fn scale_and_fill_texture(
                         }
                     }
 
+                    if sample_count == 0 {
+                        // println!("sample count 0 on {:} {:} {:} ({:} {:})", x, y, i, x_scale, y_scale);
+                        // happens e.g. when the offset + width/height > the texture width/height
+                        break;
+                    }
+
                     let average = (total / sample_count) as u8;
 
                     if i == RGBA_CHANNELS - 1 && average == 0 {
@@ -244,8 +263,13 @@ pub fn scale_and_fill_texture(
 }
 
 pub fn set_rgb_pixel(image: &mut [u8], width: usize, x: usize, y: usize, r: u8, g: u8, b: u8) {
-    image[(y * width + x) * RGBA_CHANNELS] = r;
-    image[(y * width + x) * RGBA_CHANNELS + 1] = g;
-    image[(y * width + x) * RGBA_CHANNELS + 2] = b;
-    image[(y * width + x) * RGBA_CHANNELS + 3] = 255;
+    let pixel = (y * width + x) * RGBA_CHANNELS;
+    if image.len() < pixel + 3 {
+        println!("can't set rgb pixel at {:} {:}, out of bounds!", x, y);
+        return;
+    }
+    image[pixel] = r;
+    image[pixel + 1] = g;
+    image[pixel + 2] = b;
+    image[pixel + 3] = 255;
 }

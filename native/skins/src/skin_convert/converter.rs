@@ -62,10 +62,7 @@ pub fn convert_skin(info: SkinInfo, client_claims: &Value) -> Result<(Vec<u8>, b
             height: SKIN_HEIGHT,
         };
 
-        // apparently some people have an empty skin so yeah
-        if info.skin_width > 0 && !info.raw_skin_data.is_empty() {
-            scale_and_fill_texture(&info.raw_skin_data, &mut new_vec, skin_width, SKIN_WIDTH, &source, &target);
-        }
+        scale_and_fill_texture(&info.raw_skin_data, &mut new_vec, skin_width, SKIN_WIDTH, &source, &target);
 
         return Ok((new_vec, is_classic));
     }
@@ -98,6 +95,7 @@ fn convert_geometry(skin_data: &[u8], mut skin_width: usize, client_claims: &Val
     let mut accurate_skin_data: Vec<u8>;
     let accurate_skin: &[u8];
 
+    //todo instead of scaling the actual image, just multiply all calculations by the scale
     if skin_width != tex_width || skin_height != tex_height {
         // we have to scale the skin data to what the geometry says
 
@@ -156,6 +154,8 @@ fn convert_geometry(skin_data: &[u8], mut skin_width: usize, client_claims: &Val
 
     // lets check (and translate it) if the skin also has an animated head
 
+    //todo when applying animated images, make sure to override all pixels that
+    // were already present on the target image. e.g. ddba25386561f13367f1c8ee7845872b
     let animated_face = &geometry_patch["animated_face"];
     if animated_face.is_string() {
         let animated_face = animated_face.as_str();
@@ -309,6 +309,8 @@ fn translate_cubed_bone(
     cubes: &JsonValue,
     new_vec: &mut [u8]
 ) -> Result<Option<SkinModel>, &'static str> {
+    //todo a cubed bone can have multiple cubes
+    // e.g. ffaa9a60d29be2ca3eea2e845463c4f8
     let cube = &cubes[0];
 
     let size = &cube["size"];
@@ -333,8 +335,9 @@ fn translate_cubed_bone(
         None
     };
 
-    // temp 'fix'
-    // todo find out why we aren't doing anything when uv is an object
+    //todo impl this and find out if that way is the only way that an uv object can be used
+    // every face is a key and every face has the following keys: uv and uv_size
+    // see 1b8fa001a3513de16b3b49b1a2e547ac
     if uv.is_object() {
         return Ok(result);
     }
@@ -440,6 +443,8 @@ fn translate_poly_bone(
         }
 
         if u > w_f || v > h_f || u < 0.0 || v < 0.0 {
+            //todo skins like 5b2ad288a512a88d7083165f9284344f & e6f3c367ebad2e1c289771d4d0654132
+            // use out of bounds entries. should we support this?
             return Err("uvs contains an out of bounds entry");
         }
 

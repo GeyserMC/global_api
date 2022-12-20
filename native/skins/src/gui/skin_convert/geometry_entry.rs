@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::ops::Mul;
 
-use egui::{Context, Slider, TextureHandle, Window};
+use egui::{Context, Label, Sense, Slider, TextureHandle, Window};
 use json::JsonValue;
 
 use crate::common::geometry::BoneType;
@@ -135,7 +135,9 @@ impl SkinDebugGeometryEntry {
 
 pub fn update(ctx: &Context, entry: &mut SkinDebugGeometryEntry) {
     Window::new(format!("geometry entry - {:}", entry.short_name)).vscroll(true).show(ctx, |ui| {
-        ui.label(&entry.geometry_entry);
+        if ui.add(Label::new(&entry.geometry_entry).sense(Sense::click())).clicked() {
+            ui.output().copied_text = entry.geometry_entry.to_owned();
+        }
     });
 
     Window::new(format!("source image - {}", entry.short_name)).show(ctx, |ui| {
@@ -167,7 +169,10 @@ pub fn update(ctx: &Context, entry: &mut SkinDebugGeometryEntry) {
         if entry.selected_bone == -1 {
             ui.label("Please select a bone first!");
         } else {
-            ui.label(entry.bone_geometry.get(entry.selected_bone as usize).unwrap());
+            let content: &String = entry.bone_geometry.get(entry.selected_bone as usize).unwrap();
+            if ui.add(Label::new(content).sense(Sense::click())).clicked() {
+                ui.output().copied_text = content.to_owned();
+            }
         }
     });
 

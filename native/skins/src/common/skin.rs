@@ -43,6 +43,6 @@ lazy_static! {
         lodepng::decode32_file("resources/default/skin/alex_slim.png").unwrap().buffer.as_bytes().to_vec()
     };
     pub static ref STEVE_SKIN: Vec<u8> = {
-        lodepng::decode32_file("resources/default/skin/steve_wide.png").unwrap().buffer.as_bytes().to_vec()
+        lodepng::decode32_file("resources/default/skin/steve_classic.png").unwrap().buffer.as_bytes().to_vec()
     };
 }

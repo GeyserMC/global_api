@@ -1,5 +1,4 @@
 #![allow(dead_code)]
-extern crate core;
 
 use std::fs::File;
 use std::io::{Read, Write};
@@ -95,7 +94,8 @@ fn convert_single(mut client_data: String) -> Result<(), String> {
         return Err("Received client data is neither a JWT nor the raw content of a JWT".to_string());
     }
 
-    let result = base64::decode(client_data);
+    // JWT uses base64url
+    let result = base64::decode_config(client_data, base64::URL_SAFE);
     if result.is_err() {
         return Err("Received invalid base64!".to_string());
     }
