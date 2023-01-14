@@ -52,7 +52,6 @@ RUN 7z a global_api.7z /app/_build/${MIX_ENV}/rel/global_api
 
 FROM scratch AS release
 
-ARG MIX_ENV
 COPY --from=bake_release /app/global_api.7z .
 
 CMD ["/bin/bash"]
