@@ -1,15 +1,5 @@
 import Config
 
-# Configure your database
-config :global_api, GlobalApi.Repo,
-  hostname: System.get_env("DATABASE_HOSTNAME", "host.docker.internal"),
-  username: System.get_env("DATABASE_USERNAME", "root"),
-  password: System.get_env("DATABASE_PASSWORD", "global_api"),
-  database: System.get_env("DATABASE_DATABASE", "global_api_dev"),
-  pool_size: String.to_integer(System.get_env("DATABASE_POOL_SIZE", "3")),
-  port: String.to_integer(System.get_env("DATABASE_PORT", "3306")),
-  timeout: 25000
-
 # we require local DNS (api.geysermc e.g.) in order to test
 # the global api fully.
 domain = "geysermc"
@@ -32,24 +22,6 @@ config :global_api, :domain_info,
     domain: domain,
     subdomain: "skin"
   }
-
-# Even in development mode we're using the real subdomains and most stuff also uses https,
-# e.g. make sure that build.js tries to use http instead of https
-
-config :global_api, :xbox_accounts_app_info,
-  client_id: "client_id",
-  redirect_url: "https://api.geysermc.org/v2/admin/xbox/token",
-  client_secret: "client_secret"
-
-config :global_api, :link_app_info,
-  client_id: "client id",
-  redirect_url: "https://link.geysermc.org/method/online",
-  client_secret: "client secret"
-
-config :global_api, :telemetry,
-  host: nil,
-  port: 8125,
-  server_id: 1
 
 # For development, we disable any cache and enable
 # debugging and code reloading.
@@ -101,8 +73,8 @@ config :global_api, GlobalApiWeb.Endpoint,
     port: String.to_integer(System.get_env("PORT") || "80"),
     transport_options: [socket_opts: [:inet]]
   ],
-  url: [host: "api.geysermc"],
-  static_url: [host: "cdn.geysermc"],
+  url: [host: "api." <> domain],
+  static_url: [host: "cdn." <> domain],
   pubsub_server: GlobalApi.PubSub,
   live_reload: [
     patterns: [

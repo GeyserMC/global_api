@@ -10,12 +10,7 @@ import Config
 config :global_api,
   ecto_repos: [GlobalApi.Repo]
 
-config :global_api, :app,
-  metrics_auth: "your metrics auth",
-  mineskin_api_key: "your mineskin api key"
-
 config :sentry,
-  dsn: "your sentry dsn",
   environment_name: config_env(),
   enable_source_code_context: true,
   root_source_code_path: File.cwd!(),
@@ -62,9 +57,7 @@ config :phoenix, :json_library, Jason
 
 config :global_api, GlobalApi.PromEx,
   manual_metrics_start_delay: :no_delay,
-  drop_metrics_groups: [],
-  grafana: :disabled,
-  metrics_server: :disabled
+  drop_metrics_groups: []
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

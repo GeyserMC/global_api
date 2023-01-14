@@ -59,7 +59,6 @@ defmodule GlobalApi.MixProject do
       {:telemetry_metrics_statsd, "~> 0.6.2"},
       {:telemetry_poller, "~> 1.0"},
       {:sentry, "~> 8.0.6"},
-      {:distillery, "~> 2.1", only: :prod, git: "https://github.com/planswell/distillery", branch: "otp-25"},
       {:open_api_spex, "~> 3.12"},
       {:esbuild, "~> 0.5", runtime: Mix.env() == :dev},
       {:tailwind, "~> 0.1", runtime: Mix.env() == :dev}

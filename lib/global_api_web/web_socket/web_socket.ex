@@ -16,7 +16,7 @@ defmodule GlobalApiWeb.WebSocket do
 
   defstruct subscriptions: nil, creator_of: nil, last_ping: 0
 
-  @idle_timeout if Mix.env() == :prod, do: 20_000, else: 60 * 60 * 1_000
+  @idle_timeout if Utils.environment() == :prod, do: 20_000, else: 60 * 60 * 1_000
   @ping_interval 5_000
 
   @debug -1

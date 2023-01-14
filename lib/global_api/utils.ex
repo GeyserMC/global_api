@@ -11,6 +11,8 @@ defmodule GlobalApi.Utils do
 
   def get_env(key, atom), do: Application.get_env(:global_api, key)[atom]
 
+  def environment(), do: get_env(:app, :environment)
+
   def hash_string(hash) do
     hash
     |> Base.encode16

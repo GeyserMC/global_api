@@ -2,7 +2,9 @@ defmodule GlobalApiWeb.Router do
   use GlobalApiWeb, :router
   use Plug.ErrorHandler
 
-  domain_info = Application.get_env(:global_api, :domain_info)
+  alias GlobalApi.Utils
+
+  domain_info = Application.compile_env(:global_api, :domain_info)
   # we apparently can't call functions
   api_host = domain_info[:api][:subdomain] <> "."
   cdn_host = domain_info[:cdn][:subdomain] <> "."
@@ -89,7 +91,7 @@ defmodule GlobalApiWeb.Router do
   end
 
   scope "/", host: api_host do
-    scope "/v1", GlobalApiWeb.Api, log: Mix.env() == :dev do
+    scope "/v1", GlobalApiWeb.Api, log: Utils.environment() == :dev do
       pipe_through :api
 
       scope "/link" do
@@ -111,7 +113,7 @@ defmodule GlobalApiWeb.Router do
       end
     end
 
-    scope "/v2", GlobalApiWeb.Api, log: Mix.env() == :dev do
+    scope "/v2", GlobalApiWeb.Api, log: Utils.environment() == :dev do
       pipe_through :api
 
       scope "/admin" do
@@ -166,7 +168,7 @@ defmodule GlobalApiWeb.Router do
         pipe_through [:api, :swagger]
         get "/", OpenApiSpex.Plug.RenderSpec, []
       end
-      scope "/swaggerui" do
+      scope "/docs" do
         pipe_through :browser
         get "/", OpenApiSpex.Plug.SwaggerUI, path: "/openapi"
       end
@@ -174,7 +176,7 @@ defmodule GlobalApiWeb.Router do
   end
 
   # Enables LiveDashboard only for development
-  if Mix.env() == :dev do
+  if Utils.environment() == :dev do
     import Phoenix.LiveDashboard.Router
 
     pipeline :dashboard do
@@ -191,11 +193,11 @@ defmodule GlobalApiWeb.Router do
     end
   end
 
-  defp handle_errors(conn, %{reason: %GlobalApiWeb.WrappedError{message: message, status_code: status_code}}) do
+  def handle_errors(conn, %{reason: %GlobalApiWeb.WrappedError{message: message, status_code: status_code}}) do
     handle_error(conn, status_code, message)
   end
 
-  defp handle_errors(conn, _) do
+  def handle_errors(conn, _) do
     handle_error(conn, conn.status, Plug.Conn.Status.reason_phrase(conn.status))
   end
 

@@ -195,7 +195,7 @@ defmodule GlobalApi.XboxAccounts do
       {"Content-Type", "application/x-www-form-urlencoded"}
     ]
 
-    scope = if is_link do "Xboxlive.signin" else "Xboxlive.offline_access" end
+    scope = if is_link do "XboxLive.signin" else "XboxLive.offline_access" end
 
     body = "client_id=" <> client_id <> "&scope=" <> scope <> "&redirect_uri=" <> redirect_url <> "&client_secret=" <> client_secret
     body = body <>

@@ -35,16 +35,11 @@ services:
     ports:
       - "80:80"
     volumes:
-      - ./lib:/app/lib:ro
-      - ./config:/app/config:ro
-      - ./assets:/app/assets:rw
-      - ./assets/node_modules:/app/assets/node_modules:rw
-      - ./priv/repo:/app/priv/repo:ro
-      - ./priv/native:/app/priv/native:rw
-      - ./native:/app/native:rw
-      - ./_build:/app/_build:rw
-      - ./deps:/app/deps:rw
-      - ./rel:/app/rel:ro
+      - ./_cache/_build/:/app/_build/:rw
+      - ./_cache/deps/:/app/deps/:rw
+      - ./_cache/node_modules/:/app/assets/node_modules/:rw
+      - ./_cache/cargo/registry/:/usr/local/cargo/registry/:rw
+      - .:/app/:rw
     depends_on:
       - db
     healthcheck:

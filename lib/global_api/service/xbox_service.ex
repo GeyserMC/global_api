@@ -12,7 +12,7 @@ defmodule GlobalApi.Service.XboxService do
         {_, response} = Cachex.fetch(
           :get_gamertag,
           xuid,
-          fn _ ->
+          fn ->
             identity = XboxRepo.get_by_xuid(xuid)
             if identity != nil do
               {:commit, identity.gamertag}

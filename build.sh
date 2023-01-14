@@ -2,11 +2,10 @@
 
 set -e
 
-APP_NAME="$(grep 'app:' mix.exs | sed -e 's/\[//g' -e 's/ //g' -e 's/app://' -e 's/[:,]//g')"
-APP_VSN="$(grep 'version:' mix.exs | cut -d '"' -f2)"
+export MIX_ENV=prod
+docker build -t global_api_release --target release . --build-arg MIX_ENV
 
-docker build -t release . --build-arg APP_VSN=${APP_VSN} --build-arg APP_NAME=${APP_NAME}
+id=$(docker create global_api_release)
 
-id=$(docker create release)
-docker cp $id:${APP_NAME}-${APP_VSN}.tar.gz .
+docker cp $id:global_api.7z .
 docker rm $id

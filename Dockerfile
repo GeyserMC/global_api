@@ -1,7 +1,6 @@
-FROM elixir:1.14 AS base
+FROM elixir:1.14.2 AS setup_base
 
 ARG MIX_ENV
-
 WORKDIR /app
 
 ENV NODE_VERSION=18 \
@@ -13,6 +12,7 @@ ENV NODE_VERSION=18 \
 RUN curl -sL https://deb.nodesource.com/setup_$NODE_VERSION.x | bash - && \
   apt-get install -y nodejs
 
+#todo ensure that Rust will always build with the x86_64 architecture
 RUN curl https://sh.rustup.rs -sSf > rustup.sh
 RUN chmod +x rustup.sh
 RUN ./rustup.sh -y --no-modify-path --profile minimal --default-toolchain $RUST_VERSION
@@ -22,43 +22,51 @@ RUN chmod -R a+w $RUSTUP_HOME $CARGO_HOME
 RUN mix local.hex --force && \
   mix local.rebar --force
 
-ENV MIX_ENV=${MIX_ENV:-prod}
+
+FROM setup_base AS bake_release
 
 COPY mix.exs mix.lock ./
-COPY assets/package.json assets/package-lock.json ./assets/
-RUN mix deps.get
-RUN cd assets && npm i && cd ../
+RUN mix deps.get --only ${MIX_ENV}
+RUN mkdir config
 
-# can't use single command as it'd copy all the dirs their content in one folder :/
-COPY config config
+COPY assets/package.json assets/package-lock.json ./assets/
+RUN npm ci --prefix ./assets
+
+COPY config/config.exs config/${MIX_ENV}.exs config/
+RUN mix deps.compile
+
+COPY priv priv
+
 COPY native native
 COPY lib lib
-COPY priv priv
 COPY assets assets
-
-
-FROM base AS dev
-#todo
-
-
-FROM debian:bullseye AS prod
-#todo use the release and run it
-
-
-FROM base AS release_build
 
 RUN mix assets.deploy
 
 COPY rel rel
-RUN mix distillery.release
+RUN mix release
+
+RUN apt install -y p7zip-full
+RUN 7z a global_api.7z /app/_build/${MIX_ENV}/rel/global_api
 
 
 FROM scratch AS release
 
-ARG APP_NAME \
-    APP_VSN
+ARG MIX_ENV
+COPY --from=bake_release /app/global_api.7z .
 
-# if this fails, check if APP_NAME & APP_VSN are defined
-COPY --from=release_build /app/_build/prod/rel/${APP_NAME}/releases/${APP_VSN}/${APP_NAME}.tar.gz ./${APP_NAME}-${APP_VSN}.tar.gz
+CMD ["/bin/bash"]
+
+
+FROM setup_base AS dev
+
+RUN apt install -y inotify-tools
+
+EXPOSE 80 443
+CMD npm i --prefix ./assets && mix deps.get && mix ecto.migrate && mix phx.server
+
+
+FROM debian:bullseye AS prod
+#todo use the release and run it
 
 CMD ["/bin/bash"]

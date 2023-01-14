@@ -3,13 +3,12 @@ defmodule GlobalApiWeb.Endpoint do
   use Phoenix.Endpoint, otp_app: :global_api
 
   alias GlobalApiWeb.Router
-
-  @static_url Application.get_env(:global_api, GlobalApiWeb.Endpoint)[:static_url][:host]
+  alias GlobalApi.Utils
 
   socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: Router.session_options()]]
 
   # Live Dashboard and is only enabled during development
-  if Mix.env() == :dev do
+  if Utils.environment() == :dev do
     plug Phoenix.LiveDashboard.RequestLogger,
          param_key: "request_logger",
          cookie_key: "request_logger"
@@ -25,7 +24,7 @@ defmodule GlobalApiWeb.Endpoint do
   #      if: {GlobalApi.UnplugPredicates.SecureMetricsEndpoint, []},
   #      do: {PromEx.Plug, prom_ex_module: GlobalApi.PromEx}
 
-  if Mix.env() == :prod do
+  if Utils.environment() == :prod do
     plug Plug.SSL
   end
 
@@ -35,11 +34,14 @@ defmodule GlobalApiWeb.Endpoint do
   # only serve the assets at the cdn subdomain
   plug :static_assets, nil
 
-  # stuff from let's encrypt
+  # .well-known is needed for let's encrypt.
+  # The base dir is /lib/global_api(-version for releases),
+  # but that would require us to know the version number for non-dev environments.
+  # So let's define it in the root dir
   plug Plug.Static,
-       at: "/",
+       at: "/.well-known",
        from: :global_api,
-       only: ~w(.well-known)
+       only: "../../.well-known"
 
   plug Plug.Parsers,
        parsers: [:multipart, :json],
@@ -54,6 +56,6 @@ defmodule GlobalApiWeb.Endpoint do
   @static_opts Plug.Static.init(at: "/", from: :global_api, gzip: true, headers: %{"access-control-allow-origin" => "*"})
 
   def static_assets(conn, _) do
-    if @static_url == conn.host, do: Plug.Static.call(conn, @static_opts), else: conn
+    if Utils.get_env(:app, :static_url) == conn.host, do: Plug.Static.call(conn, @static_opts), else: conn
   end
 end

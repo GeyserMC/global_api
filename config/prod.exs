@@ -1,4 +1,4 @@
-use Mix.Config
+import Config
 
 protocol = "https"
 domain = "geysermc.org"
@@ -50,15 +50,7 @@ config :global_api, GlobalApiWeb.Endpoint,
   static_url: [host: "cdn." <> domain],
   cache_static_manifest: "priv/static/cache_manifest.json",
   server: true,
-  root: ".",
   version: Application.spec(:global_api, :vsn)
 
 # Do not print debug messages in production
-config :logger,
-  level: :info,
-  compile_time_purge_matching: [
-    [level_lower_than: :info]
-  ]
-
-# Import the config/prod.secret.exs which loads secrets and configuration from environment variables.
-import_config "prod.secret.exs"
+config :logger, level: :info

@@ -3,6 +3,7 @@ defmodule GlobalApi.DatabaseUploader do
   require Logger
 
   alias GlobalApi.DatabaseQueue
+  alias GlobalApi.Utils
 
   def child_spec(opts) do
     %{
@@ -34,7 +35,7 @@ defmodule GlobalApi.DatabaseUploader do
       continue()
     catch
       _, error ->
-        stacktrace = if Mix.env() == :dev do __STACKTRACE__ else [] end
+        stacktrace = if Utils.environment() == :dev do __STACKTRACE__ else [] end
         Logger.error("try number: #{try_number}. Exception: #{Exception.format(:error, error, stacktrace)}")
         :timer.sleep(1000)
         try_apply(fn_ref, args, try_number + 1)

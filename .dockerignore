@@ -1,2 +1,13 @@
-assets/node_modules
-native/**/target
+_cache/
+_build/
+deps/
+assets/node_modules/
+native/**/target/
+priv/native/
+.elixir_ls/
+.idea/
+.git/
+.gitignore
+Dockerfile
+Jenkinsfile
+README*

@@ -42,6 +42,7 @@ npm-debug.log
 
 native/**/target/**
 priv/native/**
+_cache/
 
 token_cache.json
 
