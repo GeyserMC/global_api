@@ -8,7 +8,7 @@ pipeline {
       }
       post {
         success {
-          archiveArtifacts artifacts: '*.tar.gz', fingerprint: true
+          archiveArtifacts artifacts: '*.7z', fingerprint: true
         }
       }
     }
