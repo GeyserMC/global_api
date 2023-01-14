@@ -9,13 +9,13 @@ name = "skins"
 path = "src/lib.rs"
 crate-type = ["cdylib"]
 
-[[bin]]
-name = "skins-bin"
-path = "src/main.rs"
-required-features = ["build-binary"]
-
-[features]
-build-binary = ["egui", "eframe", "lazy_static"]
+#[[bin]]
+#name = "skins-bin"
+#path = "src/main.rs"
+#required-features = ["build-binary"]
+#
+#[features]
+#build-binary = ["egui", "eframe"]
 
 [dependencies]
 rustler = "0.26.0"
@@ -28,6 +28,7 @@ jsonwebtokens = "1.1.0"
 serde_json = "1.0.85"
 base64 = "0.13.0"
 json = "0.12.4"
+lazy_static = { version = "1.4.0" }
 
 # skin rendering
 image = { version = "0.24.4", features = ["png"] }
@@ -35,6 +36,5 @@ imageproc = "0.23.0"
 #ril = { version = "0.4.0", features = ["png", "text"] }
 
 # gui for bin
-egui = { version = "0.19.0", optional = true }
-eframe = { version = "0.19.0", optional = true }
-lazy_static = { version = "1.4.0", optional = true }
+egui = { version = "0.19.0" }
+eframe = { version = "0.19.0" }
