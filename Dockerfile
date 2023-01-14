@@ -1,6 +1,5 @@
 FROM elixir:1.14.2 AS setup_base
 
-ARG MIX_ENV
 WORKDIR /app
 
 ENV NODE_VERSION=18 \
@@ -24,15 +23,16 @@ RUN mix local.hex --force && \
 
 
 FROM setup_base AS bake_release
+ARG MIX_ENV
 
 COPY mix.exs mix.lock ./
-RUN mix deps.get --only ${MIX_ENV}
+RUN mix deps.get --only $MIX_ENV
 RUN mkdir config
 
 COPY assets/package.json assets/package-lock.json ./assets/
 RUN npm ci --prefix ./assets
 
-COPY config/config.exs config/${MIX_ENV}.exs config/
+COPY config/config.exs config/$MIX_ENV.exs config/
 RUN mix deps.compile
 
 COPY priv priv
@@ -47,7 +47,7 @@ COPY rel rel
 RUN mix release
 
 RUN apt install -y p7zip-full
-RUN 7z a global_api.7z /app/_build/${MIX_ENV}/rel/global_api
+RUN 7z a global_api.7z /app/_build/$MIX_ENV/rel/global_api
 
 
 FROM scratch AS release
