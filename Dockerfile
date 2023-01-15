@@ -25,6 +25,8 @@ RUN mix local.hex --force && \
 FROM setup_base AS bake_release
 ARG MIX_ENV
 
+RUN apt install -y p7zip-full
+
 COPY mix.exs mix.lock ./
 RUN mix deps.get --only $MIX_ENV
 RUN mkdir config
@@ -32,7 +34,9 @@ RUN mkdir config
 COPY assets/package.json assets/package-lock.json ./assets/
 RUN npm ci --prefix ./assets
 
-COPY config/config.exs config/$MIX_ENV.exs config/
+# we have to define runtime.exs as well,
+# otherwise the release would be configured like it doesn't have a runtime.exs
+COPY config/config.exs config/$MIX_ENV.exs config/runtime.exs config/
 RUN mix deps.compile
 
 COPY priv priv
@@ -46,7 +50,6 @@ RUN mix assets.deploy
 COPY rel rel
 RUN mix release
 
-RUN apt install -y p7zip-full
 RUN 7z a global_api.7z /app/_build/$MIX_ENV/rel/global_api
 
 

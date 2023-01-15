@@ -1,8 +1,7 @@
 defmodule GlobalApi.SkinsNif do
   use Rustler,
       otp_app: :global_api,
-      crate: :skins,
-      mode: :release
+      crate: :skins
 
   @type extra_data() :: {binary, binary, integer}
 

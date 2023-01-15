@@ -40,8 +40,7 @@ defmodule GlobalApiWeb.Endpoint do
   # So let's define it in the root dir
   plug Plug.Static,
        at: "/.well-known",
-       from: :global_api,
-       only: "../../.well-known"
+       from: "../../.well-known"
 
   plug Plug.Parsers,
        parsers: [:multipart, :json],
