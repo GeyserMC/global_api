@@ -27,6 +27,7 @@ config :global_api, GlobalApi.Repo,
 config :global_api, :app,
   environment: config_env(),
   static_url: "cdn.geysermc",
+  well_known_dir: "../.well-known",
   metrics_auth: "your metrics auth",
   mineskin_api_key: "your mineskin api key"
 

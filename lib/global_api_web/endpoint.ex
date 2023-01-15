@@ -34,12 +34,10 @@ defmodule GlobalApiWeb.Endpoint do
   # only serve the assets at the cdn subdomain
   plug :static_assets, nil
 
-  # .well-known is needed for let's encrypt.
-  # The base dir is the CWD (which would be /*build*),
-  # so let's use a build-independent directory (the parent)
+  # .well-known is needed for let's encrypt
   plug Plug.Static,
        at: "/.well-known",
-       from: "../.well-known"
+       from: Utils.get_env(:app, :well_known_dir)
 
   plug Plug.Parsers,
        parsers: [:multipart, :json],
