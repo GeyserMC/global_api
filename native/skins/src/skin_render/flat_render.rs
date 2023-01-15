@@ -102,8 +102,7 @@ fn render_position(
     target_offset: &Offset,
     target_scale: usize
 ) {
-    let width = target.width() as usize;
-    let height = target.height() as usize;
+    let target_width = target.width() as usize;
 
     if target_scale == 0 {
         return;
@@ -112,9 +111,9 @@ fn render_position(
     let target_position = OffsetAndDimension {
         x_offset: target_offset.x_offset * target_scale,
         y_offset: target_offset.y_offset * target_scale,
-        width: width * target_scale,
-        height: height * target_scale,
+        width: data_position.width * target_scale,
+        height: data_position.height * target_scale,
     };
 
-    scale_and_fill_texture(data, target, data_width, width, data_position, &target_position);
+    scale_and_fill_texture(data, target, data_width, target_width, data_position, &target_position);
 }
