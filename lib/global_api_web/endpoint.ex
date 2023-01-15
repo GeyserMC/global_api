@@ -39,7 +39,7 @@ defmodule GlobalApiWeb.Endpoint do
   # so let's use a build-independent directory (the parent)
   plug Plug.Static,
        at: "/.well-known",
-       from: "../../.well-known"
+       from: "../.well-known"
 
   plug Plug.Parsers,
        parsers: [:multipart, :json],
