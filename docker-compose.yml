@@ -32,6 +32,8 @@ services:
       target: dev
       args:
         MIX_ENV: dev
+    environment:
+      - RUST_BACKTRACE=full
     ports:
       - "80:80"
     volumes:

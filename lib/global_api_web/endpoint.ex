@@ -35,9 +35,8 @@ defmodule GlobalApiWeb.Endpoint do
   plug :static_assets, nil
 
   # .well-known is needed for let's encrypt.
-  # The base dir is /lib/global_api(-version for releases),
-  # but that would require us to know the version number for non-dev environments.
-  # So let's define it in the root dir
+  # The base dir is the CWD (which would be /*build*),
+  # so let's use a build-independent directory (the parent)
   plug Plug.Static,
        at: "/.well-known",
        from: "../../.well-known"

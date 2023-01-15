@@ -20,9 +20,13 @@ defmodule GlobalApi.Utils do
   end
 
   def is_hexadecimal(data) do
-    case Base.decode16(data, case: :lower) do
-      {:ok, _} -> true
-      _ -> false
+    if rem(String.length(data), 2) != 0 do
+      is_hexadecimal(data <> "0")
+    else
+      case Base.decode16(data, case: :lower) do
+        {:ok, _} -> true
+        _ -> false
+      end
     end
   end
 

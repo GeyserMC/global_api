@@ -8,6 +8,7 @@ import Config
 # The block below contains prod specific runtime configuration.
 
 #TODO: place all the domain_info stuff in here and use FastGlobal
+#todo only use environment variables in here
 
 is_prod = config_env() == :prod
 
