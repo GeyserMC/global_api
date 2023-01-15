@@ -78,11 +78,11 @@ defmodule GlobalApiWeb.WebSocket do
 
   def websocket_handle(:ping, state) do
     current_time = System.monotonic_time(:millisecond)
-    if (current_time - state.last_ping) < @ping_interval do
-      {[{:close, @ping_too_fast}], state}
-    else
+    # if (current_time - state.last_ping) < @ping_interval do
+    #   {[{:close, @ping_too_fast}], state}
+    # else
       {:ok, %{state | last_ping: current_time}}
-    end
+    # end
   end
 
   def websocket_handle(:pong, state) do
