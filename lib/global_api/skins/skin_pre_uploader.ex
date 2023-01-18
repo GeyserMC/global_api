@@ -6,12 +6,6 @@ defmodule GlobalApi.SkinPreUploader do
   alias GlobalApi.SocketManager
   alias GlobalApi.Utils
 
-  @headers [
-    {"Content-Type", "multipart/form-data"},
-    {"User-Agent", "GeyserMC/global_api"},
-    {"Authorization", Application.get_env(:global_api, :app)[:mineskin_api_key]}
-  ]
-
   def start_link(init_arg) do
     GenServer.start_link(__MODULE__, init_arg, name: __MODULE__)
   end
@@ -54,7 +48,11 @@ defmodule GlobalApi.SkinPreUploader do
     #      :multipart,
     #      [{"file", png, {"form-data", [name: "file", filename: "floodgate.png"]}, []}]
     #    },
-    #    @headers,
+    #    [
+    #      {"Content-Type", "multipart/form-data"},
+    #      {"User-Agent", "GeyserMC/global_api"},
+    #      {"Authorization", Utils.get_env(:app, :mineskin_api_key)}
+    #    ],
     #    [recv_timeout: 15_000]
     #  )
 
