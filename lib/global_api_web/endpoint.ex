@@ -37,7 +37,7 @@ defmodule GlobalApiWeb.Endpoint do
   # .well-known is needed for let's encrypt
   plug Plug.Static,
        at: "/.well-known",
-       from: Utils.get_env(:app, :well_known_dir)
+       from: {:global_api, Utils.get_env(:app, :well_known_dir)}
 
   plug Plug.Parsers,
        parsers: [:multipart, :json],
