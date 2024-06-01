@@ -41,6 +41,7 @@ defmodule GlobalApi.SkinUploader do
         },
         [
           {"Content-Type", "multipart/form-data"},
+          {"Accept", "application/json"},
           {"User-Agent", "GeyserMC/global_api"},
           {"Authorization", Utils.get_env(:app, :mineskin_api_key)}
         ],
@@ -50,55 +51,60 @@ defmodule GlobalApi.SkinUploader do
       case request do
         {:ok, response} ->
           {resp_type, body} = Jason.decode(response.body)
-          # let's handle errors first. For whatever reason cloudflare throws a 502 once in a while
+          # let's handle errors first. For whatever reason cloudflare throws a HTML 502 once in a while
           if resp_type != :ok do
             IO.puts("#{resp_type} #{inspect(body)}")
             upload_and_store({rgba_hash, is_steve, png}, true)
           else
-            # yay, data is valid
-
-            error = body["error"]
-            if error != nil do
-              IO.puts("Error while uploading skin! #{body["errorCode"]} #{error}. First try? #{first_try}")
-              IO.puts(inspect(body))
-
-              timeout = ceil((body["nextRequest"] || 0) * 1000) - System.system_time(:millisecond)
-              timeout = max(timeout, 0)
-
-              if first_try do
-                :timer.sleep(timeout)
-                upload_and_store({rgba_hash, is_steve, png}, false)
-              else
-                SocketManager.skin_upload_failed(rgba_hash)
-                :timer.sleep(timeout)
-              end
+            if response.status_code >= 500 do
+              :timer.sleep(2_000)
+              IO.puts("Received #{response.status_code}, #{inspect(body)}")
+              upload_and_store({rgba_hash, is_steve, png}, first_try)
             else
-              hash_string = Utils.hash_string(rgba_hash)
+              # yay, data and response is valid
+              error = body["error"]
+              if error != nil do
+                IO.puts("Error while uploading skin! #{body["errorCode"]} #{error}. First try? #{first_try}")
+                IO.puts(inspect(body))
 
-              texture_data = body["data"]["texture"]
+                timeout = ceil((body["nextRequest"] || 0) * 1000) - System.system_time(:millisecond)
+                timeout = max(timeout, 0)
 
-              texture_id = texture_data["url"]
-              # http://textures.minecraft.net/texture/ = 38 chars long
-              texture_id = String.slice(texture_id, 38, String.length(texture_id) - 38)
+                if first_try do
+                  :timer.sleep(timeout)
+                  upload_and_store({rgba_hash, is_steve, png}, false)
+                else
+                  SocketManager.skin_upload_failed(rgba_hash)
+                  :timer.sleep(timeout)
+                end
+              else
+                hash_string = Utils.hash_string(rgba_hash)
 
-              skin_value = texture_data["value"]
-              skin_signature = texture_data["signature"]
+                texture_data = body["data"]["texture"]
 
-              SocketManager.skin_uploaded(
-                rgba_hash,
-                %{
-                  hash: hash_string,
-                  texture_id: texture_id,
-                  value: skin_value,
-                  signature: skin_signature,
-                  is_steve: is_steve
-                }
-              )
-              :telemetry.execute([:global_api, :metrics, :skins, :skin_uploaded], %{count: 1, first_try: first_try})
+                texture_id = texture_data["url"]
+                # http://textures.minecraft.net/texture/ = 38 chars long
+                texture_id = String.slice(texture_id, 38, String.length(texture_id) - 38)
 
-              timeout = ceil((body["nextRequest"] || 0) * 1_000) - System.system_time(:millisecond)
-              if timeout > 0 do
-                :timer.sleep(timeout)
+                skin_value = texture_data["value"]
+                skin_signature = texture_data["signature"]
+
+                SocketManager.skin_uploaded(
+                  rgba_hash,
+                  %{
+                    hash: hash_string,
+                    texture_id: texture_id,
+                    value: skin_value,
+                    signature: skin_signature,
+                    is_steve: is_steve
+                  }
+                )
+                :telemetry.execute([:global_api, :metrics, :skins, :skin_uploaded], %{count: 1, first_try: first_try})
+
+                timeout = ceil((body["nextRequest"] || 0) * 1_000) - System.system_time(:millisecond)
+                if timeout > 0 do
+                  :timer.sleep(timeout)
+                end
               end
             end
           end
