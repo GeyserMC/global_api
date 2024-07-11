@@ -3,7 +3,7 @@
 set -e
 
 export MIX_ENV=prod
-docker build -t global_api_release --target release . --build-arg MIX_ENV
+docker build -t global_api_release --target release_7z . --build-arg MIX_ENV
 
 id=$(docker create global_api_release)
 

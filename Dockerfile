@@ -53,12 +53,11 @@ RUN mix release
 RUN 7z a global_api.7z /app/_build/$MIX_ENV/rel/global_api
 
 
-FROM scratch AS release
+FROM scratch AS release_7z
 
 COPY --from=bake_release /app/global_api.7z .
 
 CMD ["/bin/bash"]
-
 
 FROM setup_base AS dev
 
@@ -68,7 +67,10 @@ EXPOSE 80 443
 CMD npm i --prefix ./assets && mix deps.get && mix ecto.migrate && mix phx.server
 
 
-FROM debian:bullseye AS prod
-#todo use the release and run it
+FROM debian:bullseye AS release
+ARG MIX_ENV
+WORKDIR /app
 
-CMD ["/bin/bash"]
+COPY --from=bake_release /app/_build/$MIX_ENV/rel/global_api .
+
+CMD /app/bin/global_api start
