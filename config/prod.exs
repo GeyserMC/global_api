@@ -22,13 +22,8 @@ config :global_api, :domain_info,
     subdomain: "skin"
   }
 
-# The `cipher_suite` is set to `:strong` to support only the
-# latest and more secure SSL ciphers
-# `log_level` is set to `:error` to ignore SSL errors received from e.g. old client
-
 config :global_api, GlobalApiWeb.Endpoint,
-  http: [port: 80],
-  https: [
+  http: [
     dispatch: [
       {:_, [
         {"/ws", GlobalApiWeb.WebSocket, []},
@@ -36,15 +31,10 @@ config :global_api, GlobalApiWeb.Endpoint,
       ]}
     ],
     ip: {0, 0, 0, 0, 0, 0, 0, 0},
-    port: String.to_integer(System.get_env("PORT") || "443"),
-    otp_app: :global_api,
-    keyfile: "path/to/privkey.pem",
-    cacertfile: "path/to/fullchain.pem",
-    certfile: "path/to/cert.pem",
-    cipher_suite: :strong,
-    log_level: :error
+    port: String.to_integer(System.get_env("PORT") || "80"),
+    otp_app: :global_api
   ],
-  force_ssl: [hsts: true, host: nil, log: false],
+  force_ssl: [rewrite_on: [:x_forwarded_proto, :x_forwarded_host, :x_forwarded_for], host: nil, log: false],
   check_origin: [protocol <> "://*." <> domain],
   url: [host: "api." <> domain],
   static_url: [host: "cdn." <> domain],
