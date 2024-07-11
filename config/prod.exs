@@ -34,7 +34,7 @@ config :global_api, GlobalApiWeb.Endpoint,
     port: String.to_integer(System.get_env("PORT") || "80"),
     otp_app: :global_api
   ],
-  force_ssl: [rewrite_on: [:x_forwarded_proto, :x_forwarded_host, :x_forwarded_for], host: nil, log: false],
+  force_ssl: [rewrite_on: [:x_forwarded_proto, :x_forwarded_host], host: nil, log: false],
   check_origin: [protocol <> "://*." <> domain],
   url: [host: "api." <> domain],
   static_url: [host: "cdn." <> domain],
