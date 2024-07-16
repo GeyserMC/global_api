@@ -363,7 +363,6 @@ defmodule GlobalApiWeb.WebSocket do
     {[{:text, data}], state}
 
   def terminate(_reason, _req, state) do
-    IO.puts("terminated!")
     subscriptions = Map.get(state, :subscriptions)
     # the creator should always be subscribed to itself
     if !is_nil(subscriptions) do
