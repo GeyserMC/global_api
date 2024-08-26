@@ -9,7 +9,7 @@ defmodule GlobalApi.Application do
   def start(_type, _args) do
     children = [
       GlobalApi.PromEx,
-      {GlobalApi.DatabaseQueue, [pool_size: 7]},
+      {GlobalApi.DatabaseQueue, [pool_size: 14]},
       GlobalApi.SocketManager,
       GlobalApi.SkinPreQueue,
       GlobalApi.SkinPreUploader,

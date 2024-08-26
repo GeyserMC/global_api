@@ -106,6 +106,10 @@ defmodule GlobalApiWeb.WebSocket do
     end
   end
 
+  def store(client_data, convert_code) do
+    GlobalApi.Skins.SkinStorage.store(client_data)
+  end
+
   def websocket_handle({:json, %{"chain_data" => chain_data, "client_data" => client_data}}, state)
       when is_list(chain_data) and is_binary(client_data) do
     try do
@@ -114,24 +118,28 @@ defmodule GlobalApiWeb.WebSocket do
           {[{:close, @invalid_data}], state}
 
         {:invalid_size, extra_data} ->
+          store(client_data, 0)
           handle_extra_data(extra_data)
 
           send_log_message(state, @info, "received a skin with an invalid skin size")
           {:ok, state}
 
         {:invalid_geometry, extra_data} ->
+          store(client_data, 1)
           handle_extra_data(extra_data)
 
           send_log_message(state, @info, "received a skin with invalid geometry")
           {:ok, state}
 
         {:invalid_geometry, reason, extra_data} ->
+          store(client_data, 2)
           handle_extra_data(extra_data)
 
           send_log_message(state, @info, "received a skin with invalid geometry: #{reason}")
           {:ok, state}
 
         {is_steve, png, rgba_hash, minecraft_hash, {xuid, _, _} = extra_data} ->
+          store(client_data, 3)
           handle_extra_data(extra_data)
 
           # check for cached skin

@@ -39,6 +39,7 @@ defmodule GlobalApi.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
+      {:blake2, "~> 1.0.4"},
       {:phoenix, "~> 1.6.13"},
       {:phoenix_live_reload, "~> 1.3.3", only: :dev},
       {:phoenix_live_view, "~> 0.18.1"},
