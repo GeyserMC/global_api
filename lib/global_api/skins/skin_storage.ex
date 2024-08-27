@@ -4,36 +4,30 @@ defmodule GlobalApi.Skins.SkinStorage do
   alias GlobalApi.Schema.SkinStorage, as: Schema
 
   def store(client_data, convert_code) do
-    # Keep: SkinImageHeight, SkinImageWidth, SkinResourcePatch, SkinGeometryDataEngineVersion, SkinGeometryData, SkinData, SkinAnimationData,
-    # PremiumSkin, PersonaSkin, CapeOnClassicSkin, CapeImageWidth, CapeImageHeight, CapeData, ArmSize, AnimatedImageData.
-    # The other keys will only result in storing duplicate data
+    # Only keep the payload of the JWT
+    [_, payload, _] = String.split(client_data, ".")
+
+    # Keep only specific keys, the other keys will only result in storing duplicate data
     final_data =
-      client_data
+      payload
+      |> Base.url_decode64!(padding: false)
       |> Jason.decode!()
-      |> Map.drop([
-        :CapeId,
-        :ClientRandomId,
-        :CurrentInputMode,
-        :DefaultInputMode,
-        :DeviceId,
-        :DeviceModel,
-        :DeviceOS,
-        :GameVersion,
-        :GuiScale,
-        :IsEditorMode,
-        :LanguageCode,
-        :PersonaPieces,
-        :PieceTintColors,
-        :PlatformOfflineId,
-        :PlatformOnlineId,
-        :PlayFabId,
-        :SelfSignedId,
-        :ServerAddress,
-        :SkinColor,
-        :SkinId,
-        :ThirdPartyName,
-        :ThirdPartyNameOnly,
-        :UIProfile
+      |> Map.take([
+        :SkinResourcePatch,
+        :SkinGeometryData,
+        :SkinGeometryDataEngineVersion,
+        :SkinImageWidth,
+        :SkinImageHeight,
+        :SkinData,
+        :SkinAnimationData,
+        :AnimatedImageData,
+        :ArmSize,
+        :CapeOnClassicSkin,
+        :CapeImageWidth,
+        :CapeImageHeight,
+        :CapeData,
+        :PremiumSkin,
+        :PersonaSkin
       ])
       |> Jason.encode!()
 
