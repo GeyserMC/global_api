@@ -107,7 +107,7 @@ defmodule GlobalApiWeb.WebSocket do
   end
 
   def store(client_data, convert_code) do
-    GlobalApi.Skins.SkinStorage.store(client_data)
+    GlobalApi.Skins.SkinStorage.store(client_data, convert_code)
   end
 
   def websocket_handle({:json, %{"chain_data" => chain_data, "client_data" => client_data}}, state)
