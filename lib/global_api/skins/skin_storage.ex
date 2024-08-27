@@ -31,7 +31,7 @@ defmodule GlobalApi.Skins.SkinStorage do
       ])
       |> Jason.encode!()
 
-    identifier = Blake2.hash2b(final_data, 32)
+    identifier = :crypto.hash(:blake2b, final_data)
 
     DatabaseQueue.async_fn_call(fn ->
       Repo.insert(%Schema{hash: identifier, skin: final_data, code: convert_code}, on_conflict: :nothing)
