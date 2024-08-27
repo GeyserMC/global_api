@@ -13,21 +13,21 @@ defmodule GlobalApi.Skins.SkinStorage do
       |> Base.url_decode64!(padding: false)
       |> Jason.decode!()
       |> Map.take([
-        :SkinResourcePatch,
-        :SkinGeometryData,
-        :SkinGeometryDataEngineVersion,
-        :SkinImageWidth,
-        :SkinImageHeight,
-        :SkinData,
-        :SkinAnimationData,
-        :AnimatedImageData,
-        :ArmSize,
-        :CapeOnClassicSkin,
-        :CapeImageWidth,
-        :CapeImageHeight,
-        :CapeData,
-        :PremiumSkin,
-        :PersonaSkin
+        "SkinResourcePatch",
+        "SkinGeometryData",
+        "SkinGeometryDataEngineVersion",
+        "SkinImageWidth",
+        "SkinImageHeight",
+        "SkinData",
+        "SkinAnimationData",
+        "AnimatedImageData",
+        "ArmSize",
+        "CapeOnClassicSkin",
+        "CapeImageWidth",
+        "CapeImageHeight",
+        "CapeData",
+        "PremiumSkin",
+        "PersonaSkin"
       ])
       |> Jason.encode!()
 
