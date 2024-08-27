@@ -35,6 +35,6 @@ defmodule GlobalApi.Skins.SkinStorage do
 
     DatabaseQueue.async_fn_call(fn ->
       Repo.insert(%Schema{hash: identifier, skin: final_data, code: convert_code}, on_conflict: :nothing)
-    end)
+    end, [])
   end
 end
