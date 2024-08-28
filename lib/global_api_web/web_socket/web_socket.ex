@@ -118,28 +118,28 @@ defmodule GlobalApiWeb.WebSocket do
           {[{:close, @invalid_data}], state}
 
         {:invalid_size, extra_data} ->
-          store(client_data, 0)
+          # store(client_data, 0)
           handle_extra_data(extra_data)
 
           send_log_message(state, @info, "received a skin with an invalid skin size")
           {:ok, state}
 
         {:invalid_geometry, extra_data} ->
-          store(client_data, 1)
+          # store(client_data, 1)
           handle_extra_data(extra_data)
 
           send_log_message(state, @info, "received a skin with invalid geometry")
           {:ok, state}
 
         {:invalid_geometry, reason, extra_data} ->
-          store(client_data, 2)
+          # store(client_data, 2)
           handle_extra_data(extra_data)
 
           send_log_message(state, @info, "received a skin with invalid geometry: #{reason}")
           {:ok, state}
 
         {is_steve, png, rgba_hash, minecraft_hash, {xuid, _, _} = extra_data} ->
-          store(client_data, 3)
+          # store(client_data, 3)
           handle_extra_data(extra_data)
 
           # check for cached skin
