@@ -83,8 +83,8 @@ defmodule GlobalApi.SkinUploader do
                 texture_data = body["data"]["texture"]
 
                 texture_id = texture_data["url"]
-                # http://textures.minecraft.net/texture/ = 38 chars long
-                texture_id = String.slice(texture_id, 38, String.length(texture_id) - 38)
+                # can vary now between http and https, so we just grab the last section
+                texture_id = String.split(texture_id, "/", trim: true) |> List.last()
 
                 skin_value = texture_data["value"]
                 skin_signature = texture_data["signature"]
