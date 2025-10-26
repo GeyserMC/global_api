@@ -5,12 +5,12 @@ defmodule GlobalApi.SkinsNif do
 
   @type extra_data() :: {binary, binary, integer}
 
-  @spec validate_and_convert(list, binary) ::
+  @spec validate_and_convert(map, binary) ::
     :invalid_data |
     {:invalid_size | :invalid_geometry, extra_data()} |
     {:invalid_geometry, binary, extra_data()} |
     {boolean, binary, binary, binary, extra_data()}
-  def validate_and_convert(_chain_data, _client_data) do
+  def validate_and_convert(_auth_data, _client_data) do
     :erlang.nif_error(:nif_not_loaded)
   end
 

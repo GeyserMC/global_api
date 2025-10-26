@@ -4,6 +4,31 @@ use serde_json::Value;
 
 const MOJANG_PUBLIC_KEY: &str = "MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAECRXueJeTDqNRRgJi/vlRufByu/2G0i2Ebt6YMar5QX/R0DIIyrJMcUpruK4QveTfJSTp3Shlq4Gk34cD/4GUWwkv0DVuzeuB+tXija7HBxii03NHDbPAD0AKnLr2wdAp";
 
+pub fn validate_token<'a>(token: &'a str, client_data: &'a str) -> Option<(Value, Value)> {
+    let verifier = Verifier::create().build().unwrap();
+
+    let key = create_key(MOJANG_PUBLIC_KEY);
+
+    let claims = verifier.verify(token, &key);
+
+    if let Ok(data) = claims {
+        let cpk = data["cpk"].as_str()?;
+        
+        let cpk_key = create_key(cpk);
+
+        let client_claims_result = verifier.verify(client_data, &cpk_key);
+
+        if let Ok(client_claims) = client_claims_result {
+            Some((data, client_claims))
+        } else {
+            None
+        }
+    } else {
+        None
+    }
+}
+
+// This is the original function for the legacy flow
 pub fn validate_chain<'a>(chain_data: ListIterator<'a>, client_data: &'a str) -> Option<(Value, Value)> {
     let verifier = Verifier::create().build().unwrap();
 
