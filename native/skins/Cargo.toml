@@ -29,6 +29,9 @@ serde_json = "1.0.85"
 base64 = "0.13.0"
 json = "0.12.4"
 lazy_static = { version = "1.4.0" }
+serde = { version = "1.0.228", features = ["derive"] }
+ureq = { version = "3.1.2", features = ["json"] }
+jsonwebtoken = "9.3.1"
 
 # skin rendering
 image = { version = "0.24.4", features = ["png"] }
