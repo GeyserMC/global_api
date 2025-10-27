@@ -1,3 +1,4 @@
+// note the 's'
 use jsonwebtokens::{
     Algorithm as LegacyAlgorithm, AlgorithmID as LegacyAlgorithmID, Verifier as LegacyVerifier
 };
@@ -104,7 +105,7 @@ lazy_static! {
 
 
 pub fn validate_token<'a>(token: &'a str, client_data: &'a str) -> Option<(Value, Value)> {
-    let header = decode_header(token).ok()?; // This will now work
+    let header = decode_header(token).ok()?;
     let kid = header.kid?;
 
     let key = JWKS.keys.iter().find(|k| 
