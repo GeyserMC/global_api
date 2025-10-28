@@ -110,65 +110,81 @@ defmodule GlobalApiWeb.WebSocket do
     GlobalApi.Skins.SkinStorage.store(client_data, convert_code)
   end
 
-  def websocket_handle({:json, %{"chain_data" => chain_data, "client_data" => client_data}}, state)
-      when is_list(chain_data) and is_binary(client_data) do
+  def websocket_handle({:json, %{"client_data" => client_data} = json}, state)
+      when is_binary(client_data) do
     try do
-      case SkinsNif.validate_and_convert(chain_data, client_data) do
-        :invalid_data ->
-          {[{:close, @invalid_data}], state}
+      auth_data =
+        cond do
+          Map.has_key?(json, "token") ->
+            %{ "token" => json["token"] }
 
-        {:invalid_size, extra_data} ->
-          # store(client_data, 0)
-          handle_extra_data(extra_data)
+          Map.has_key?(json, "chain_data") ->
+            %{ "chain_data" => json["chain_data"] }
 
-          send_log_message(state, @info, "received a skin with an invalid skin size")
-          {:ok, state}
+          true ->
+            nil
+        end
 
-        {:invalid_geometry, extra_data} ->
-          # store(client_data, 1)
-          handle_extra_data(extra_data)
+      if is_nil(auth_data) do
+        {[{:close, 1007, @invalid_data}], state}
+      else
+        case SkinsNif.validate_and_convert(auth_data, client_data) do
+          :invalid_data ->
+            {[{:close, @invalid_data}], state}
 
-          send_log_message(state, @info, "received a skin with invalid geometry")
-          {:ok, state}
+          {:invalid_size, extra_data} ->
+            # store(client_data, 0)
+            handle_extra_data(extra_data)
 
-        {:invalid_geometry, reason, extra_data} ->
-          # store(client_data, 2)
-          handle_extra_data(extra_data)
+            send_log_message(state, @info, "received a skin with an invalid skin size")
+            {:ok, state}
 
-          send_log_message(state, @info, "received a skin with invalid geometry: #{reason}")
-          {:ok, state}
+          {:invalid_geometry, extra_data} ->
+            # store(client_data, 1)
+            handle_extra_data(extra_data)
 
-        {is_steve, png, rgba_hash, minecraft_hash, {xuid, _, _} = extra_data} ->
-          # store(client_data, 3)
-          handle_extra_data(extra_data)
+            send_log_message(state, @info, "received a skin with invalid geometry")
+            {:ok, state}
 
-          # check for cached skin
-          {:ok, entry} = Cachex.get(:xuid_to_skin, xuid)
-          if entry != nil do
-            # the player's skin is cached, let's go to part 2
-            part_two(state, xuid, is_steve, png, rgba_hash, minecraft_hash, entry)
-          else
-            #todo should probably get the player skin first
-            # and when the actual skin isn't cached get the unique_skin
-            player_skin = SkinsRepo.get_player_skin(xuid)
-            if player_skin != nil do
-              unique_skin = player_skin.skin
+          {:invalid_geometry, reason, extra_data} ->
+            # store(client_data, 2)
+            handle_extra_data(extra_data)
 
-              entry = {
-                unique_skin.id,
-                unique_skin.texture_id,
-                unique_skin.value,
-                unique_skin.signature
-              }
-              Cachex.put(:hash_to_skin, {unique_skin.hash, unique_skin.is_steve}, entry)
+            send_log_message(state, @info, "received a skin with invalid geometry: #{reason}")
+            {:ok, state}
 
-              # the player's skin isn't cached, let's go to part 2
-              part_two(state, xuid, is_steve, png, rgba_hash, minecraft_hash, UniqueSkin.to_protected(player_skin.skin, player_skin))
+          {is_steve, png, rgba_hash, minecraft_hash, {xuid, _, _} = extra_data} ->
+            # store(client_data, 3)
+            handle_extra_data(extra_data)
+
+            # check for cached skin
+            {:ok, entry} = Cachex.get(:xuid_to_skin, xuid)
+            if entry != nil do
+              # the player's skin is cached, let's go to part 2
+              part_two(state, xuid, is_steve, png, rgba_hash, minecraft_hash, entry)
             else
-              part_two(state, xuid, is_steve, png, rgba_hash, minecraft_hash, %{})
+              #todo should probably get the player skin first
+              # and when the actual skin isn't cached get the unique_skin
+              player_skin = SkinsRepo.get_player_skin(xuid)
+              if player_skin != nil do
+                unique_skin = player_skin.skin
+
+                entry = {
+                  unique_skin.id,
+                  unique_skin.texture_id,
+                  unique_skin.value,
+                  unique_skin.signature
+                }
+                Cachex.put(:hash_to_skin, {unique_skin.hash, unique_skin.is_steve}, entry)
+
+                # the player's skin isn't cached, let's go to part 2
+                part_two(state, xuid, is_steve, png, rgba_hash, minecraft_hash, UniqueSkin.to_protected(player_skin.skin, player_skin))
+              else
+                part_two(state, xuid, is_steve, png, rgba_hash, minecraft_hash, %{})
+              end
             end
-          end
-          {:ok, state}
+            {:ok, state}
+        end
       end
     rescue
       error ->
