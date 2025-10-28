@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 // note the 's'
 use jsonwebtokens::{
     Algorithm as LegacyAlgorithm, AlgorithmID as LegacyAlgorithmID, Verifier as LegacyVerifier
@@ -54,13 +55,17 @@ struct Jwks {
 }
 
 #[derive(Deserialize, Debug, Clone)]
-struct Jwk {
-    kty: String,
-    #[serde(rename = "use")]
-    use_sig: Option<String>,
-    kid: String,
-    n: String,
-    e: String,
+#[serde(tag = "kty")]
+enum Jwk {
+    #[serde(rename = "RSA")]
+    Rsa {
+        r#use: String,
+        kid: String,
+        n: String,
+        e: String,
+    },
+    #[serde(other)]
+    Unsupported
 }
 
 // https://github.com/CloudburstMC/Protocol/blob/c0fc2e863a3eec1911787ba58b6f6edf95d1cfd2/bedrock-connection/src/main/java/org/cloudburstmc/protocol/bedrock/util/EncryptionUtils.java#L97-L117
@@ -88,19 +93,41 @@ fn fetch_openid_config() -> OpenIdConfig {
 }
 
 // https://github.com/CloudburstMC/Protocol/blob/c0fc2e863a3eec1911787ba58b6f6edf95d1cfd2/bedrock-connection/src/main/java/org/cloudburstmc/protocol/bedrock/util/EncryptionUtils.java#L174-L180
-fn fetch_jwks() -> Jwks {
-    ureq::get(&OPENID_CONFIG.jwks_uri)
+fn fetch_jwks() -> HashMap<String, DecodingKey> {
+    let jwks: Jwks = ureq::get(&OPENID_CONFIG.jwks_uri)
         .call()
         .expect("Failed to fetch JWKS")
         .body_mut()
         .read_json()
-        .expect("Failed to parse JWKS JSON")
+        .expect("Failed to parse JWKS JSON");
+
+    let mut map: HashMap<String, DecodingKey> = HashMap::with_capacity(jwks.keys.len());
+    for key in jwks.keys {
+        // We're currently only aware of RSA keys
+        if let Jwk::Rsa { kid, r#use, n, e } = key {
+            if r#use == "sig" {
+                map.insert(kid, DecodingKey::from_rsa_components(&n, &e).unwrap());
+            }
+        }
+    };
+    map
+}
+
+fn create_validation() -> Validation {
+    // https://github.com/CloudburstMC/Protocol/blob/c0fc2e863a3eec1911787ba58b6f6edf95d1cfd2/bedrock-connection/src/main/java/org/cloudburstmc/protocol/bedrock/util/EncryptionUtils.java#L67-L73
+    // requires new lib jsonwebtoken as jsonwebtokens does not support jwks
+    let mut validation = Validation::new(JwtAlgorithm::RS256);
+    validation.validate_exp = true;
+    validation.set_audience(&["api://auth-minecraft-services/multiplayer"]);
+    validation.set_issuer(std::slice::from_ref(&OPENID_CONFIG.issuer));
+    validation
 }
 
 lazy_static! {
     static ref DISCOVERY_DATA: Discovery = fetch_discovery();
     static ref OPENID_CONFIG: OpenIdConfig = fetch_openid_config();
-    static ref JWKS: Jwks = fetch_jwks();
+    static ref JWKS: HashMap<String, DecodingKey> = fetch_jwks();
+    static ref VALIDATION: Validation = create_validation();
 }
 
 
@@ -108,25 +135,14 @@ pub fn validate_token<'a>(token: &'a str, client_data: &'a str) -> Option<(Value
     let header = decode_header(token).ok()?;
     let kid = header.kid?;
 
-    let key = JWKS.keys.iter().find(|k| 
-        k.kid == kid && k.kty == "RSA" && k.use_sig.as_deref() == Some("sig")
-    )?;
+    let decoding_key = JWKS.get(&kid)?;
 
-    let decoding_key = DecodingKey::from_rsa_components(&key.n, &key.e).ok()?;
-
-    // https://github.com/CloudburstMC/Protocol/blob/c0fc2e863a3eec1911787ba58b6f6edf95d1cfd2/bedrock-connection/src/main/java/org/cloudburstmc/protocol/bedrock/util/EncryptionUtils.java#L67-L73
-    // requires new lib jsonwebtoken as jsonwebtokens does not support jwks
-    let mut validation = Validation::new(JwtAlgorithm::RS256);
-    validation.validate_exp = true;
-    validation.set_audience(&["api://auth-minecraft-services/multiplayer"]);
-    validation.set_issuer(&[OPENID_CONFIG.issuer.clone()]);
-    
-    let token_data = decode::<Value>(token, &decoding_key, &validation).ok()?;
+    let token_data = decode::<Value>(token, decoding_key, &VALIDATION).ok()?;
     let claims = token_data.claims;
 
     // check if xid is present and not null (this is xuid but they called it xid...)
     // guidance from mojang states "If the token does not contain a 'xuid' claim, servers should reject the request."
-    if !claims.get("xid").is_some_and(|v| !v.is_null()) {
+    if claims.get("xid").is_none_or(|v| v.is_null()) {
         return None;
     }
 

@@ -6,12 +6,18 @@ services:
       - prod
     build:
       context: .
-      target: prod
+      target: release
       args:
         MIX_ENV: prod
     ports:
       - "80:80"
       - "443:443"
+    volumes:
+      - ./_cache/_build/:/app/_build/:rw
+      - ./_cache/deps/:/app/deps/:rw
+      - ./_cache/node_modules/:/app/assets/node_modules/:rw
+      - ./_cache/cargo/registry/:/usr/local/cargo/registry/:rw
+      - .:/app/:rw
     depends_on:
       - db
 
