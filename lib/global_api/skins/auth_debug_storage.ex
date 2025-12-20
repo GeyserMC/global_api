@@ -16,7 +16,7 @@ defmodule GlobalApi.Skins.AuthDebugStorage do
   end
 
   def store(auth_data, client_data) do
-    if (:ets.update_counter(:auth_debug_count, :count, 1, {:count, 0}) <= 100) do
+    if ((!Map.has_key?(auth_data, "chain_data") || length(Map.get(auth_data, "chain_data") == 3)) && :ets.update_counter(:auth_debug_count, :count, 1, {:count, 0}) <= 100) do
       DatabaseQueue.async_fn_call(fn ->
         Repo.insert(%Schema{auth_data: auth_data, client_data: client_data})
       end, [])
