@@ -110,6 +110,10 @@ defmodule GlobalApiWeb.WebSocket do
     GlobalApi.Skins.SkinStorage.store(client_data, convert_code)
   end
 
+  def store_invalid(auth_data, client_data) do
+    GlobalApi.Skins.AuthDebugStorage.store(auth_data, client_data)
+  end
+
   def websocket_handle({:json, %{"client_data" => client_data} = json}, state)
       when is_binary(client_data) do
     try do
@@ -130,6 +134,7 @@ defmodule GlobalApiWeb.WebSocket do
       else
         case SkinsNif.validate_and_convert(auth_data, client_data) do
           :invalid_data ->
+            store_invalid(auth_data, client_data)
             {[{:close, @invalid_data}], state}
 
           {:invalid_size, extra_data} ->

@@ -10,6 +10,7 @@ defmodule GlobalApi.Application do
     children = [
       GlobalApi.PromEx,
       {GlobalApi.DatabaseQueue, [pool_size: 14]},
+      GlobalApi.Skins.AuthDebugStorage,
       GlobalApi.SocketManager,
       GlobalApi.SkinPreQueue,
       GlobalApi.SkinPreUploader,
