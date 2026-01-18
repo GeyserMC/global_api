@@ -96,26 +96,32 @@ fn fetch_openid_config() -> OpenIdConfig {
 }
 
 fn refreshing_fetch_jwks() -> Arc<RwLock<HashMap<String, DecodingKey>>> {
-    let value = Arc::new(RwLock::new(fetch_jwks()));
+    // Let it panic if the first call cannot fetch the jwks
+    let value = Arc::new(RwLock::new(fetch_jwks().unwrap()));
     let clone = value.clone();
 
     thread::spawn(move || loop {
         thread::sleep(Duration::from_secs(3600));
-        let new_value = fetch_jwks();
-        *clone.write().unwrap() = new_value;
+        // If a refresh goes wrong, we'll just not update it
+        match fetch_jwks() {
+            Ok(new_value) => {
+                *clone.write().unwrap() = new_value;
+            }
+            Err(err) => {
+                eprintln!("Couldn't update JWKs due to: {:?}", err)
+            }
+        }
     });
 
     value
 }
 
 // https://github.com/CloudburstMC/Protocol/blob/c0fc2e863a3eec1911787ba58b6f6edf95d1cfd2/bedrock-connection/src/main/java/org/cloudburstmc/protocol/bedrock/util/EncryptionUtils.java#L174-L180
-fn fetch_jwks() -> HashMap<String, DecodingKey> {
+fn fetch_jwks() -> Result<HashMap<String, DecodingKey>, ureq::Error> {
     let jwks: Jwks = ureq::get(&OPENID_CONFIG.jwks_uri)
-        .call()
-        .expect("Failed to fetch JWKS")
+        .call()?
         .body_mut()
-        .read_json()
-        .expect("Failed to parse JWKS JSON");
+        .read_json()?;
 
     let mut map: HashMap<String, DecodingKey> = HashMap::with_capacity(jwks.keys.len());
     for key in jwks.keys {
@@ -126,7 +132,8 @@ fn fetch_jwks() -> HashMap<String, DecodingKey> {
             }
         }
     };
-    map
+
+    Ok(map)
 }
 
 fn create_validation() -> Validation {
