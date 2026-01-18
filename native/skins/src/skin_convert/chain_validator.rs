@@ -12,6 +12,9 @@ use serde_json::Value;
 use lazy_static::lazy_static;
 use serde::Deserialize;
 use std::fmt::Debug;
+use std::sync::{Arc, RwLock};
+use std::thread;
+use std::time::Duration;
 
 const MOJANG_PUBLIC_KEY: &str = "MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAECRXueJeTDqNRRgJi/vlRufByu/2G0i2Ebt6YMar5QX/R0DIIyrJMcUpruK4QveTfJSTp3Shlq4Gk34cD/4GUWwkv0DVuzeuB+tXija7HBxii03NHDbPAD0AKnLr2wdAp";
 const DISCOVERY_ENDPOINT: &str = "https://client.discovery.minecraft-services.net/api/v1.0/discovery/MinecraftPE/builds/1.0.0.0";
@@ -92,6 +95,19 @@ fn fetch_openid_config() -> OpenIdConfig {
         .expect("Failed to parse OpenID JSON")
 }
 
+fn refreshing_fetch_jwks() -> Arc<RwLock<HashMap<String, DecodingKey>>> {
+    let value = Arc::new(RwLock::new(fetch_jwks()));
+    let clone = value.clone();
+
+    thread::spawn(move || loop {
+        thread::sleep(Duration::from_secs(3600));
+        let new_value = fetch_jwks();
+        *clone.write().unwrap() = new_value;
+    });
+
+    value
+}
+
 // https://github.com/CloudburstMC/Protocol/blob/c0fc2e863a3eec1911787ba58b6f6edf95d1cfd2/bedrock-connection/src/main/java/org/cloudburstmc/protocol/bedrock/util/EncryptionUtils.java#L174-L180
 fn fetch_jwks() -> HashMap<String, DecodingKey> {
     let jwks: Jwks = ureq::get(&OPENID_CONFIG.jwks_uri)
@@ -126,7 +142,7 @@ fn create_validation() -> Validation {
 lazy_static! {
     static ref DISCOVERY_DATA: Discovery = fetch_discovery();
     static ref OPENID_CONFIG: OpenIdConfig = fetch_openid_config();
-    static ref JWKS: HashMap<String, DecodingKey> = fetch_jwks();
+    static ref JWKS: Arc<RwLock<HashMap<String, DecodingKey>>> = refreshing_fetch_jwks();
     static ref VALIDATION: Validation = create_validation();
 }
 
@@ -135,7 +151,8 @@ pub fn validate_token<'a>(token: &'a str, client_data: &'a str) -> Option<(Value
     let header = decode_header(token).ok()?;
     let kid = header.kid?;
 
-    let decoding_key = JWKS.get(&kid)?;
+    let keys = JWKS.read().unwrap();
+    let decoding_key = keys.get(&kid)?;
 
     let token_data = decode::<Value>(token, decoding_key, &VALIDATION).ok()?;
     let claims = token_data.claims;
@@ -219,5 +236,5 @@ fn create_key(pub_key: &str) -> LegacyAlgorithm {
 }
 
 fn create_key_from(pub_key: &str) -> String {
-    vec!["-----BEGIN PUBLIC KEY-----", pub_key, "-----END PUBLIC KEY-----"].concat()
+    ["-----BEGIN PUBLIC KEY-----", pub_key, "-----END PUBLIC KEY-----"].concat()
 }
