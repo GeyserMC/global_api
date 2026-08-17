@@ -36,7 +36,7 @@ defmodule GlobalApiWeb.WebSocket do
   @internal_error Jason.encode!(%{info: "the service experienced an unexpected error"})
 
   def init(request, _state) do
-    opts = %{:idle_timeout => @idle_timeout, :max_frame_size => 1_572_864} # 1.5mb
+    opts = %{:idle_timeout => @idle_timeout, :max_frame_size => 4_194_304} # 4mb
     {:cowboy_websocket, request, URI.decode_query(request.qs), opts}
   end
 
@@ -69,7 +69,7 @@ defmodule GlobalApiWeb.WebSocket do
       {id, verify_code} = SocketManager.create_subscriber(self())
       {
         [
-          {:text, Jason.encode!(%{event_id: 0, id: id, verify_code: verify_code})}
+          {:text, Jason.encode!(%{event_id: 0, id: id, verify_code: verify_code, allow_subscribers: false})}
         ],
         %__MODULE__{subscriptions: [id], creator_of: id}
       }
