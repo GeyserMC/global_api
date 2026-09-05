@@ -9,7 +9,7 @@ defmodule GlobalApi.Application do
   def start(_type, _args) do
     children = [
       GlobalApi.PromEx,
-      {GlobalApi.DatabaseQueue, [pool_size: 14]},
+      {GlobalApi.DatabaseQueue, [pool_size: GlobalApi.Utils.get_env(:app, :db_queue_pool_size)]},
       GlobalApi.Skins.AuthDebugStorage,
       GlobalApi.SocketManager,
       GlobalApi.SkinPreQueue,

@@ -1,6 +1,8 @@
 defmodule GlobalApiWeb.WebSocket do
   @behaviour :cowboy_websocket
+  require Logger
 
+  alias GlobalApi.DatabaseQueue
   alias GlobalApi.SkinsNif
   alias GlobalApi.SkinsRepo
   alias GlobalApi.SocketManager
@@ -11,12 +13,13 @@ defmodule GlobalApiWeb.WebSocket do
   @type t :: %__MODULE__{
     subscriptions: Map.t,
     creator_of: integer | nil,
+    opened_at: integer,
     last_ping: integer
   }
 
-  defstruct subscriptions: nil, creator_of: nil, last_ping: 0
+  defstruct subscriptions: nil, creator_of: nil, opened_at: 0, last_ping: 0
 
-  @idle_timeout if Utils.environment() == :prod, do: 20_000, else: 60 * 60 * 1_000
+  @idle_timeout if Utils.environment() == :prod, do: 45_000, else: 60 * 60 * 1_000
   @ping_interval 5_000
 
   @debug -1
@@ -29,8 +32,6 @@ defmodule GlobalApiWeb.WebSocket do
   @ping_too_fast Jason.encode!(%{error: "pings have to be at least #{ceil(@ping_interval / 1_000)} seconds apart"})
   @invalid_action Jason.encode!(%{error: "invalid action"})
   @invalid_data Jason.encode!(%{error: "invalid data"})
-
-  @invalid_data Jason.encode!(%{error: "invalid chain and/or client data"})
 
   @creator_left Jason.encode!(%{info: "creator left and there are no uploads left"})
   @internal_error Jason.encode!(%{info: "the service experienced an unexpected error"})
@@ -71,7 +72,7 @@ defmodule GlobalApiWeb.WebSocket do
         [
           {:text, Jason.encode!(%{event_id: 0, id: id, verify_code: verify_code, allow_subscribers: false})}
         ],
-        %__MODULE__{subscriptions: [id], creator_of: id}
+        %__MODULE__{subscriptions: [id], creator_of: id, opened_at: System.monotonic_time(:second)}
       }
     end
   end
@@ -193,15 +194,7 @@ defmodule GlobalApiWeb.WebSocket do
       end
     rescue
       error ->
-        # the client data is too long for Sentry, so we have to be creative
-        response = HTTPoison.post!("https://dump.geysermc.org/documents", Jason.encode!(client_data))
-        response = Jason.decode!(response.body)
-
-        if is_nil(response[:key]) do
-          Sentry.capture_message("Failed to upload dump", extra: %{response: response, exception: error})
-        else
-          Sentry.capture_exception(error, extra: %{dump_url: response.key})
-        end
+        Sentry.capture_message("Caught an error while handling skin upload.", extra: %{exception: error})
         {:ok, state}
     end
   end
@@ -215,7 +208,7 @@ defmodule GlobalApiWeb.WebSocket do
   end
 
   defp handle_extra_data(extra_data) do
-    XboxRepo.handle_extra_data(extra_data)
+    DatabaseQueue.async_fn_call(fn -> XboxRepo.handle_extra_data(extra_data) end, [])
   end
 
   defp part_two(state, xuid, is_steve, png, rgba_hash, minecraft_hash, skin_data) do
@@ -388,8 +381,8 @@ defmodule GlobalApiWeb.WebSocket do
   def websocket_info(data, state), do:
     {[{:text, data}], state}
 
-  def terminate(_reason, _req, state) do
-    IO.puts("terminated!")
+  def terminate(reason, _req, state) do
+    Logger.info("terminated! #{inspect(reason)}")
     subscriptions = Map.get(state, :subscriptions)
     # the creator should always be subscribed to itself
     if !is_nil(subscriptions) do
